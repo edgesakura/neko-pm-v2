@@ -104,7 +104,7 @@ EOF
 cat > "${LAUNCHER_DIR}/boss-launcher.sh" << EOF
 #!/bin/bash
 cd "${SCRIPT_DIR}"
-claude --instructions "${SCRIPT_DIR}/instructions/boss-cat.md"
+claude --yes --instructions "${SCRIPT_DIR}/instructions/boss-cat.md"
 EOF
 chmod +x "${LAUNCHER_DIR}/boss-launcher.sh"
 
@@ -112,7 +112,7 @@ chmod +x "${LAUNCHER_DIR}/boss-launcher.sh"
 cat > "${LAUNCHER_DIR}/guard-launcher.sh" << EOF
 #!/bin/bash
 cd "${SCRIPT_DIR}"
-claude --instructions "${SCRIPT_DIR}/instructions/guard-cat.md"
+claude --yes --instructions "${SCRIPT_DIR}/instructions/guard-cat.md"
 EOF
 chmod +x "${LAUNCHER_DIR}/guard-launcher.sh"
 
@@ -123,7 +123,7 @@ for i in $(seq 1 $WORKERS); do
 cd "${SCRIPT_DIR}"
 # 子猫${i}として起動
 export KITTEN_ID=${i}
-claude --instructions "${SCRIPT_DIR}/instructions/kitten.md"
+claude --yes --instructions "${SCRIPT_DIR}/instructions/kitten.md"
 EOF
     chmod +x "${LAUNCHER_DIR}/kitten${i}-launcher.sh"
 done
