@@ -1,0 +1,29 @@
+# Output（成果物は公開しない）
+output/
+!output/.gitkeep
+
+# Temp launchers（起動時に生成）
+.launchers/
+
+# Environment
+.env
+.env.*
+
+# Secrets
+*.pem
+*.key
+credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Queue state（実行時に生成されるため）
+queue/boss_to_guard.yaml
+queue/tasks/*.yaml
+queue/reports/*.yaml
+!queue/tasks/.gitkeep
+!queue/reports/.gitkeep
+
+# Nawabari (dashboard state)
+nawabari.md

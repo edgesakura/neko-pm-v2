@@ -1,0 +1,88 @@
+# neko-pm 設定ファイル
+# 猫型マルチエージェントシステム設定にゃ〜
+
+# システム基本設定
+system:
+  name: "neko-pm"
+  version: "1.0.0"
+  language: "ja"
+
+# エージェント設定
+agents:
+  boss_cat:
+    name: "ボスねこ"
+    model: "opus"
+    session: "boss"
+    pane: "boss:0.0"
+    role: "PM（プロジェクトマネージャー）"
+
+  guard_cat:
+    name: "番猫"
+    model: "sonnet"
+    session: "team"
+    pane: "team:0.0"
+    role: "PL（プロジェクトリーダー）"
+
+  elder_cat:
+    name: "長老猫"
+    model: "opus"
+    session: null  # オンデマンド召喚
+    role: "参謀（アドバイザー）"
+
+  kitten:
+    name: "子猫"
+    model: "sonnet"
+    session: "worker"
+    role: "メンバー（実行部隊）"
+    default_count: 3
+
+# 通信設定
+communication:
+  # ボスねこ→番猫
+  boss_to_guard:
+    queue_file: "queue/boss_to_guard.yaml"
+
+  # 番猫→子猫
+  guard_to_kitten:
+    queue_dir: "queue/tasks/"
+
+  # 子猫→番猫
+  kitten_to_guard:
+    queue_dir: "queue/reports/"
+
+# 縄張り（状況板）設定
+nawabari:
+  file: "nawabari.md"
+  update_interval: "on_event"  # リアルタイム更新
+
+# send-keys ルール（絶対厳守にゃ！）
+send_keys_rule:
+  # 必ず2回に分けて送信すること
+  # 1回目: コマンド入力（Enter なし）
+  # 2回目: Enter 送信
+  steps:
+    - "tmux send-keys -t {pane} \"{command}\" \"\""
+    - "sleep 1"
+    - "tmux send-keys -t {pane} Enter"
+  warning: "絶対に1回のsend-keysでコマンドとEnterを同時に送るなにゃ！"
+
+# スキルロード設定
+skills:
+  base_path: ".claude/skills"
+  available:
+    - "coding-standards"
+    - "tdd-workflow"
+    - "security-review"
+    - "backend-patterns"
+    - "frontend-patterns"
+    - "datadog"
+    - "aws"
+    - "ppt"
+
+# 禁止事項（全エージェント共通）
+prohibited_actions:
+  - "ボスねこ・番猫が直接タスク実行"
+  - "階層をスキップした通信"
+  - "send-keys 1回送信"
+  - "status.md の不正更新"
+  - "スキル化候補の記入漏れ"
