@@ -17,8 +17,9 @@ Memory MCP（知識グラフ記憶）を導入することで、セッション�
 {
   "mcpServers": {
     "memory": {
+      "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-memory"]
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
     }
   }
 }

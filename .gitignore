@@ -27,3 +27,37 @@ queue/reports/*.yaml
 
 # Nawabari (dashboard state)
 nawabari.md
+
+# History（セッション履歴）
+history/
+
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Memory MCP（ローカル状態）
+memory/
+
+# PID files
+*.pid
+.owl-watcher.pid
+
+# Retrospective reports（振り返りMD）
+queue/reports/*.md
+
+# Test files
+test-*.js
+
+# Screenshots（一時ファイル）
+*.jpg
+*.png
+*.jpeg
+
+# Local settings（ローカル固有）
+.claude/settings.local.json
+
+# Research reports（一時的な調査結果）
+reports/

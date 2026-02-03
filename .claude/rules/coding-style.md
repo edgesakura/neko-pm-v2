@@ -1,0 +1,1 @@
+/home/edgesakura/git/.claude/rules/coding-style.md
