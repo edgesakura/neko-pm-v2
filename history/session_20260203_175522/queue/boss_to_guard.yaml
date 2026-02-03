@@ -1,0 +1,26 @@
+commands:
+  - command_id: "cmd-2026-02-03T16:15:15"
+    timestamp: "2026-02-03T16:15:15"
+    type: security-review
+    priority: high
+    description: |
+      shuugou.sh にセキュリティ上の問題がないかレビューするにゃ。
+      **オンデマンドCodex（workers.4）を召喚してレビューを実行するにゃ〜**
+    context:
+      target_file: "shuugou.sh"
+      method: "ondemand-codex"
+      codex_pane: "neko:workers.4"
+    instructions: |
+      1. まず shuugou.sh の内容を確認するにゃ
+      2. workers.4 にCodex召喚コマンドを送信するにゃ（2回ルール厳守）：
+
+         tmux send-keys -t neko:workers.4 'codex exec --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm "shuugou.shのセキュリティレビューを実行して。コマンドインジェクション、権限昇格、情報漏洩などの観点でチェックして"' ""
+         sleep 1
+         tmux send-keys -t neko:workers.4 Enter
+
+      3. 結果を待ってnawabari.mdに記録するにゃ
+    expected_outputs:
+      - "セキュリティレビュー結果"
+      - "問題点のリスト（あれば）"
+      - "改善提案"
+    status: in_progress

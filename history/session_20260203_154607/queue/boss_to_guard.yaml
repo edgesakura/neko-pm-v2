@@ -1,0 +1,57 @@
+commands:
+  - command_id: "cmd-20260203-143959"
+    timestamp: "2026-02-03T14:39:59"
+    type: maintenance
+    priority: medium
+    status: pending
+    description: |
+      【nawabari.md肥大化対策】アーカイブと軽量化
+
+      ## 背景
+      nawabari.mdが70KBに肥大化している。
+      長老猫（opus）からの改善提案を実施する。
+
+      ## 実施内容
+
+      ### タスク1: historyディレクトリ作成
+      - `history/` ディレクトリを作成（なければ）
+      - .gitkeepを配置
+
+      ### タスク2: 完了作戦をアーカイブ
+      - nawabari.mdから完了作戦を全て抽出
+      - `history/nawabari-20260203.md` に保存
+      - ヘッダーに「アーカイブ日時」「対象期間」を記載
+
+      ### タスク3: nawabari.md軽量化
+      - 「進行中作戦」セクションは維持
+      - 「完了作戦」は直近3件のみ残す
+      - 古い完了作戦は削除（アーカイブ済み）
+
+      ### タスク4: instructions/guard-cat.md にルール追記
+      以下のルールを追記：
+      ```
+      ## nawabari.md 運用ルール
+
+      ### サイズ管理
+      - nawabari.mdは50KB以下を維持
+      - 完了作戦は直近3件のみ保持
+      - 古い完了作戦は history/nawabari-YYYYMMDD.md にアーカイブ
+
+      ### アーカイブタイミング
+      - 作戦完了時に50KBを超えていたら自動アーカイブ
+      - または1週間ごとに定期アーカイブ
+      ```
+
+      ### タスク5: .gitignoreに追記
+      - `history/` はgit管理対象にする（除外しない）
+
+    context:
+      current_size: "70KB"
+      target_size: "< 50KB"
+      archive_path: "history/nawabari-20260203.md"
+
+    expected_outputs:
+      - "history/nawabari-20260203.md 作成完了"
+      - "nawabari.md 軽量化完了（< 50KB）"
+      - "instructions/guard-cat.md ルール追記完了"
+      - "サイズ確認結果"

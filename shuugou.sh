@@ -260,16 +260,16 @@ echo ""
 LAUNCHER_EOF
 chmod +x "${LAUNCHER_DIR}/fox-launcher.sh"
 
-# 研究狸ランチャー生成（GPT-5.2-thinking 深い調査）
+# 研究狸ランチャー生成（Codex CLI / gpt-5.2-codex 深い調査）
 cat > "${LAUNCHER_DIR}/tanuki-launcher.sh" << 'LAUNCHER_EOF'
 #!/bin/bash
 cd "$(dirname "$0")/.."
 echo "🦝 研究狸起動ポン！"
 echo "   深い調査依頼を待つポン"
-echo "   モデル: gpt-5.2-thinking"
+echo "   モデル: gpt-5.2-codex (Codex CLI)"
 echo ""
 echo "呼び出し例:"
-echo '  openai chat --model gpt-5.2-thinking "調査内容"'
+echo '  codex exec --full-auto --model gpt-5.2-codex "調査内容"'
 echo ""
 LAUNCHER_EOF
 chmod +x "${LAUNCHER_DIR}/tanuki-launcher.sh"

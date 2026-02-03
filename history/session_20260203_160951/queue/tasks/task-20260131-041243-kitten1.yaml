@@ -1,0 +1,154 @@
+task_id: "task-20260131-041243-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T04:12:43"
+priority: high
+load_skills: []
+description: |
+  【フェーズ2.5】marp-agent統合作戦: スキル動作テスト
+
+  ## 概要
+  npm install 承認済み（ボスねこ・ご主人承認）。
+  @marp-team/marp-core, @marp-team/marp-cli をインストールし、
+  marp-slide-generator スキルの動作テストを実施する。
+
+  ## 承認情報
+  - 承認者: ボスねこ（ご主人承認済み）
+  - 承認時刻: 2026-01-31T04:11:56
+  - command_id: cmd-20260131-041156
+
+  ## 実施内容
+
+  ### 1. npm パッケージインストール
+
+  #### 1.1 プロジェクトディレクトリに移動
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+  ```
+
+  #### 1.2 パッケージインストール
+  ```bash
+  # Marp Core（Markdown→HTML変換）
+  npm install @marp-team/marp-core
+
+  # Marp CLI（PDF生成）- グローバルインストール
+  npm install -g @marp-team/marp-cli
+  ```
+
+  ### 2. marp-slide-generator スキル動作テスト
+
+  #### 2.1 テストMarkdown作成
+  場所: /home/edgesakura/git/neko-pm/output/marp-test/test-slide.md
+
+  内容: Marp形式のMarkdownテンプレート
+  - Frontmatter（marp: true, theme: default, size: 16:9, paginate: true）
+  - タイトルスライド
+  - 箇条書きスライド（3-5項目）
+  - 表スライド
+  - 引用スライド
+
+  参考: /home/edgesakura/git/.claude/skills/marp-slide-generator/template.md
+
+  #### 2.2 Marp Core テスト（Markdown → HTML）
+  ```javascript
+  // test-marp-core.js
+  const { Marp } = require('@marp-team/marp-core');
+
+  const marp = new Marp();
+  const markdown = `---
+  marp: true
+  theme: default
+  size: 16:9
+  paginate: true
+  ---
+
+  # テストスライド
+
+  Marp動作テスト
+
+  ---
+
+  ## 箇条書きテスト
+
+  - 項目1
+  - 項目2
+  - 項目3
+  `;
+
+  const { html, css } = marp.render(markdown);
+  console.log('HTML生成成功:', html.length, 'bytes');
+  console.log('CSS生成成功:', css.length, 'bytes');
+  ```
+
+  実行:
+  ```bash
+  node test-marp-core.js
+  ```
+
+  #### 2.3 Marp CLI テスト（PDF生成）
+  ```bash
+  # テストMarkdownファイルからPDF生成
+  marp output/marp-test/test-slide.md -o output/marp-test/test-slide.pdf
+
+  # 生成されたPDFを確認
+  ls -lh output/marp-test/test-slide.pdf
+  ```
+
+  ### 3. 動作確認結果の記録
+
+  #### 3.1 成功した項目
+  - [ ] npm install @marp-team/marp-core
+  - [ ] npm install -g @marp-team/marp-cli
+  - [ ] Marp Core: Markdown → HTML変換
+  - [ ] Marp CLI: PDF生成
+
+  #### 3.2 エラーが発生した場合
+  エラーメッセージ、原因、対処方法を記録
+
+  #### 3.3 動作テスト結果サマリー
+  - インストール成功/失敗
+  - HTML変換成功/失敗
+  - PDF生成成功/失敗
+  - 生成されたファイルサイズ
+  - 所要時間
+
+  ### 4. 完了報告YAML作成
+  queue/reports/report-20260131-041243-kitten1.yaml
+
+  ## 自律実行範囲
+  - ✅ npm install（ボスねこ・ご主人承認済み）
+  - ✅ ディレクトリ作成（output/marp-test/）
+  - ✅ テストファイル作成（test-slide.md, test-marp-core.js）
+  - ✅ Marp Core テスト（Node.js実行）
+  - ✅ Marp CLI テスト（PDF生成）
+  - ✅ 動作確認結果の記録
+
+  ## 注意事項
+  - npm install は承認済み（安心して実行してOK）
+  - エラーが発生した場合は詳細に記録
+  - PDF生成にはChromiumが必要（システムにインストール済みか確認）
+  - 生成されたファイル（HTML, PDF）は output/marp-test/ に保存
+
+  ## エスカレ判断基準
+  - npm install 失敗 → エラー内容を報告、解決策を提案
+  - Chromium未インストール → インストール方法を提案
+  - その他のエラー → 詳細なエラーメッセージを報告
+
+context:
+  phase: "フェーズ2.5"
+  operation_type: "skill_testing"
+  approval_id: "cmd-20260131-041156"
+  approved_by: "boss-cat"
+  user_approved: true
+  packages_to_install:
+    - "@marp-team/marp-core"
+    - "@marp-team/marp-cli"
+  reference_files:
+    - "/home/edgesakura/git/.claude/skills/marp-slide-generator/SKILL.md"
+    - "/home/edgesakura/git/.claude/skills/marp-slide-generator/template.md"
+
+expected_outputs:
+  - "output/marp-test/test-slide.md（テストMarkdown）"
+  - "output/marp-test/test-slide.pdf（生成PDF）"
+  - "test-marp-core.js（Coreテストスクリプト）"
+  - "完了報告YAML（queue/reports/report-20260131-041243-kitten1.yaml）"
+  - "動作テスト結果サマリー"

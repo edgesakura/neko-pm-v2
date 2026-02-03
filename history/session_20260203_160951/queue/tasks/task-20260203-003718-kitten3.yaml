@@ -1,0 +1,335 @@
+task_id: "task-20260203-003718-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-03T00:37:18"
+priority: high
+command_id: "cmd-20260203-003615"
+description: |
+  【Phase 1】chat-app スマホ便利機能追加
+
+  ## 背景
+  Phase 0 完了。スマホからターミナル操作が可能になった。
+  次はスマホでの操作性を向上させる機能を追加するにゃ。
+
+  ## 実装する機能（3つ）
+
+  ### 機能1: クイックボタン（3つ）
+  ワンタップでよく使うコマンドを実行できるボタン：
+  - [📎 neko:boss] → `tmux attach -t neko:boss\n`
+  - [🔄 再起動] → `cd ~/git/neko-pm && ./shuugou.sh\n`
+  - [📋 状況] → `cat ~/git/neko-pm/nawabari.md | tail -30\n`
+
+  ### 機能2: Ctrl+B ボタン（tmux プレフィックス）
+  スマホで tmux 操作するためのボタン：
+  - [Ctrl+B] → `\x02` を送信（tmux プレフィックス）
+  - [d] → `d` を送信（デタッチ用）
+  - [c] → `c` を送信（新規ウィンドウ）
+  - [n] → `n` を送信（次のウィンドウ）
+
+  ### 機能3: ファイル転送
+  スクショをアップロードしてClaude Codeが読めるようにする：
+  - [📷] ボタンでファイル選択
+  - /api/upload にアップロード
+  - アップロード後、パスをターミナルに表示
+
+  ## 実装手順
+
+  ### 🔍 ステップ1: 現在の実装を確認
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # terminal.js の sendInput() を確認
+  grep -A 20 "function sendInput" public/terminal.js
+
+  # 既存のボタンUI確認
+  grep -A 10 "screenshot-btn\|send-btn" public/index.html
+  ```
+
+  ### ✏️ ステップ2: index.html にボタンUI追加
+
+  **追加場所**: `<div id="terminal-container">` の前に追加
+
+  ```html
+  <!-- クイックボタン -->
+  <div class="quick-buttons">
+    <button type="button" class="quick-btn" data-command="tmux attach -t neko:boss\n">📎 neko:boss</button>
+    <button type="button" class="quick-btn" data-command="cd ~/git/neko-pm &amp;&amp; ./shuugou.sh\n">🔄 再起動</button>
+    <button type="button" class="quick-btn" data-command="cat ~/git/neko-pm/nawabari.md | tail -30\n">📋 状況</button>
+  </div>
+
+  <!-- tmux / 特殊キー -->
+  <div class="tmux-buttons">
+    <button type="button" class="tmux-btn" data-key="ctrl-b">Ctrl+B</button>
+    <button type="button" class="tmux-btn" data-key="d">d</button>
+    <button type="button" class="tmux-btn" data-key="c">c</button>
+    <button type="button" class="tmux-btn" data-key="n">n</button>
+    <button type="button" class="tmux-btn" data-key="ctrl-c">Ctrl+C</button>
+  </div>
+  ```
+
+  **注意**: 既存の `<input type="file" id="screenshot-input">` はそのまま使用
+
+  ### 📝 ステップ3: terminal.js にイベントハンドラー追加
+
+  **追加場所**: `initTerminal()` 関数内、既存のイベントリスナーの後
+
+  ```javascript
+  // クイックボタンのイベントリスナー
+  document.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const command = btn.getAttribute('data-command');
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(command);
+        console.log('[QUICK] Sent:', command);
+      } else {
+        console.error('[QUICK] WebSocket not connected');
+      }
+    });
+  });
+
+  // tmux / 特殊キーのイベントリスナー
+  document.querySelectorAll('.tmux-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-key');
+      let data = '';
+
+      switch (key) {
+        case 'ctrl-b':
+          data = '\x02'; // Ctrl+B (tmux プレフィックス)
+          break;
+        case 'ctrl-c':
+          data = '\x03'; // Ctrl+C (終了)
+          break;
+        default:
+          data = key; // d, c, n など
+          break;
+      }
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+        console.log('[TMUX] Sent:', key, '(', data.charCodeAt(0), ')');
+      } else {
+        console.error('[TMUX] WebSocket not connected');
+      }
+    });
+  });
+
+  // ファイル転送のイベントリスナー（既存の screenshot-btn を拡張）
+  const screenshotBtn = document.getElementById('screenshot-btn');
+  const screenshotInput = document.getElementById('screenshot-input');
+
+  if (screenshotBtn && screenshotInput) {
+    screenshotBtn.addEventListener('click', () => {
+      screenshotInput.click();
+    });
+
+    screenshotInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // ファイルサイズチェック（10MB制限）
+      if (file.size > 10 * 1024 * 1024) {
+        alert('ファイルサイズが10MBを超えています');
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // アップロード成功：パスをターミナルに表示
+          const message = `\n📷 File uploaded: ${data.path}\n`;
+          console.log('[UPLOAD] Success:', data.path);
+
+          // ターミナルに表示（terminal.write を使用）
+          if (term) {
+            term.write(message);
+          }
+        } else {
+          console.error('[UPLOAD] Error:', data.error);
+          alert('アップロードに失敗しました: ' + data.error);
+        }
+      } catch (error) {
+        console.error('[UPLOAD] Exception:', error);
+        alert('アップロードに失敗しました');
+      }
+
+      // input をリセット（同じファイルを再選択可能にする）
+      e.target.value = '';
+    });
+  }
+  ```
+
+  ### 🎨 ステップ4: styles.css にスタイル追加
+
+  ```css
+  /* クイックボタン */
+  .quick-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: #1e1e1e;
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+  }
+
+  .quick-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 8px 12px;
+    background: #0e639c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .quick-btn:hover {
+    background: #1177bb;
+  }
+
+  .quick-btn:active {
+    background: #0d5280;
+  }
+
+  /* tmux / 特殊キー */
+  .tmux-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: #1e1e1e;
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+  }
+
+  .tmux-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 8px 12px;
+    background: #2d2d30;
+    color: #cccccc;
+    border: 1px solid #3e3e42;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .tmux-btn:hover {
+    background: #3e3e42;
+    border-color: #007acc;
+  }
+
+  .tmux-btn:active {
+    background: #252526;
+  }
+
+  /* スマホ対応（タップしやすいサイズ） */
+  @media (max-width: 768px) {
+    .quick-btn,
+    .tmux-btn {
+      min-height: 44px;
+      font-size: 16px;
+    }
+  }
+  ```
+
+  ### 🔄 ステップ5: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ6: 動作確認
+
+  **期待される結果**：
+
+  1. **クイックボタン**
+     - [📎 neko:boss] クリック → tmux attach -t neko:boss が実行される ✅
+     - [🔄 再起動] クリック → shuugou.sh が実行される ✅
+     - [📋 状況] クリック → nawabari.md が表示される ✅
+
+  2. **tmux操作ボタン**
+     - [Ctrl+B] クリック → tmux プレフィックスが送信される ✅
+     - [d] クリック → デタッチが実行される ✅
+     - [c] クリック → 新規ウィンドウが作成される ✅
+
+  3. **ファイル転送**
+     - [📷] クリック → ファイル選択ダイアログが開く ✅
+     - ファイル選択 → /api/upload にアップロード ✅
+     - アップロード成功 → パスがターミナルに表示される ✅
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **実装した機能**（3つ）
+  2. **追加したコード**（HTML、JavaScript、CSS）
+  3. **動作確認結果**（9つの成功基準）
+  4. **サーバー再起動確認**（server.log 最後の10行）
+  5. **スマホでの動作確認結果**（可能であれば）
+
+  ## 成果物
+  - index.html（クイックボタン、tmuxボタンUI追加）
+  - terminal.js（イベントハンドラー追加）
+  - styles.css（ボタンスタイル追加）
+  - サーバー再起動完了
+  - 動作確認結果
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - ✅ WebSocket 接続状態を確認してから送信すること
+  - ✅ スマホのタッチイベントも考慮すること（min-height: 44px）
+  - ✅ ファイルアップロードは既存の /api/upload を使用すること
+  - 🚨 同一ファイル書き込みなので、1匹で実装すること（RACE-001）
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  files_to_modify:
+    - "public/index.html"
+    - "public/terminal.js"
+    - "public/styles.css"
+  existing_upload_endpoint: "/api/upload"
+  quick_commands:
+    - command: "tmux attach -t neko:boss\n"
+      label: "📎 neko:boss"
+    - command: "cd ~/git/neko-pm && ./shuugou.sh\n"
+      label: "🔄 再起動"
+    - command: "cat ~/git/neko-pm/nawabari.md | tail -30\n"
+      label: "📋 状況"
+
+expected_outputs:
+  - "クイックボタン（3つ）追加"
+  - "tmux操作ボタン（5つ）追加"
+  - "ファイル転送機能追加"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "動作確認結果（9つの成功基準）"
+  - "完了報告YAML（queue/reports/task-20260203-003718-kitten3.yaml）"
+
+notes: |
+  - 🎯 Phase 1 の3つの機能を実装
+  - ✅ スマホでの操作性を向上
+  - 📝 WebSocket 接続状態を確認してから送信
+  - 🚨 同一ファイル書き込み（RACE-001）
+  - 完了したら必ず番猫に報告するにゃ〜

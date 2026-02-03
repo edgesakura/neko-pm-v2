@@ -1,0 +1,165 @@
+task_id: "task-20260131-043621-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T04:36:21"
+priority: high
+load_skills: []
+description: |
+  【夜間自律開発】ハイブリッドPPTXスキル作成作戦
+
+  ## 概要
+  ご主人の要望: Marp（Markdown）と既存PPTX、どちらからでもPPTXを生成したい。
+  編集可能なPPTXが最終成果物として必要。
+
+  既存の /ppt スキルと marp-slide-generator スキルを統合した新スキル
+  「hybrid-pptx」を作成する。
+
+  ## 要件
+
+  ### 1. Markdown入力モード
+  - Marp形式のMarkdown（`---`でスライド区切り）を入力
+  - 構成を解析してPPTXを生成
+  - marp-slide-generatorで構成を考え、/pptでPPTX出力
+  - ワークフロー:
+    1. Marp Markdown作成（marp-slide-generatorスキル使用）
+    2. Markdownを解析してPPTX構造に変換
+    3. knowledge/ppt/ の変換ツールでPPTX生成
+    4. 編集可能なPPTXを出力
+
+  ### 2. 既存PPTX入力モード
+  - 既存のPPTXをテンプレートとして使用
+  - スライド番号指定（例: 0,3,5,7）でレイアウト流用
+  - テキスト差し替えでPPTX出力
+  - ワークフロー:
+    1. 既存PPTXのサムネイル作成（thumbnail.py）
+    2. スライド選択・並べ替え（rearrange.py）
+    3. テキスト抽出（inventory.py）
+    4. テキスト置換（replace.py）
+    5. 編集可能なPPTXを出力
+
+  ## 成果物
+
+  ### .claude/skills/hybrid-pptx/SKILL.md
+  以下の内容を含むこと：
+
+  #### セクション1: 概要
+  - スキル名: hybrid-pptx
+  - トリガーワード: /hybrid-pptx, /pptx, "PPTXを作成"
+  - 目的: Markdown/既存PPTXの両方からPPTXを生成
+
+  #### セクション2: 2つのワークフロー
+
+  **A. Markdown入力モード**
+  - 入力: Marp形式Markdown
+  - 処理手順（ステップバイステップ）
+  - 使用ツール:
+    - marp-slide-generator（構成考案）
+    - knowledge/ppt/html2pptx.md（Markdown → PPTX変換）
+  - 出力: 編集可能なPPTX
+
+  **B. 既存PPTX入力モード**
+  - 入力: 既存PPTXファイルパス
+  - 処理手順（ステップバイステップ）
+  - 使用ツール:
+    - knowledge/ppt/thumbnail.py（サムネイル）
+    - knowledge/ppt/rearrange.py（並べ替え）
+    - knowledge/ppt/inventory.py（テキスト抽出）
+    - knowledge/ppt/replace.py（テキスト置換）
+  - 出力: 編集可能なPPTX
+
+  #### セクション3: 実装例
+  - Markdown入力モードの実装例（コードブロック）
+  - 既存PPTX入力モードの実装例（コードブロック）
+
+  #### セクション4: 依存関係
+  - Pythonパッケージ: markitdown[pptx], defusedxml
+  - Node.jsパッケージ: @marp-team/marp-core, @marp-team/marp-cli
+  - システム: LibreOffice（PDF変換）, Poppler（pdftoppm）
+
+  #### セクション5: 使用例
+  - ユーザーからの依頼例（「○○のPPTXを作って」等）
+  - スキルの応答例
+
+  ## 参照ファイル（必ず読むこと）
+
+  ### 既存スキル
+  1. **/home/edgesakura/git/.claude/skills/ppt/SKILL.md**
+     - PPTXスキルの全体像を把握
+     - 3つのワークフロー（新規作成、既存編集、テンプレート利用）
+     - ナレッジ連携、ビジュアル検証
+
+  2. **/home/edgesakura/git/.claude/skills/marp-slide-generator/SKILL.md**
+     - Marpスライド生成の詳細
+     - システムプロンプト、スライドルール、構成テクニック
+     - Markdown → HTML変換
+
+  ### ナレッジベース
+  3. **/home/edgesakura/git/knowledge/ppt/index.md**
+     - PPTXツール全体のインデックス
+
+  4. **/home/edgesakura/git/knowledge/ppt/html2pptx.md**
+     - HTMLからPPTX生成方法（Markdown → PPTX変換に使える）
+
+  5. **/home/edgesakura/git/knowledge/ppt/ooxml.md**
+     - PPTX内部構造（OOXML）の理解
+     - 既存PPTX編集時の参考
+
+  6. **/home/edgesakura/git/knowledge/ppt/SKILL.md**
+     - テンプレート利用ワークフロー
+     - rearrange.py, inventory.py, replace.py の使い方
+
+  ## 実装方針
+
+  1. **既存スキルの統合**
+     - /ppt と marp-slide-generator の長所を組み合わせる
+     - 重複を避け、相互補完的な設計にする
+
+  2. **ワークフロー重視**
+     - ステップバイステップで明確な手順を記載
+     - コマンド例を豊富に提供
+
+  3. **使いやすさ**
+     - トリガーワードを明確に
+     - ユーザーがどのモードを使うべきか分かりやすく説明
+
+  4. **拡張性**
+     - 将来的に他のPPTX生成方法を追加しやすい構造
+
+  ## 自律実行範囲
+  - ✅ 既存ファイル読み取り・分析（/ppt, marp-slide-generator, knowledge/ppt/）
+  - ✅ .claude/skills/hybrid-pptx/SKILL.md 作成
+  - ✅ 必要ならサンプルスクリプト作成
+  - ⚠️ npm install / pip install → 不要（既存ツール使用）
+
+  ## 夜間自律開発モード 🌙
+  - ⚠️ **ご主人は寝ているにゃ**
+  - npm/pip install が必要な場合 → nawabari.mdに記載して待機（ただし今回は不要と想定）
+  - エスカレが必要な場合 → nawabari.mdに記載
+  - **完了時はsend-keysでボスねこに通知するにゃ〜**
+
+  ## エスカレ判断基準
+  - npm/pip install 必要 → エスカレ（ただし今回は不要と想定）
+  - 技術的判断困難 → エスカレ
+  - その他質問 → nawabari.mdに記載
+
+  ## 注意事項
+  - 既存スキル（/ppt, marp-slide-generator）を **上書きしない**
+  - 新しいスキル（hybrid-pptx）として独立させる
+  - SKILL.mdは詳細に、実装例は豊富に記載
+  - 夜間自律開発のため、判断に迷ったら nawabari.md に記載して待機
+
+context:
+  source_skills:
+    - "/home/edgesakura/git/.claude/skills/ppt/SKILL.md"
+    - "/home/edgesakura/git/.claude/skills/marp-slide-generator/SKILL.md"
+  knowledge_base: "/home/edgesakura/git/knowledge/ppt/"
+  output_skill: "/home/edgesakura/git/.claude/skills/hybrid-pptx/"
+  mode: "night_autonomous_development"
+  escalation_allowed: true
+  escalation_target: "nawabari.md"
+
+expected_outputs:
+  - ".claude/skills/hybrid-pptx/SKILL.md（詳細なスキルドキュメント）"
+  - "Markdown → PPTX ワークフロー説明"
+  - "既存PPTX → テンプレート流用ワークフロー説明"
+  - "実装例・コードサンプル"
+  - "完了報告YAML（queue/reports/report-20260131-043621-kitten1.yaml）"

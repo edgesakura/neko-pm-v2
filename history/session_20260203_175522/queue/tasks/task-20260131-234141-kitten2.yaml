@@ -1,0 +1,99 @@
+task_id: "task-20260131-234141-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-01-31T23:41:41"
+priority: urgent
+load_skills: []
+description: |
+  【タスク】owl-watcher.sh 承認監視機能実装
+
+  ## 目的
+  番猫・子猫が承認プロンプトで止まる問題を解決するため、
+  owl-watcher.sh を承認監視システムに拡張する。
+
+  ## 実装内容
+
+  ### 1. 監視対象ペインの設定
+  - 監視対象: neko:workers.0（番猫）、neko:workers.1（子猫1）、neko:workers.3（子猫2）、neko:workers.4（子猫3）
+  - スキップ: neko:workers.2（フクロウ自身）
+
+  ### 2. 承認プロンプト検出パターン
+  以下のパターンを検出する：
+  - "Allow Bash(...)?", "Allow Read(...)?", "Allow Edit(...)?", etc.
+  - "? (y/n)" または "[y/n]" パターン
+
+  ### 3. 承認判断ロジック
+
+  #### 自動承認（y を send-keys、2回ルール厳守）
+  - Allow Read
+  - Allow Edit
+  - Allow Write
+  - Allow Bash(npm, node, cat, ls, git add, git commit, git status, git diff, mkdir, touch, echo, cd, pwd, head, tail, grep, find, date, tmux)
+  - Allow Glob
+  - Allow Grep
+  - Allow Task
+  - Allow WebFetch
+  - Allow WebSearch
+
+  #### 拒否（n を send-keys、ご主人に通知）
+  削除系コマンド:
+  - rm -rf, rm -r, rmdir
+  - delete, DELETE, DROP, TRUNCATE
+  - git push, git reset --hard
+  - force, --force, -f
+  - sudo
+
+  ### 4. 承認実行（2回ルール厳守）
+  ```bash
+  # 1回目: y または n を送信（Enter なし）
+  tmux send-keys -t {pane} "y"
+  sleep 1
+  # 2回目: Enter を送信
+  tmux send-keys -t {pane} Enter
+  ```
+
+  ### 5. ログ記録
+  - ファイル: logs/approval.log
+  - フォーマット: [タイムスタンプ] [ペイン] [承認/拒否] [コマンド内容]
+
+  ### 6. WebSocket通知
+  - 問題のある承認（削除系）を検出したら、WebSocket経由でchat-appに通知
+  - 通知先: ws://localhost:3000（server.jsが受信）
+  - 通知内容: { type: 'approval_alert', pane: '...', command: '...', timestamp: '...' }
+
+  ## 実装方針
+  1. 現在の owl-watcher.sh を読み取り、構造を理解する
+  2. ペイン監視ループを追加する
+  3. 承認プロンプト検出ロジックを実装する
+  4. 承認判断ロジックを実装する
+  5. send-keys で自動承認する（2回ルール厳守）
+  6. ログ記録機能を実装する
+  7. WebSocket通知機能を実装する（wscat または curl 経由）
+  8. テスト実行して動作確認する
+
+  ## 注意事項
+  - 2回ルール厳守（send-keys は必ず2回に分けて実行）
+  - 削除系コマンドは絶対に自動承認しない
+  - ログは必ず記録する
+  - フクロウ自身のペイン（neko:workers.2）は監視しない
+
+  ## 成果物
+  - owl-watcher.sh の改修版（承認監視機能付き）
+  - logs/approval.log の作成確認
+  - 動作確認レポート（queue/reports/にYAML形式で報告）
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/owl-watcher.sh"
+  panes_to_monitor:
+    - "neko:workers.0"
+    - "neko:workers.1"
+    - "neko:workers.3"
+    - "neko:workers.4"
+  skip_pane: "neko:workers.2"
+  log_file: "logs/approval.log"
+  websocket_url: "ws://localhost:3000"
+
+expected_outputs:
+  - "owl-watcher.sh の改修版"
+  - "logs/approval.log の動作確認"
+  - "queue/reports/report-20260131-234141-kitten2.yaml"

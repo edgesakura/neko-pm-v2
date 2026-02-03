@@ -1,0 +1,171 @@
+task_id: "task-20260202-171319-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T17:13:19"
+priority: urgent
+command_id: "cmd-20260202-171217"
+description: |
+  【🎯確定】app.js の古いコードを削除せよ
+
+  ## 根本原因（ボスねこが特定）
+
+  **app.js と index.html のID不一致**
+
+  | app.js が期待 | index.html の実際 |
+  |---------------|------------------|
+  | sendButton | send-btn（違う！） |
+  | clearHistoryButton | 存在しない |
+  | clearAlertsBtn | 存在しない |
+  | statusBoard | 存在しない |
+
+  → タブUI化でindex.htmlの構造が変わったが、app.jsの古いコードが残っている
+
+  ## 修正タスク
+
+  **app.js の古いコードをコメントアウトまたは削除**
+
+  ### 🔍 ステップ1: 問題箇所の確認
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  grep -n "sendButton\|clearHistoryButton\|clearAlertsBtn\|statusBoard" public/app.js
+  ```
+
+  ### 🔧 ステップ2: 削除対象（8箇所）
+
+  #### 1. line 20付近: `const clearHistoryButton = ...`
+  ```bash
+  sed -n '15,25p' public/app.js
+  ```
+  → `const clearHistoryButton = document.getElementById('clearHistoryButton');` をコメントアウト
+
+  #### 2. line 25付近: `const sendButton = ...`
+  ```bash
+  sed -n '20,30p' public/app.js
+  ```
+  → `const sendButton = document.getElementById('sendButton');` をコメントアウト
+
+  #### 3. line 29付近: `const statusBoard = ...`
+  ```bash
+  sed -n '24,34p' public/app.js
+  ```
+  → `const statusBoard = document.getElementById('statusBoard');` をコメントアウト
+
+  #### 4. line 42付近: `const clearAlertsBtn = ...`
+  ```bash
+  sed -n '37,47p' public/app.js
+  ```
+  → `const clearAlertsBtn = document.getElementById('clearAlertsBtn');` をコメントアウト
+
+  #### 5. line 187付近: `sendButton.disabled = false;`
+  ```bash
+  sed -n '182,192p' public/app.js
+  ```
+  → `sendButton.disabled = false;` を削除または `if (sendButton) { ... }` で囲む
+
+  #### 6. line 222付近: `sendButton.disabled = true;`
+  ```bash
+  sed -n '217,227p' public/app.js
+  ```
+  → `sendButton.disabled = true;` を削除または `if (sendButton) { ... }` で囲む
+
+  #### 7. line 487付近: `statusBoard.classList.add(...)`
+  ```bash
+  sed -n '482,492p' public/app.js
+  ```
+  → `statusBoard.classList.add(...)` を削除
+
+  #### 8. line 835-839: `clearHistoryButton.addEventListener...` 等
+  ```bash
+  sed -n '830,845p' public/app.js
+  ```
+  → `clearHistoryButton.addEventListener(...)` およびその周辺を削除
+
+  ### ✏️ ステップ3: 修正実行
+
+  **推奨方法**: Editツールを使って該当行を確認してからコメントアウトまたは削除
+
+  例：
+  ```javascript
+  // 修正前
+  const sendButton = document.getElementById('sendButton');
+
+  // 修正後（コメントアウト）
+  // const sendButton = document.getElementById('sendButton'); // タブUI化で不要
+  ```
+
+  ### 🔄 ステップ4: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ5: 動作確認
+
+  **期待される結果**：
+  - ブラウザのコンソールでエラーが出ない ✅
+  - 写真送信が正常に動作する ✅
+  - terminal.js の機能が正常に動作する ✅
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **削除した8箇所の詳細**（修正前後のコード、行番号）
+  2. **grep結果**（削除対象の確認）
+  3. **コンソールエラーが消えたこと**の確認
+  4. **写真送信が動作すること**の確認
+  5. **terminal.js が正常に動作すること**の確認
+
+  ## 成果物
+  - 修正済み app.js（8箇所削除またはコメントアウト）
+  - grep結果（削除前後の確認）
+  - server.log の最後の10行
+  - 動作確認レポート（コンソールエラーなし + 写真送信動作）
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - 🎯 ボスねこが根本原因を特定したので、確実に修正すること
+  - 📝 8箇所すべてを削除またはコメントアウトすること（漏れ厳禁）
+  - ✅ 修正後はコンソールエラーが出ないことを必ず確認
+  - 🔍 写真送信が正常に動作することを確認
+  - 🐱 terminal.js は正常動作している（修正不要）
+  - 完了したら queue/reports/ に報告YAML作成にゃ
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  root_cause: "app.jsとindex.htmlのID不一致"
+  target_file: "public/app.js"
+  delete_targets:
+    - "line 20付近: clearHistoryButton"
+    - "line 25付近: sendButton"
+    - "line 29付近: statusBoard"
+    - "line 42付近: clearAlertsBtn"
+    - "line 187付近: sendButton.disabled = false"
+    - "line 222付近: sendButton.disabled = true"
+    - "line 487付近: statusBoard.classList"
+    - "line 835-839: addEventListener"
+
+expected_outputs:
+  - "修正済み app.js（8箇所削除またはコメントアウト）"
+  - "grep結果（削除前後の確認）"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "コンソールエラーが消えたことの確認"
+  - "写真送信が正常に動作することの確認"
+  - "完了報告YAML（queue/reports/task-20260202-171319-kitten3.yaml）"
+
+notes: |
+  - 🎯 ボスねこが根本原因を特定（ID不一致）
+  - ✅ terminal.js は正常動作（修正不要）
+  - 🚨 app.js の古いコードが問題
+  - 📝 8箇所を確実に削除またはコメントアウト
+  - 完了したら必ず番猫に報告するにゃ〜

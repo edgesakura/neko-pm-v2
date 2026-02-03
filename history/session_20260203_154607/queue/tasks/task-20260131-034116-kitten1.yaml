@@ -1,0 +1,182 @@
+task_id: "task-20260131-034116-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T03:41:16"
+priority: high
+load_skills: []
+description: |
+  【フェーズ2】marp-agent統合作戦: Claude Code skills化
+
+  ## 概要
+  /home/edgesakura/git/marp-agent のリポジトリ分析結果を基に、
+  Claude Code skills として3つのスキルを作成する
+
+  ## 前提
+  - フェーズ1（子猫1）の分析レポートを参照せよ
+    - queue/reports/report-20260131-032615-kitten1.yaml
+  - 夜間自律開発モード（ご主人は寝ている）
+  - npm install が必要になったら nawabari.md に記載して待機
+
+  ## 実施内容
+
+  ### 1. marp-slide-generator スキル作成（最優先）
+
+  #### 1.1 ディレクトリ作成
+  ```bash
+  mkdir -p /home/edgesakura/git/.claude/skills/marp-slide-generator
+  ```
+
+  #### 1.2 SKILL.md 作成
+  場所: /home/edgesakura/git/.claude/skills/marp-slide-generator/SKILL.md
+
+  内容:
+  - スキル概要（Marpスライド自動生成）
+  - トリガーワード（/marp, "スライド作って"等）
+  - 機能説明
+    - テーマ・題材指定でスライド生成
+    - Web検索機能（Tavily API）で最新情報取得
+    - Marp形式Markdown出力
+    - PDF出力（オプション）
+  - 使用方法
+    - 入力: テーマ、題材、スライド枚数、Web検索の要否
+    - 出力: Marp形式Markdown、PDF（オプション）
+  - 技術情報
+    - システムプロンプト（agent.py の SYSTEM_PROMPT を参考）
+    - Frontmatter例（marp: true, theme: border, size: 16:9, paginate: true）
+    - スライドルール（1枚目タイトル、箇条書き3-5項目、絵文字なし）
+    - セクション区切りスライド（背景色変更）
+  - 依存パッケージ
+    - @marp-team/marp-core
+    - @marp-team/marp-cli（PDF生成用）
+  - 注意事項
+    - ビジネスライクなデザイン（絵文字禁止）
+    - Web検索エラー時はスライド作成せず報告
+  - 実装例
+    - コード例を記載
+
+  参考ファイル:
+  - /home/edgesakura/git/marp-agent/amplify/agent/runtime/agent.py
+    - SYSTEM_PROMPT（システムプロンプト）
+    - web_search ツール（Tavily API）
+    - output_slide ツール（マークダウン出力）
+
+  #### 1.3 テンプレートファイル作成（オプション）
+  場所: /home/edgesakura/git/.claude/skills/marp-slide-generator/template.md
+
+  内容: Marp形式のMarkdownテンプレート
+  - Frontmatter（marp: true, theme: border等）
+  - タイトルスライド
+  - セクション区切りスライド
+  - 箇条書きスライド
+  - 表スライド
+  - 引用スライド
+  - 参考文献スライド
+
+  参考ファイル:
+  - /home/edgesakura/git/marp-agent/amplify/agent/runtime/border.css
+    - カスタムテーマ（border）
+
+  ### 2. marp-theme-customizer スキル作成
+
+  #### 2.1 ディレクトリ作成
+  ```bash
+  mkdir -p /home/edgesakura/git/.claude/skills/marp-theme-customizer
+  ```
+
+  #### 2.2 SKILL.md 作成
+  場所: /home/edgesakura/git/.claude/skills/marp-theme-customizer/SKILL.md
+
+  内容:
+  - スキル概要（Marpカスタムテーマ作成・編集）
+  - トリガーワード
+  - 機能説明
+    - カスタムテーマ（CSS）作成
+    - セクション区切りスライドのスタイル
+    - 小文字クラス（参考文献用）
+    - ハイライト、引用等のスタイル
+  - 使用方法
+  - 技術情報
+    - Marp テーマの書き方
+    - CSSカスタマイズ方法
+  - 実装例
+    - border.css を参考にしたサンプルCSS
+
+  参考ファイル:
+  - /home/edgesakura/git/marp-agent/amplify/agent/runtime/border.css
+
+  ### 3. bedrock-agentcore-integration スキル作成
+
+  #### 3.1 ディレクトリ作成
+  ```bash
+  mkdir -p /home/edgesakura/git/.claude/skills/bedrock-agentcore-integration
+  ```
+
+  #### 3.2 SKILL.md 作成
+  場所: /home/edgesakura/git/.claude/skills/bedrock-agentcore-integration/SKILL.md
+
+  内容:
+  - スキル概要（Bedrock AgentCore統合ガイド）
+  - トリガーワード
+  - 機能説明
+    - AgentCore Runtimeの定義方法（CDK）
+    - Pythonエージェントの実装方法（Strands Agents SDK）
+    - セッション管理（会話履歴保持）
+    - ストリーミングレスポンス
+    - ツール定義（@toolデコレータ）
+  - 使用方法
+  - 技術情報
+    - CDK定義（resource.ts）
+    - Pythonエージェント（agent.py）
+    - Dockerfile（コンテナイメージ）
+    - 認証（JWT / Cognito）
+    - 監視（OpenTelemetry + CloudWatch）
+  - 実装例
+    - resource.ts のサンプル
+    - agent.py のサンプル
+    - Dockerfileのサンプル
+
+  参考ファイル:
+  - /home/edgesakura/git/marp-agent/amplify/agent/resource.ts
+  - /home/edgesakura/git/marp-agent/amplify/agent/runtime/agent.py
+  - /home/edgesakura/git/marp-agent/amplify/agent/runtime/Dockerfile
+
+  ### 4. 完了報告YAML作成
+  queue/reports/report-20260131-034116-kitten1.yaml
+
+  ## 自律実行範囲
+  - ✅ ディレクトリ作成（.claude/skills/配下）
+  - ✅ SKILL.md作成（ファイル書き込み）
+  - ✅ テンプレートファイル作成（オプション）
+  - ✅ 参照ファイル読み取り（marp-agentリポジトリ）
+  - ⚠️ npm install → 実行せず、必要性のみ報告
+
+  ## 注意事項
+  - 夜間自律開発のため、ご主人は寝ている
+  - npm install が必要な場合:
+    - nawabari.md の「🚨 要対応」に記載
+    - 作業を停止して待機
+    - ご主人が起きるまで待つ
+  - スキル作成のみなら npm install 不要（参照するだけ）
+  - 実際にテスト（npm run build等）するなら npm install 必要
+    - ただし、夜間自律開発では不要（ご主人が起きてから）
+
+  ## エスカレ判断基準
+  - SKILL.md作成のみ → npm install 不要
+  - 動作テスト（npm run build等） → npm install 必要 → エスカレ
+
+context:
+  phase: "フェーズ2"
+  operation_type: "skills_creation"
+  reference_report: "queue/reports/report-20260131-032615-kitten1.yaml"
+  reference_repo: "/home/edgesakura/git/marp-agent"
+  reference_files:
+    - "/home/edgesakura/git/marp-agent/amplify/agent/runtime/agent.py"
+    - "/home/edgesakura/git/marp-agent/amplify/agent/runtime/border.css"
+    - "/home/edgesakura/git/marp-agent/amplify/agent/resource.ts"
+    - "/home/edgesakura/git/marp-agent/amplify/agent/runtime/Dockerfile"
+
+expected_outputs:
+  - "/home/edgesakura/git/.claude/skills/marp-slide-generator/SKILL.md"
+  - "/home/edgesakura/git/.claude/skills/marp-theme-customizer/SKILL.md"
+  - "/home/edgesakura/git/.claude/skills/bedrock-agentcore-integration/SKILL.md"
+  - "完了報告YAML（queue/reports/report-20260131-034116-kitten1.yaml）"
+  - "npm install エスカレ判断（必要なら nawabari.md に記載）"

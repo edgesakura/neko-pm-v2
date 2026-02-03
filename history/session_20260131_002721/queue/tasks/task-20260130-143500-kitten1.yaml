@@ -1,0 +1,48 @@
+task_id: "task-20260130-143500-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T14:35:00+09:00"
+priority: high
+load_skills: []
+description: |
+  【chat-app動作確認作戦】にゃ
+
+  WSL再起動後、chat-appの動作確認を実施するにゃ〜。
+
+  ## 実施手順
+
+  1. **サーバー起動**
+     - ディレクトリ: /home/edgesakura/git/neko-pm/output/chat-app
+     - コマンド: npm start
+     - tmuxバックグラウンドで実行推奨にゃ
+
+  2. **アクセス確認**
+     - Tailscale経由: http://100.76.163.123:3000
+     - ブラウザで開けるか確認にゃ
+
+  3. **チャット機能テスト**
+     - メッセージ送信が正常に動作するか確認にゃ
+     - 複数メッセージの送受信を試すにゃ
+
+  4. **問題対応**
+     - エラーが出た場合は原因を特定にゃ
+     - 必要なら修正するにゃ
+
+  ## 注意事項
+  - サーバー起動はバックグラウンド（tmux send-keys with run_in_background）で実行するにゃ
+  - ログを確認して正常起動を確認するにゃ
+  - 動作確認結果は詳細に報告するにゃ〜
+
+context:
+  service_name: "chat-app"
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  references:
+    - "/home/edgesakura/git/neko-pm/output/chat-app/server.js"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/package.json"
+  tailscale_ip: "100.76.163.123"
+  port: 3000
+
+expected_outputs:
+  - "chat-appが正常に起動すること"
+  - "Tailscale経由でアクセスできること"
+  - "チャット機能（メッセージ送受信）が動作すること"
+  - "動作確認結果をqueue/reports/に報告すること"

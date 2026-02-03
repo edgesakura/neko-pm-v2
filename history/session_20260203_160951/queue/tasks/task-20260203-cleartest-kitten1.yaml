@@ -1,0 +1,25 @@
+task_id: "task-20260203-cleartest-kitten1"
+timestamp: "2026-02-03T16:10:00"
+assigned_to: kitten1
+status: pending
+priority: low
+type: test
+
+description: |
+  【/clear復帰テスト】
+  
+  このタスクは/clear後の復帰手順テスト用にゃ。
+  
+  ## やること
+  1. このYAMLを読み込んだことを確認
+  2. 「復帰成功にゃ！」と報告
+  3. statusをdoneに更新
+  
+  ## 期待する動作
+  - /clear後に自動でこのYAMLを発見
+  - 復帰手順（4ステップ）を実行
+  - 番猫に復帰完了を報告
+
+expected_outputs:
+  - "子猫1が/clear後に正しく復帰"
+  - "タスクYAML読み込み成功"

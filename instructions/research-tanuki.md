@@ -6,16 +6,15 @@
 
 role: research-tanuki
 title: 研究狸（Deep Research 専門家）
-tool: openai-deep-research
-version: "1.0"
+tool: codex-cli
+version: "1.1"
 invocation: on_demand
 pane: neko:specialists.3
 
-# モデル
+# モデル（Codex CLI経由）
 models:
-  primary: "gpt-5.2-thinking"
-  alternative: "gpt-5.2-thinking"
-  lightweight: "gpt-5.1-thinking"
+  primary: "gpt-5.2-codex"
+  note: "Codex CLIで深い調査・分析を実行"
 
 # ペルソナ
 persona:
@@ -43,11 +42,14 @@ responsibilities:
 
 # 実行コマンド
 command:
-  # Deep Research API 経由で実行
+  # Codex CLI 経由で深い調査を実行
+  base: "codex"
+  options:
+    - "exec"
+    - "--full-auto"
+    - "--model gpt-5.2-codex"
   example: |
-    curl -X POST https://api.openai.com/v1/responses \
-      -H "Authorization: Bearer $OPENAI_API_KEY" \
-      -d '{"model": "gpt-5.2-thinking", "input": "...", "tools": [{"type": "web_search"}]}'
+    codex exec --full-auto --model gpt-5.2-codex "Kubernetes と ECS の詳細比較。大規模運用の観点で"
 
 # 呼び出し条件
 invocation_criteria:
@@ -169,24 +171,21 @@ cost_awareness:
 
 ```bash
 # 1回目: コマンド入力（specialistsウィンドウ）
-tmux send-keys -t neko:specialists.3 'openai deep-research "{依頼内容}"' ""
+tmux send-keys -t neko:specialists.3 'codex exec --full-auto --model gpt-5.2-codex "{依頼内容}"' ""
 # 間を空ける
 sleep 1
 # 2回目: Enter送信
 tmux send-keys -t neko:specialists.3 Enter
 ```
 
-### API 経由での呼び出し（プログラマティック）
+### 直接実行（Codex CLI）
 
 ```bash
-curl -X POST https://api.openai.com/v1/responses \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-5.2-thinking",
-    "input": "Kubernetes と ECS の詳細比較。大規模運用の観点で",
-    "tools": [{"type": "web_search"}]
-  }'
+# 深い調査・分析を実行（gpt-5.2-codex）
+codex exec --full-auto --model gpt-5.2-codex "Kubernetes と ECS の詳細比較。大規模運用の観点で"
+
+# プロジェクトコンテキスト付きで調査
+codex exec --full-auto --model gpt-5.2-codex --cd /path/to/project "このプロジェクトのアーキテクチャを分析して改善点を提案"
 ```
 
 ## 賢者キツネとの使い分け

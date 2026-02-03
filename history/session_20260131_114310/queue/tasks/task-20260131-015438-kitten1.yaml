@@ -1,0 +1,112 @@
+task_id: "task-20260131-015438-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T01:54:38"
+priority: high
+load_skills: []
+description: |
+  【エスカレ階層改修作戦 〜番猫→ボスねこ→ご主人〜】
+
+  ## 概要
+  番猫からの質問・確認をボスねこ経由にする設計変更 + 階層化承認フローの導入
+
+  ## 現状の問題
+  1. 番猫が nawabari.md の「🚨要対応」セクションでご主人に直接質問している
+  2. 番猫・子猫がls等の軽い操作でも承認待ちになる
+
+  ## 改修後の流れ
+
+  ### A. 質問・確認のエスカレ
+  ```
+  番猫 → ボスねこにエスカレ → ボスねこが判断
+    ├─ 判断可能 → ボスねこが回答
+    └─ 判断不可 → ご主人に確認
+  ```
+
+  ### B. 階層化承認フロー（新規追加）
+  ```
+  【軽い操作】番猫・子猫が自動承認
+    ├─ ファイル読み書き
+    ├─ ls, cat, mkdir
+    └─ テスト実行
+
+  【重い操作】ボスねこにエスカレ
+    ├─ npm install → ボスねこ判断
+    ├─ git add/commit → ボスねこ判断
+    ├─ git push → ボスねこ → ご主人確認
+    └─ 外部API → ボスねこ → ご主人確認
+  ```
+
+  ## ボスねこの判断基準
+
+  ### 判断可能（ボスねこが回答）
+  - 技術的な選択（ベストプラクティス）
+  - スキル化判断（スコア基準）
+  - 実装方針の選択
+  - エラー対処方法
+  - npm install（package.json記載のもの）
+  - git add/commit（通常のコミット）
+
+  ### 判断不可（ご主人確認）
+  - ビジネス要件の確認
+  - 予算・コストに関わる判断
+  - スコープの拡大・縮小
+  - 納期・優先度の変更
+  - git push（リモートへの反映）
+  - 外部API呼び出し（課金発生）
+
+  ## 改修対象ファイル（順次実行）
+
+  ### 1. instructions/guard-cat.md（番猫指示書）
+  - 「ご主人お伺いルール」→「ボスねこエスカレルール」に変更
+  - エスカレ時の send-keys 通知追加
+  - 自動承認範囲の明記（承認不要セクション）
+  - 承認必要（ボスねこエスカレ）セクション
+
+  ### 2. instructions/boss-cat.md（ボスねこ指示書）
+  - 番猫からのエスカレ受信ルール追加
+  - 判断基準の明文化
+  - 承認フローの追加
+  - ご主人確認が必要な場合の通知方法
+
+  ### 3. instructions/kitten.md（子猫指示書）
+  - 自動承認範囲の明記
+  - 重い操作時のエスカレルール（番猫経由でボスねこへ）
+  - 承認依頼の通知方法
+
+  ## 実装手順
+  1. 既存ファイル読み取り（guard-cat.md, boss-cat.md, kitten.md）
+  2. guard-cat.md 改修
+     - 「🚨🚨🚨 ご主人お伺いルール」を「🚨🚨🚨 ボスねこエスカレルール」に変更
+     - エスカレ方法を send-keys に変更
+     - 自動承認範囲を明記（ファイル読み書き、ls, cat, mkdir, テスト実行）
+     - 承認必要（ボスねこエスカレ）を明記（npm install, git add/commit）
+  3. boss-cat.md 改修
+     - 番猫からのエスカレ受信ルール追加
+     - 判断基準の明文化（判断可能・判断不可のリスト）
+     - 承認フローの追加
+  4. kitten.md 改修
+     - 自動承認範囲の明記
+     - 重い操作時のエスカレルール（番猫経由でボスねこへ）
+  5. 整合性確認（3ファイル間で矛盾がないか）
+  6. 完了報告YAML作成
+
+  ## 注意事項
+  - 3つのファイル間で矛盾がないこと（整合性が最重要）
+  - 既存の動作を壊さないこと
+  - エスカレ方法は send-keys（2回ルール）
+  - 自動承認範囲は明確に定義すること
+
+  ## 自律実行範囲
+  指示書の編集OKにゃ！承認不要にゃ。
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/instructions/guard-cat.md"
+    - "/home/edgesakura/git/neko-pm/instructions/boss-cat.md"
+    - "/home/edgesakura/git/neko-pm/instructions/kitten.md"
+
+expected_outputs:
+  - "instructions/guard-cat.md（エスカレ先変更、自動承認範囲）"
+  - "instructions/boss-cat.md（エスカレ受信、承認フロー）"
+  - "instructions/kitten.md（自動承認範囲、エスカレルール）"
+  - "完了報告YAML（queue/reports/report-20260131-015438-kitten1.yaml）"

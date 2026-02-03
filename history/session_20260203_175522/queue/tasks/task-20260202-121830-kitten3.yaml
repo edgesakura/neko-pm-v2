@@ -1,0 +1,92 @@
+task_id: "task-20260202-121830-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T12:18:30"
+priority: urgent
+command_id: "cmd-20260202-121728"
+description: |
+  【🚨緊急バグ修正】owl-watcher.sh 承認監視が機能しない問題
+
+  ## 現象
+  - 子猫2（neko:workers.3）が承認プロンプトで止まっている
+  - フクロウが承認を検出できていない
+
+  ## 修正内容
+
+  ### 修正1: 承認プロンプト検出パターン追加（line 296付近）
+  **ファイル**: /home/edgesakura/git/neko-pm/owl-watcher.sh
+
+  **Before:**
+  ```bash
+  if echo "$capture_output" | grep -qE "(Allow (Bash|Read|Edit|Write|Glob|Grep|Task|WebFetch|WebSearch).*\?|\? \(y/n\)|\[y/n\])"; then
+  ```
+
+  **After:**
+  ```bash
+  if echo "$capture_output" | grep -qE "(Allow (Bash|Read|Edit|Write|Glob|Grep|Task|WebFetch|WebSearch).*\?|\? \(y/n\)|\[y/n\]|Do you want to proceed\?)"; then
+  ```
+
+  ### 修正2: grep -c の改行問題修正（line 226-228付近）
+  **Before:**
+  ```bash
+  local high_count=$(echo "$review_result" | grep -ci "HIGH" || echo "0")
+  local medium_count=$(echo "$review_result" | grep -ci "MEDIUM" || echo "0")
+  local low_count=$(echo "$review_result" | grep -ci "LOW" || echo "0")
+  ```
+
+  **After:**
+  ```bash
+  local high_count=$(echo "$review_result" | grep -ci "HIGH" | tr -d '\n' || echo "0")
+  local medium_count=$(echo "$review_result" | grep -ci "MEDIUM" | tr -d '\n' || echo "0")
+  local low_count=$(echo "$review_result" | grep -ci "LOW" | tr -d '\n' || echo "0")
+  ```
+
+  ### 修正3: 数字選択式への対応（send_approval関数、line 356-386付近）
+  **追加箇所**: send_approval関数内
+
+  ```bash
+  # 既存のresponse="y"の前に追加
+  local response="y"
+
+  # 数字選択式の場合は "1" を送信
+  if echo "$capture_output" | grep -q "❯ 1. Yes"; then
+      response="1"
+  fi
+  ```
+
+  ## 動作確認
+
+  修正後、以下を確認：
+  1. owl-watcher.sh を再起動（既に動いていれば）
+  2. 子猫2の承認が通ること
+  3. logs/approval.log にログが記録されること
+
+  ```bash
+  # フクロウ再起動
+  ./owl-watcher.sh --stop
+  ./owl-watcher.sh --daemon
+
+  # ログ確認
+  tail -f logs/approval.log
+  ```
+
+context:
+  file: "/home/edgesakura/git/neko-pm/owl-watcher.sh"
+  lines_to_fix:
+    - 226
+    - 227
+    - 228
+    - 296
+    - 356-386
+  symptom: "子猫2がowl-researcher.sh --helpの承認待ちで停止中"
+
+expected_outputs:
+  - "owl-watcher.sh の修正版"
+  - "子猫2の承認が通ること（確認）"
+  - "logs/approval.log にログが記録されること（確認）"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - Editツールで該当行を修正するにゃ
+  - 修正後は動作確認が必須にゃ
+  - 子猫2が動き出したら成功にゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

@@ -1,0 +1,86 @@
+commands:
+  - command_id: "cmd-20260130-190000"
+    timestamp: "2026-01-30T19:00:00+09:00"
+    type: feature-development
+    priority: high
+    status: done
+    description: |
+      【作戦名】chat-app機能改修作戦 〜スマホからボスねこを操る〜
+      ※ 完了済み
+
+  - command_id: "cmd-20260130-193000"
+    timestamp: "2026-01-30T19:30:00+09:00"
+    type: system-improvement
+    priority: high
+    status: done
+    description: |
+      【作戦名】neko-pm自律化作戦 〜承認地獄からの解放〜
+      ※ 完了済み
+
+  - command_id: "cmd-20260130-195535"
+    timestamp: "2026-01-30T19:55:35+09:00"
+    type: security-enhancement
+    priority: high
+    status: pending
+    description: |
+      【作戦名】chat-app認証機能追加作戦 〜誤操作からの解放〜
+
+      ## 目標
+      chat-appにパスワード認証機能を追加し、不正アクセス・誤操作を防止する
+
+      ## 背景
+      - スマホからの誤操作でコマンドが送信される事象が発生
+      - Tailscale VPN内でも追加の認証レイヤーが必要
+
+      ## 要件
+      1. シンプルパスワード認証
+      2. パスワードはサーバー側の.envファイルに保存
+      3. 認証セッションはブラウザのlocalStorageに保存
+      4. 一度認証すれば次回からスキップ可能
+
+      ## タスク
+      1. サーバー側: パスワード検証エンドポイント追加
+         - POST /api/auth でパスワード検証
+         - 環境変数 CHAT_PASSWORD で設定
+      2. フロントエンド側: 認証画面追加
+         - 起動時にパスワード入力画面表示
+         - 認証成功でlocalStorageにトークン保存
+         - 次回アクセス時はトークン検証でスキップ
+      3. WebSocket接続時の認証チェック
+         - 未認証の場合は接続拒否
+      4. テスト追加
+         - 認証成功/失敗のテスト
+         - セッション永続化のテスト
+
+      ## 実装方針
+      - パスワードはハッシュ化して比較（bcryptまたはシンプルなSHA256）
+      - セッショントークンはランダム生成
+      - トークンの有効期限は24時間（オプション）
+
+      ## 自律実行範囲
+      以下は承認不要で実行OKにゃ：
+      - ファイル読み書き（プロジェクト内）
+      - テスト実行
+      - npm install（package.json記載のもの）
+      - git add, git commit
+
+      以下は承認必要にゃ：
+      - git push
+      - 外部API呼び出し（課金発生）
+      - 本番環境への変更
+
+    context:
+      service_name: "chat-app"
+      target_directory: "/home/edgesakura/git/neko-pm/output/chat-app"
+      files_to_modify:
+        - "server.js"
+        - "public/index.html"
+        - "public/app.js"
+        - ".env（新規作成）"
+
+    expected_outputs:
+      - "パスワード認証機能実装"
+      - "認証画面UI"
+      - "テスト追加"
+      - ".envファイル作成"
+      - "nawabari.md更新"

@@ -1,0 +1,35 @@
+commands:
+  - command_id: "cmd-20260203-160120"
+    timestamp: "2026-02-03T16:01:20"
+    type: security-review
+    priority: high
+    status: pending
+    description: |
+      【Phase 4テスト】フクロウ召喚 - セキュリティレビュー
+
+      guard-cat.mdのowl_utilizationセクションにセキュリティ上の問題がないかレビューしてほしいにゃ。
+      **フクロウを召喚してCodexでレビューを実行するにゃ〜**
+
+      ## 実施内容
+      1. フクロウ（neko:owl）を召喚する
+      2. フクロウにCodexを使ってセキュリティレビューを依頼
+      3. レビュー対象: instructions/guard-cat.md の owl_utilization セクション
+      4. 結果をnawabari.mdに報告
+
+      ## フクロウ召喚方法
+      tmux send-keys で neko:owl ペインにレビュー依頼を送信
+
+      ## 期待する確認項目
+      - 権限設定は適切か
+      - 情報漏洩リスクはないか
+      - 不正な操作の可能性はないか
+
+    context:
+      target_file: "instructions/guard-cat.md"
+      target_section: "owl_utilization"
+      review_tool: "Codex"
+
+    expected_outputs:
+      - "フクロウ召喚完了"
+      - "Codexによるセキュリティレビュー結果"
+      - "nawabari.mdへの報告"

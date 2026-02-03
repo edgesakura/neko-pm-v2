@@ -1,0 +1,123 @@
+commands:
+  - command_id: "cmd-20260130-190000"
+    timestamp: "2026-01-30T19:00:00+09:00"
+    type: feature-development
+    priority: high
+    description: |
+      【作戦名】chat-app機能改修作戦 〜スマホからボスねこを操る〜
+      ※ 子猫1,2が実行中
+
+    context:
+      service_name: "chat-app"
+      status: "実行中（子猫1: バックエンド、子猫2: フロントエンド）"
+
+  - command_id: "cmd-20260130-193000"
+    timestamp: "2026-01-30T19:30:00+09:00"
+    type: system-improvement
+    priority: high
+    description: |
+      【作戦名】neko-pm自律化作戦 〜承認地獄からの解放〜
+
+      ## 目標
+      neko-pmの番猫・子猫が自律的に判断・実行できるよう指示書を改善する
+
+      ## 背景
+      multi-agent-shogunを参考に、以下の改善が必要と判明：
+      1. 判断ルールの明示化
+      2. 承認範囲の事前定義
+      3. YAML Front Matterによる機械可読化
+      4. Memory MCP導入
+
+      ## タスク1: 判断ルールの明示化
+      番猫・子猫の「自律判断基準」を指示書に追加
+
+      ### 番猫用（guard-cat.md）
+      - タスク分解の5つの問い（shogunの家老を参考）
+        1. 目的は何か？
+        2. どうタスク分解するか？
+        3. 何人（何猫）必要か？
+        4. どの観点で取り組むか？
+        5. リスクは何か？
+
+      ### 子猫用（kitten.md）
+      - 実行判断基準
+      - エスカレーション基準（番猫に相談すべき場合）
+
+      ## タスク2: 承認範囲の事前定義
+      指示書に「承認不要/必要」の操作リストを追加
+
+      ```yaml
+      # 承認不要（自律実行OK）
+      - ファイル読み取り（Read, Glob, Grep）
+      - プロジェクト内ディレクトリ作成
+      - npm/pip install（package.json/requirements.txt記載のもの）
+      - テスト実行
+      - ローカルサーバー起動
+      - git add, git commit
+
+      # 承認必要（番猫/ボスねこに確認）
+      - git push
+      - 外部API呼び出し（課金発生）
+      - システムファイル変更（/etc, ~/.bashrc等）
+      - 本番環境への変更
+      - 新規パッケージ追加（package.jsonにないもの）
+      ```
+
+      ## タスク3: YAML Front Matter導入
+      各指示書の冒頭にYAML形式でメタ情報を追加
+
+      ```yaml
+      ---
+      role: guard-cat
+      version: 2.0
+      autonomy_level: high
+      forbidden_actions:
+        - F001: 直接タスク実行（子猫に委譲すべし）
+        - F002: nawabari.md以外への状態書き込み
+        - F003: ボスねこへの直接報告（縄張り経由）
+      auto_approve:
+        - file_read
+        - directory_create_in_project
+        - npm_install_listed
+        - test_run
+      require_approval:
+        - git_push
+        - external_api_call
+        - system_file_change
+      ---
+      ```
+
+      ## タスク4: Memory MCP導入
+      セッション間で記憶を引き継ぐ仕組みを導入
+
+      ### 実装方針
+      1. ~/.claude/settings.jsonにMemory MCPを追加
+      2. 各エージェントの起動時にメモリ読み込み
+      3. 重要な判断・学習をメモリに保存
+
+      ### 保存すべき情報
+      - ご主人の好み・方針
+      - 過去の失敗パターン
+      - プロジェクト固有の設定
+      - 各猫の役割・制約
+
+      ## 担当
+      - 子猫3（workers.1）: 全タスク担当
+
+      ## 参考
+      - multi-agent-shogun: https://github.com/yohey-w/multi-agent-shogun
+      - 特にinstructions/*.mdのYAML Front Matter
+
+    context:
+      target_files:
+        - "instructions/boss-cat.md"
+        - "instructions/guard-cat.md"
+        - "instructions/kitten.md"
+      reference_repo: "https://github.com/yohey-w/multi-agent-shogun"
+      assigned_worker: "workers.1（子猫3）"
+
+    expected_outputs:
+      - "改善された指示書（YAML Front Matter付き）"
+      - "判断ルール・承認範囲の明文化"
+      - "Memory MCP設定"
+      - "自律動作の改善確認"

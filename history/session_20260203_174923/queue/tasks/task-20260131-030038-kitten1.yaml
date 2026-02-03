@@ -1,0 +1,99 @@
+task_id: "task-20260131-030038-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T03:00:38"
+priority: high
+load_skills: []
+description: |
+  【バグ修正】chat-appにtmuxノイズが表示される問題
+
+  ## 症状
+  スマホのchat-app画面に大量の横線（─────）が表示される
+
+  ## 原因（ボスねこ調査済み）
+  BossChatMonitorがtmuxペインの出力をそのまま送信している。
+  tmuxの出力には以下のノイズが含まれる：
+  - `────────────────────────` （罫線）
+  - `[Opus 4.5] | 📁 neko-pm | ...` （ステータスライン）
+  - `❯` （プロンプト）
+  - `Context left until auto-compact: X%` （コンテキスト情報）
+
+  これがマークダウンとしてレンダリングされて横線だらけになる
+
+  ## 修正方法
+  lib/boss-chat.js の extractDiff 関数を修正して、
+  ノイズをフィルタリングする：
+
+  ### 1. extractDiff 関数を修正
+  ```javascript
+  function extractDiff(lastOutput, currentOutput) {
+    // 既存のdiff抽出ロジック
+    if (currentOutput.length < lastOutput.length) {
+      return filterTmuxNoise(currentOutput);
+    }
+    const diff = currentOutput.slice(lastOutput.length);
+    return filterTmuxNoise(diff);
+  }
+  ```
+
+  ### 2. filterTmuxNoise 関数を追加
+  ```javascript
+  // 新規追加: tmuxノイズをフィルタリング
+  function filterTmuxNoise(text) {
+    return text
+      // 罫線を除去（─が3つ以上連続）
+      .replace(/─{3,}/g, '')
+      // ステータスラインを除去
+      .replace(/\[(?:Opus|Sonnet|Haiku).*?\]/g, '')
+      .replace(/📁.*?📊.*?💰.*$/gm, '')
+      .replace(/Context left.*$/gm, '')
+      .replace(/until auto-compact.*$/gm, '')
+      // プロンプトを除去
+      .replace(/^❯\s*$/gm, '')
+      // 空行の連続を1つに
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+  ```
+
+  ## 実装手順
+  1. output/chat-app/lib/boss-chat.js を読み取り
+  2. extractDiff 関数を探す
+  3. extractDiff 関数の return 文を filterTmuxNoise でラップ
+  4. filterTmuxNoise 関数を追加（extractDiff 関数の前後に配置）
+  5. ファイル保存
+  6. 完了報告YAML作成
+  7. サーバー再起動手順を報告に含める
+
+  ## 修正箇所
+  output/chat-app/lib/boss-chat.js
+  - extractDiff 関数修正（return をfilterTmuxNoiseでラップ）
+  - filterTmuxNoise 関数追加（新規）
+
+  ## 期待される効果
+  - ✅ chat-app画面から横線（罫線）が消える
+  - ✅ ステータスライン情報が表示されなくなる
+  - ✅ プロンプト記号（❯）が表示されなくなる
+  - ✅ コンテキスト情報が表示されなくなる
+  - ✅ 実際のボスねこの返答のみが表示される
+
+  ## 自律実行範囲
+  - ファイル編集OK（番猫自動承認）
+  - 原因判明済みなので、承認不要で修正可能
+
+  ## 注意事項
+  - 正規表現のパターンを正確に記述すること
+  - フィルタリングが過剰にならないように注意
+  - サーバー再起動が必要（手順を報告に含める）
+
+context:
+  service_name: "chat-app"
+  target_dir: "/home/edgesakura/git/neko-pm/output/chat-app"
+  files_to_modify:
+    - "lib/boss-chat.js"
+  bug_type: "tmuxノイズ除去"
+  severity: "high"
+
+expected_outputs:
+  - "lib/boss-chat.js（extractDiff修正、filterTmuxNoise追加）"
+  - "完了報告YAML（queue/reports/report-20260131-030038-kitten1.yaml）"
+  - "サーバー再起動手順"

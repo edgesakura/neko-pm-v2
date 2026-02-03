@@ -1,0 +1,171 @@
+task_id: "task-20260130-050500-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T05:05:00+09:00"
+priority: high
+command_id: "cmd-20260130-050000"
+
+load_skills:
+  - "backend-patterns"
+  - "frontend-patterns"
+  - "tdd-workflow"
+
+description: |
+  【Claude Code Webチャットアプリ開発】にゃ
+
+  スマホからTailscale VPN経由でClaude Codeと会話できるWebチャットアプリを開発するにゃ。
+
+  ## 実装フェーズ
+
+  ### Phase 1: プロジェクト初期化（subtask-1）
+  1. プロジェクトディレクトリ作成（/home/edgesakura/git/neko-pm/output/chat-app）
+  2. package.json作成
+     - express: ^4.18.0
+     - ws: ^8.13.0
+     - marked: ^4.3.0
+  3. ディレクトリ構成作成（public/）
+  4. npm install実行
+
+  ### Phase 2: バックエンド実装（subtask-2）
+  1. **server.js** 実装
+     - Expressサーバー（静的ファイル配信: public/）
+     - ポート設定（デフォルト: 3000、環境変数で変更可能）
+     - 0.0.0.0でlisten（Tailscale VPN経由アクセス用）
+     - WebSocketサーバー実装
+       - クライアント接続管理
+       - メッセージ送受信
+       - エラーハンドリング
+     - **tmux連携ロジック** 実装
+       - ユーザーメッセージ受信時:
+         1. send-keys でClaude Codeペインにメッセージ送信（2回ルール: 1回目はメッセージ、2回目はEnter）
+         2. capture-pane で出力を1秒ごとに取得
+         3. 前回との差分を検出してクライアントに送信（ストリーミング）
+       - tmuxペイン名: 環境変数またはデフォルト設定
+
+  ### Phase 3: フロントエンド実装（subtask-3）
+  1. **public/index.html** 実装
+     - モバイルファーストデザイン
+     - メッセージ履歴表示エリア
+     - 入力フォーム（textarea + 送信ボタン）
+     - ダークモード対応
+
+  2. **public/styles.css** 実装
+     - レスポンシブデザイン
+     - チャットバブルスタイル（ユーザー/Claude）
+     - ローディングインジケーター
+     - スマホ最適化
+
+  3. **public/app.js** 実装
+     - WebSocket接続・自動再接続ロジック
+     - メッセージ送信処理
+     - メッセージ受信処理（ストリーミング対応）
+     - マークダウンレンダリング（marked.js使用）
+     - 自動スクロール（新メッセージ到着時）
+     - 送信中インジケーター表示
+
+  ### Phase 4: 統合・テスト・ドキュメント（subtask-4）
+  1. ローカルで動作確認
+     - サーバー起動テスト
+     - WebSocket接続テスト
+     - メッセージ送受信テスト
+     - tmux連携テスト（実際にClaude Codeと会話）
+
+  2. **README.md** 作成
+     - 概要
+     - 前提条件（Node.js、tmux、Claude Code CLI）
+     - 起動方法
+     - 設定項目
+       - ポート番号（環境変数 PORT）
+       - tmuxペイン名（環境変数 CLAUDE_PANE）
+     - トラブルシューティング
+
+  3. **start.sh** 作成
+     - 依存関係チェック（tmux、claude、npm）
+     - サーバー起動
+     - ログ出力
+     - Ctrl+Cでの終了処理
+
+context:
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  tech_stack:
+    - "Node.js"
+    - "Express"
+    - "WebSocket (ws)"
+    - "tmux"
+    - "Claude Code CLI"
+    - "marked.js"
+  references:
+    - "/home/edgesakura/git/.claude/skills/backend-patterns/"
+    - "/home/edgesakura/git/.claude/skills/frontend-patterns/"
+    - "/home/edgesakura/git/neko-pm/instructions/kitten.md"
+  tmux_integration:
+    session: "neko"
+    claude_pane: "neko:main.2"  # Claude Code用ペイン（デフォルト）
+    send_keys_rule: "2回ルール（1回目: メッセージ、2回目: Enter）"
+
+expected_outputs:
+  - "server.js（バックエンド）"
+  - "public/index.html（チャットUI）"
+  - "public/styles.css（スタイル）"
+  - "public/app.js（フロントエンドJS）"
+  - "package.json（依存関係）"
+  - "README.md（起動方法・設定）"
+  - "start.sh（起動スクリプト）"
+
+constraints:
+  - "認証なし（Tailscale VPN内での利用前提）"
+  - "0.0.0.0でlisten（LAN内アクセス可能）"
+  - "マークダウン表示対応必須"
+  - "ストリーミング表示対応必須"
+  - "モバイル対応必須"
+
+notes: |
+  ## 重要な実装ポイント
+
+  ### tmux連携の2回ルール
+  ```javascript
+  // 1回目: メッセージ送信（Enterなし）
+  execSync(`tmux send-keys -t ${pane} "${message}" ""`);
+
+  // 少し待機
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // 2回目: Enter送信
+  execSync(`tmux send-keys -t ${pane} Enter`);
+  ```
+
+  ### 差分検出とストリーミング送信
+  ```javascript
+  let lastOutput = "";
+  setInterval(() => {
+    const currentOutput = execSync(`tmux capture-pane -t ${pane} -p`).toString();
+    const diff = currentOutput.slice(lastOutput.length);
+    if (diff) {
+      ws.send(JSON.stringify({ type: 'output', data: diff }));
+      lastOutput = currentOutput;
+    }
+  }, 1000);
+  ```
+
+  ### エラーハンドリング
+  - tmuxペインが存在しない場合のエラー処理
+  - WebSocket接続断時の再接続ロジック
+  - Claude Code応答タイムアウト時の処理
+
+quality_checks:
+  - "[ ] ビルドが通る（npm installが成功する）"
+  - "[ ] サーバーが起動する（npm startまたはnode server.js）"
+  - "[ ] Webブラウザでアクセスできる（http://localhost:3000）"
+  - "[ ] メッセージ送信が動作する"
+  - "[ ] tmux連携が正常動作する（Claude Codeにメッセージが届く）"
+  - "[ ] マークダウンレンダリングが動作する"
+  - "[ ] モバイルブラウザで表示が崩れない"
+  - "[ ] README.mdに起動方法が明記されている"
+
+reporting:
+  report_to: "neko-pm/queue/reports/report-20260130-050500-kitten1.yaml"
+  on_completion:
+    - "neko-pm/nawabari.md を更新（進捗100%、完了タスク追加）"
+    - "番猫に完了報告"
+  on_error:
+    - "neko-pm/nawabari.md に問題を記録"
+    - "番猫にエスカレーション"

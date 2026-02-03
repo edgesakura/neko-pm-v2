@@ -1,0 +1,48 @@
+task_id: "task-20260130-093000-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T00:30:00Z"
+priority: high
+parent_command: "cmd-20260129T172438Z"
+phase: "Phase 1: 設計・調査"
+load_skills:
+  - "ppt"
+  - "aws"
+description: |
+  【タスク】marp-agentのコード構造分析
+
+  ## 目的
+  参考実装（marp-agent）のコード構造を詳細に分析し、
+  PPTX生成Webアプリの設計基盤を作るにゃ。
+
+  ## 作業内容
+  1. `/home/edgesakura/git/marp-agent/` ディレクトリ全体を探索
+  2. 以下のファイルを重点的に読み取り・分析：
+     - amplify/agent/runtime/agent.py（エージェントロジック）
+     - src/App.tsx（フロントエンド構造）
+     - amplify/backend.ts（インフラ設定）
+     - amplify/agent/runtime/requirements.txt（依存関係）
+  3. 以下の観点で分析：
+     - ディレクトリ構造
+     - エージェント実装パターン（strands + bedrock-agentcore）
+     - ツール定義方法（web_search, output_slideの実装）
+     - フロントエンドとバックエンドの連携方法
+     - Amplify設定パターン
+  4. 分析結果を構造化レポートにまとめる
+
+context:
+  references:
+    - "/home/edgesakura/git/marp-agent/"
+    - "/home/edgesakura/git/marp-agent/amplify/agent/runtime/agent.py"
+    - "/home/edgesakura/git/marp-agent/src/App.tsx"
+    - "/home/edgesakura/git/marp-agent/amplify/backend.ts"
+  related_tasks:
+    - "task-20260130-093000-kitten2"  # python-pptx設計と連携
+
+expected_outputs:
+  - "neko-pm/output/phase1/marp-agent-analysis.md"
+
+completion_criteria:
+  - marp-agentのディレクトリ構造が明確に文書化されている
+  - エージェント実装パターンが理解できる
+  - ツール定義方法が説明されている
+  - フロントエンド・バックエンド連携が理解できる

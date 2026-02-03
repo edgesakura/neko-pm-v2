@@ -152,8 +152,8 @@ external_agents:
     use_for: ["リサーチ", "トレンド調査", "概要把握"]
   research_tanuki:
     name: "研究狸"
-    tool: "openai-api"
-    model: "gpt-5.2-thinking"
+    tool: "codex-cli"
+    model: "gpt-5.2-codex"
     pane: "neko:specialists.3"
     use_for: ["深い調査", "詳細分析", "ボスねこの相談相手"]
 

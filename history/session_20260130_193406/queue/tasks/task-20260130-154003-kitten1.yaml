@@ -1,0 +1,144 @@
+task_id: "task-20260130-154003-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T15:40:03+09:00"
+priority: high
+load_skills: []
+description: |
+  【chat-app動作確認タスク】
+
+  WSL2のmirroredモード設定後、chat-appが正常に動作するか検証するにゃ。
+
+  ## ステップ1: WSL2ネットワークモード確認
+  ```bash
+  # IPアドレス確認
+  ip addr show eth0
+
+  # WindowsホストのIPと比較
+  # PowerShellで: ipconfig
+  ```
+
+  **期待結果**: WSL2とWindowsホストで同じIPアドレスが共有されていることにゃ
+
+  ## ステップ2: chat-appサーバー起動
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # start.shの確認
+  cat start.sh
+
+  # サーバー起動（バックグラウンド）
+  ./start.sh &
+
+  # または
+  npm start &
+
+  # リッスン確認
+  sleep 3
+  netstat -tuln | grep 3000
+  # または
+  ss -tuln | grep 3000
+  ```
+
+  **期待結果**: ポート3000でリッスン開始にゃ
+
+  ## ステップ3: アクセス確認（優先順位順）
+
+  ### 3-a. localhost:3000（ローカル）
+  ```bash
+  curl http://localhost:3000
+  # または
+  curl http://127.0.0.1:3000
+  ```
+
+  ### 3-b. WindowsホストIP:3000（mirroredモード）
+  ```bash
+  # WindowsホストのIPを使用
+  curl http://<WindowsホストIP>:3000
+  ```
+
+  ### 3-c. TailscaleIP:3000（フォールバック）
+  ```bash
+  # Tailscale IPを確認
+  tailscale ip -4
+
+  # アクセステスト
+  curl http://<TailscaleIP>:3000
+  ```
+
+  **期待結果**: 少なくとも1つの方法でアクセス成功にゃ
+
+  ## ステップ4: 動作テスト
+
+  ### 4-a. WebSocket接続確認
+  ブラウザで `http://localhost:3000` にアクセスして：
+  - ページが正常に表示されるかにゃ？
+  - WebSocket接続が確立されるかにゃ？（開発者ツールのNetworkタブで確認）
+
+  ### 4-b. メッセージ送受信テスト
+  - テストメッセージを送信にゃ
+  - メッセージが正しく表示されるかにゃ
+
+  ### 4-c. tmuxペイン連携確認（オプション）
+  - tmuxペインからのコマンド実行が反映されるかにゃ
+
+  ## ステップ5: 結果報告
+
+  検証結果を以下の形式でまとめて報告するにゃ：
+
+  ```yaml
+  # queue/reports/report-20260130-154003-kitten1.yaml
+  task_id: "task-20260130-154003-kitten1"
+  reporter: "kitten1"
+  timestamp: "{完了時刻}"
+  status: "completed" | "failed"
+
+  results:
+    network_mode:
+      wsl2_ip: "{IPアドレス}"
+      windows_ip: "{IPアドレス}"
+      mirrored_confirmed: true | false
+
+    server_startup:
+      success: true | false
+      port: 3000
+      process_id: "{PID}"
+
+    access_test:
+      localhost: "success" | "failed"
+      windows_host_ip: "success" | "failed" | "not_tested"
+      tailscale_ip: "success" | "failed" | "not_tested"
+      working_url: "{実際にアクセスできたURL}"
+
+    functional_test:
+      websocket_connection: "success" | "failed"
+      message_send_receive: "success" | "failed"
+      tmux_integration: "success" | "failed" | "not_tested"
+
+  summary: |
+    {検証結果のサマリー}
+
+    【成功した点】
+    - xxx
+
+    【失敗した点】
+    - xxx
+
+    【推奨事項】
+    - xxx
+  ```
+
+context:
+  service_name: "chat-app"
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  references:
+    - "neko-pm/output/chat-app/server.js"
+    - "neko-pm/output/chat-app/start.sh"
+    - "neko-pm/output/chat-app/README.md"
+  network_mode: "mirrored（検証対象）"
+
+expected_outputs:
+  - "WSL2ネットワークモードの確認結果"
+  - "chat-appがポート3000で起動成功"
+  - "ブラウザからのアクセス確認（どのIPで成功したか）"
+  - "動作確認結果レポート（YAML形式）"
+  - "検証結果をnawabari.mdに反映"

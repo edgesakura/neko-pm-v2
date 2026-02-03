@@ -1,0 +1,1080 @@
+task_id: "task-20260203-011405-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-03T01:14:05"
+priority: high
+command_id: "cmd-20260203-011114"
+description: |
+  【Phase 2】chat-app UIリニューアル（長老猫設計）
+
+  ## 背景
+  Phase 1 完了。機能は動くがUIがイケてない。
+  長老猫（opus）に相談し、モバイルファーストの本格的なUI設計案を得た。
+
+  ## 設計方針（長老猫より）
+
+  ### ボトムシートパターン採用
+  - ボタン群を「アクションパネル」としてオーバーレイ化
+  - 普段はターミナル画面を100%表示
+  - 必要時のみアクションパネルを開く
+  - iOSのシェアシートに近いUX
+
+  ### レイアウト構造
+  ```
+  ┌─────────────────────────────────────┐
+  │ [≡] neko-pm          ● Connected   │  ← コンパクトヘッダー (52px)
+  ├─────────────────────────────────────┤
+  │                                     │
+  │         ターミナル画面              │  ← 画面の80%以上
+  │         (xterm.js)                  │
+  │                                     │
+  ├─────────────────────────────────────┤
+  │ [入力欄________] [↑] [■] [➤]       │  ← フローティングインプット
+  └─────────────────────────────────────┘
+
+  【■ボタン押下時のオーバーレイ】
+  ┌─────────────────────────────────────┐
+  │        クイックアクション            │
+  ├─────────────────────────────────────┤
+  │ セッション                          │
+  │ [📎neko:boss] [🔄再起動] [📋状況]  │
+  │                                     │
+  │ tmux操作                            │
+  │ [Ctrl+B] [d] [c] [n] [Ctrl+C]      │
+  │                                     │
+  │ ファイル                            │
+  │ [📷 ファイル転送                   ]│
+  │                            [× 閉じる]│
+  └─────────────────────────────────────┘
+  ```
+
+  ## 実装タスク（順次実行）
+
+  ### 🔍 ステップ0: バックアップ作成（必須）
+
+  **既存ファイルを壊さないための安全策**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app/public
+
+  # バックアップディレクトリ作成
+  mkdir -p backup-phase1
+
+  # 既存ファイルをバックアップ
+  cp index.html backup-phase1/index.html.backup
+  cp terminal.js backup-phase1/terminal.js.backup
+  cp styles.css backup-phase1/styles.css.backup
+
+  # バックアップ確認
+  ls -lh backup-phase1/
+
+  echo "✅ バックアップ完了"
+  ```
+
+  ### ✏️ ステップ1: styles-v2.css 作成（新規、約400行）
+
+  **長老猫の設計書に記載のCSSを作成**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app/public
+
+  # styles-v2.css を作成
+  cat > styles-v2.css << 'EOFCSS'
+  /* ============================================================
+   * neko-pm Terminal UI v2.0 - Mobile First
+   * Design by: 長老猫（opus）
+   * ============================================================ */
+
+  /* ============================================================
+   * 1. デザイントークン（CSS変数）
+   * ============================================================ */
+  :root {
+    /* タッチターゲット */
+    --touch-min: 48px;
+    --touch-comfortable: 56px;
+
+    /* カラー - Accent */
+    --accent-cyan: #00f5ff;
+    --accent-purple: #a855f7;
+    --accent-green: #22c55e;
+    --accent-yellow: #eab308;
+    --accent-red: #ef4444;
+
+    /* カラー - Base */
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border: #333333;
+
+    /* グラデーション */
+    --gradient-primary: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    --gradient-success: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    --gradient-warning: linear-gradient(135deg, var(--accent-yellow), #fb923c);
+    --gradient-danger: linear-gradient(135deg, var(--accent-red), #dc2626);
+
+    /* Safe Area（ノッチ対応） */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+
+    /* スペーシング */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* ボーダー半径 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    /* アニメーション */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 350ms ease;
+  }
+
+  /* ============================================================
+   * 2. リセット
+   * ============================================================ */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    font-family: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    touch-action: manipulation;
+  }
+
+  input {
+    font-family: inherit;
+    outline: none;
+  }
+
+  /* ============================================================
+   * 3. 認証画面
+   * ============================================================ */
+  #auth-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-primary);
+    padding: var(--spacing-lg);
+    padding-top: calc(var(--spacing-lg) + var(--safe-top));
+    padding-bottom: calc(var(--spacing-lg) + var(--safe-bottom));
+  }
+
+  #auth-screen.hidden {
+    display: none;
+  }
+
+  .auth-container {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .auth-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .auth-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+  }
+
+  #password-input {
+    width: 100%;
+    height: var(--touch-comfortable);
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0 var(--spacing-md);
+    color: var(--text-primary);
+    font-size: 16px;
+    margin-bottom: var(--spacing-md);
+    transition: border-color var(--transition-fast);
+  }
+
+  #password-input:focus {
+    border-color: var(--accent-cyan);
+  }
+
+  #login-btn {
+    width: 100%;
+    height: var(--touch-comfortable);
+    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+  }
+
+  #login-btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  #auth-error {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--accent-red);
+    border-radius: var(--radius-sm);
+    color: var(--accent-red);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  #auth-error.hidden {
+    display: none;
+  }
+
+  /* ============================================================
+   * 4. メインアプリ
+   * ============================================================ */
+  #main-app {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #main-app.hidden {
+    display: none;
+  }
+
+  /* ============================================================
+   * 5. ヘッダー（コンパクト52px）
+   * ============================================================ */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 var(--spacing-md);
+    padding-top: var(--safe-top);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+  }
+
+  #menu-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    font-size: 24px;
+    transition: color var(--transition-fast);
+  }
+
+  #menu-btn:active {
+    color: var(--accent-cyan);
+  }
+
+  .app-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.connected {
+    background: var(--accent-green);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ============================================================
+   * 6. ターミナル領域（最大化）
+   * ============================================================ */
+  .terminal-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #000000;
+  }
+
+  #terminal-container {
+    flex: 1;
+    overflow: hidden;
+    padding: var(--spacing-sm);
+  }
+
+  /* ============================================================
+   * 7. フローティング入力バー
+   * ============================================================ */
+  .input-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-bottom: calc(var(--spacing-sm) + var(--safe-bottom));
+    flex-shrink: 0;
+  }
+
+  #terminal-input {
+    flex: 1;
+    height: 40px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 0 var(--spacing-md);
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  #terminal-input:focus {
+    border-color: var(--accent-cyan);
+  }
+
+  .input-bar button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 18px;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+  }
+
+  #send-history-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  #actions-btn {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+  }
+
+  #send-btn {
+    background: var(--gradient-success);
+    color: var(--text-primary);
+  }
+
+  .input-bar button:active {
+    transform: scale(0.95);
+  }
+
+  /* ============================================================
+   * 8. アクションパネル（ボトムシート）
+   * ============================================================ */
+  #action-panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base);
+  }
+
+  #action-panel-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #action-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 70vh;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--spacing-lg);
+    padding-bottom: calc(var(--spacing-lg) + var(--safe-bottom));
+    transform: translateY(100%);
+    transition: transform var(--transition-base);
+    z-index: 1001;
+    overflow-y: auto;
+  }
+
+  #action-panel-overlay.active #action-panel {
+    transform: translateY(0);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .panel-title {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  #close-panel-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 20px;
+  }
+
+  .action-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .action-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .action-btn {
+    min-height: var(--touch-min);
+    padding: 0 var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+  }
+
+  .action-btn:active {
+    transform: scale(0.97);
+  }
+
+  .action-btn.primary {
+    background: var(--gradient-primary);
+    border-color: transparent;
+  }
+
+  .action-btn.success {
+    background: var(--gradient-success);
+    border-color: transparent;
+  }
+
+  .action-btn.warning {
+    background: var(--gradient-warning);
+    border-color: transparent;
+  }
+
+  .action-btn.danger {
+    background: var(--gradient-danger);
+    border-color: transparent;
+  }
+
+  .action-btn.full-width {
+    width: 100%;
+  }
+
+  /* ============================================================
+   * 9. サイドメニュー
+   * ============================================================ */
+  #side-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base);
+  }
+
+  #side-menu-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #side-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80%;
+    max-width: 320px;
+    background: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    padding-top: calc(var(--spacing-lg) + var(--safe-top));
+    padding-bottom: calc(var(--spacing-lg) + var(--safe-bottom));
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+    z-index: 2001;
+    overflow-y: auto;
+  }
+
+  #side-menu-overlay.active #side-menu {
+    transform: translateX(0);
+  }
+
+  .menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .menu-title {
+    font-size: 24px;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  #close-menu-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 20px;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    min-height: var(--touch-comfortable);
+    padding: 0 var(--spacing-md);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 16px;
+    transition: background var(--transition-fast);
+  }
+
+  .menu-item:active {
+    background: var(--bg-tertiary);
+  }
+
+  .menu-item.danger {
+    color: var(--accent-red);
+  }
+
+  .menu-icon {
+    font-size: 20px;
+  }
+  EOFCSS
+
+  echo "✅ styles-v2.css 作成完了（約400行）"
+  ```
+
+  ### ✏️ ステップ2: index.html 更新（新しいHTML構造）
+
+  **長老猫設計のレイアウトに変更**
+
+  重要: `<link rel="stylesheet" href="styles.css">` を `<link rel="stylesheet" href="styles-v2.css">` に変更すること！
+
+  新しいHTML構造:
+  ```html
+  <!DOCTYPE html>
+  <html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>neko-pm Terminal</title>
+    <link rel="stylesheet" href="styles-v2.css">
+  </head>
+  <body>
+    <!-- 認証画面 -->
+    <div id="auth-screen">
+      <div class="auth-container">
+        <h1 class="auth-title">🐱 neko-pm</h1>
+        <p class="auth-subtitle">Terminal Authentication</p>
+        <input type="password" id="password-input" placeholder="Enter password">
+        <button id="login-btn">Login</button>
+        <div id="auth-error" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- メインアプリ -->
+    <div id="main-app" class="hidden">
+      <!-- ヘッダー -->
+      <header class="app-header">
+        <div class="header-left">
+          <button id="menu-btn">≡</button>
+          <h1 class="app-title">neko-pm</h1>
+        </div>
+        <div class="header-right">
+          <div class="connection-status">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Connecting...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ターミナル -->
+      <div class="terminal-wrapper">
+        <div id="terminal-container"></div>
+      </div>
+
+      <!-- 入力バー -->
+      <div class="input-bar">
+        <input type="text" id="terminal-input" placeholder="Type command...">
+        <button id="send-history-btn" title="History">↑</button>
+        <button id="actions-btn" title="Actions">■</button>
+        <button id="send-btn" title="Send">➤</button>
+      </div>
+    </div>
+
+    <!-- アクションパネル（オーバーレイ） -->
+    <div id="action-panel-overlay">
+      <div id="action-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">クイックアクション</h2>
+          <button id="close-panel-btn">×</button>
+        </div>
+
+        <!-- セッション -->
+        <div class="action-section">
+          <div class="action-section-title">セッション</div>
+          <div class="action-buttons">
+            <button class="action-btn primary" data-command="tmux attach -t neko:boss&#10;">📎 neko:boss</button>
+            <button class="action-btn warning" data-command="cd ~/git/neko-pm &amp;&amp; ./shuugou.sh&#10;">🔄 再起動</button>
+            <button class="action-btn" data-command="cat ~/git/neko-pm/nawabari.md | tail -30&#10;">📋 状況</button>
+          </div>
+        </div>
+
+        <!-- tmux操作 -->
+        <div class="action-section">
+          <div class="action-section-title">tmux操作</div>
+          <div class="action-buttons">
+            <button class="action-btn" data-key="ctrl-b">Ctrl+B</button>
+            <button class="action-btn" data-key="d">d</button>
+            <button class="action-btn" data-key="c">c</button>
+            <button class="action-btn" data-key="n">n</button>
+            <button class="action-btn danger" data-key="ctrl-c">Ctrl+C</button>
+          </div>
+        </div>
+
+        <!-- ファイル -->
+        <div class="action-section">
+          <div class="action-section-title">ファイル</div>
+          <button class="action-btn full-width" id="file-upload-btn">📷 ファイル転送</button>
+          <input type="file" id="file-input" style="display: none;">
+        </div>
+      </div>
+    </div>
+
+    <!-- サイドメニュー -->
+    <div id="side-menu-overlay">
+      <div id="side-menu">
+        <div class="menu-header">
+          <h2 class="menu-title">Menu</h2>
+          <button id="close-menu-btn">×</button>
+        </div>
+        <button class="menu-item danger" id="logout-btn">
+          <span class="menu-icon">🚪</span>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="terminal.js"></script>
+  </body>
+  </html>
+  ```
+
+  ポイント:
+  - `<link rel="stylesheet" href="styles-v2.css">` に変更
+  - アクションパネルは `#action-panel-overlay` の中
+  - サイドメニューは `#side-menu-overlay` の中
+  - `data-command` と `data-key` 属性でボタンの動作を指定
+
+  ### ✏️ ステップ3: terminal.js 更新（アクションパネル開閉JS）
+
+  **UI操作のJavaScriptを追加**
+
+  既存のWebSocket処理は**絶対に壊さない**こと！
+
+  追加する機能:
+  1. アクションパネル開閉
+  2. サイドメニュー開閉
+  3. アクションボタンのイベント
+  4. ESCキーでパネル閉じる
+
+  追加するコード（initTerminal() の最後に追加）:
+
+  ```javascript
+  // ============================================================
+  // UI操作（Phase 2追加）
+  // ============================================================
+
+  // 要素取得
+  const actionsBtn = document.getElementById('actions-btn');
+  const actionPanelOverlay = document.getElementById('action-panel-overlay');
+  const closePanelBtn = document.getElementById('close-panel-btn');
+  const menuBtn = document.getElementById('menu-btn');
+  const sideMenuOverlay = document.getElementById('side-menu-overlay');
+  const closeMenuBtn = document.getElementById('close-menu-btn');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+
+  // アクションパネル開閉
+  actionsBtn.addEventListener('click', () => {
+    actionPanelOverlay.classList.add('active');
+  });
+
+  closePanelBtn.addEventListener('click', () => {
+    actionPanelOverlay.classList.remove('active');
+  });
+
+  actionPanelOverlay.addEventListener('click', (e) => {
+    if (e.target === actionPanelOverlay) {
+      actionPanelOverlay.classList.remove('active');
+    }
+  });
+
+  // サイドメニュー開閉
+  menuBtn.addEventListener('click', () => {
+    sideMenuOverlay.classList.add('active');
+  });
+
+  closeMenuBtn.addEventListener('click', () => {
+    sideMenuOverlay.classList.remove('active');
+  });
+
+  sideMenuOverlay.addEventListener('click', (e) => {
+    if (e.target === sideMenuOverlay) {
+      sideMenuOverlay.classList.remove('active');
+    }
+  });
+
+  // ESCキーでパネル閉じる
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      actionPanelOverlay.classList.remove('active');
+      sideMenuOverlay.classList.remove('active');
+    }
+  });
+
+  // クイックアクションボタン（data-command）
+  document.querySelectorAll('.action-btn[data-command]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const command = btn.getAttribute('data-command');
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminal-input',
+          data: command
+        }));
+        console.log('[ACTION] Sent:', command);
+        actionPanelOverlay.classList.remove('active');
+      } else {
+        console.error('[ACTION] WebSocket not connected');
+      }
+    });
+  });
+
+  // tmux操作ボタン（data-key）
+  document.querySelectorAll('.action-btn[data-key]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-key');
+      let data = '';
+
+      switch (key) {
+        case 'ctrl-b':
+          data = '\x02'; // Ctrl+B (tmux prefix)
+          break;
+        case 'ctrl-c':
+          data = '\x03'; // Ctrl+C (terminate)
+          break;
+        default:
+          data = key; // d, c, n etc.
+          break;
+      }
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminal-input',
+          data: data
+        }));
+        console.log('[TMUX] Sent:', key, '(', data.charCodeAt(0), ')');
+        actionPanelOverlay.classList.remove('active');
+      } else {
+        console.error('[TMUX] WebSocket not connected');
+      }
+    });
+  });
+
+  // ファイル転送
+  const fileUploadBtn = document.getElementById('file-upload-btn');
+  const fileInput = document.getElementById('file-input');
+
+  fileUploadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ファイルサイズチェック（10MB制限）
+    if (file.size > 10 * 1024 * 1024) {
+      alert('ファイルサイズが10MBを超えています');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const message = `\n📷 File uploaded: ${data.path}\n`;
+        console.log('[UPLOAD] Success:', data.path);
+        if (term) {
+          term.write(message);
+        }
+        actionPanelOverlay.classList.remove('active');
+      } else {
+        console.error('[UPLOAD] Error:', data.error);
+        alert('アップロードに失敗しました: ' + data.error);
+      }
+    } catch (error) {
+      console.error('[UPLOAD] Exception:', error);
+      alert('アップロードに失敗しました');
+    }
+
+    e.target.value = '';
+  });
+
+  // WebSocket接続状態の表示
+  if (ws) {
+    ws.addEventListener('open', () => {
+      statusDot.classList.add('connected');
+      statusText.textContent = 'Connected';
+    });
+
+    ws.addEventListener('close', () => {
+      statusDot.classList.remove('connected');
+      statusText.textContent = 'Disconnected';
+    });
+
+    ws.addEventListener('error', () => {
+      statusDot.classList.remove('connected');
+      statusText.textContent = 'Error';
+    });
+  }
+
+  console.log('[UI] Phase 2 UI initialized');
+  ```
+
+  ### ✅ ステップ4: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ5: 動作確認
+
+  **スマホでアクセスして確認**
+
+  期待される結果:
+
+  1. **ヘッダー**
+     - コンパクトなヘッダー（52px）✅
+     - ハンバーガーメニュー表示 ✅
+     - 接続状態表示 ✅
+
+  2. **ターミナル**
+     - 画面の大部分を占める ✅
+     - xterm.js正常動作 ✅
+
+  3. **入力バー**
+     - フローティング表示 ✅
+     - ■ボタン押下でアクションパネル開く ✅
+
+  4. **アクションパネル**
+     - ボトムシートで表示 ✅
+     - クイックアクションボタン動作 ✅
+     - tmux操作ボタン動作 ✅
+     - ファイル転送動作 ✅
+     - ×ボタンまたはESCで閉じる ✅
+
+  5. **サイドメニュー**
+     - ≡ボタン押下でメニュー開く ✅
+     - Logoutボタン表示 ✅
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **バックアップ状況**（ステップ0の結果）
+  2. **styles-v2.css 作成完了**（約400行）
+  3. **index.html 更新完了**（新しいHTML構造）
+  4. **terminal.js 更新完了**（UI操作JS追加）
+  5. **サーバー再起動確認**（server.log 最後の10行）
+  6. **動作確認結果**（10個の成功基準）
+  7. **スクリーンショット**（可能であれば）
+
+  ## 成果物
+  - public/styles-v2.css（新規、約400行）
+  - public/index.html（更新）
+  - public/terminal.js（更新）
+  - public/backup-phase1/（バックアップ）
+  - サーバー再起動完了
+  - 動作確認結果
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - ✅ 既存のWebSocket処理は絶対に壊さないこと
+  - ✅ タッチターゲットは最小48px以上
+  - ✅ Safe Area（ノッチ対応）を考慮
+  - ✅ バックアップを取ってから実装
+  - ✅ 動かなくなったらバックアップから復元
+  - 🚨 RACE-001: 1匹で実装（並列化禁止）
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  design_source: "長老猫（opus）設計書"
+  files_to_create:
+    - "public/styles-v2.css"
+    - "public/backup-phase1/"
+  files_to_modify:
+    - "public/index.html"
+    - "public/terminal.js"
+
+expected_outputs:
+  - "styles-v2.css 作成完了（約400行）"
+  - "index.html 更新完了（新しいHTML構造）"
+  - "terminal.js 更新完了（UI操作JS追加）"
+  - "バックアップ作成完了"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "動作確認結果（10個の成功基準）"
+  - "完了報告YAML（queue/reports/task-20260203-011405-kitten3.yaml）"
+
+notes: |
+  - 🎯 長老猫設計のボトムシートUIを実装
+  - ✅ ターミナル画面を最大化
+  - ✅ ボタン群をオーバーレイ化
+  - 📝 既存のWebSocket処理は維持
+  - 🚨 RACE-001: 1匹で実装
+  - 完了したら必ず番猫に報告するにゃ〜

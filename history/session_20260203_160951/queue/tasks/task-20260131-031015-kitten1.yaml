@@ -1,0 +1,82 @@
+task_id: "task-20260131-031015-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T03:10:15"
+priority: high
+load_skills: []
+description: |
+  【緊急バグ修正】Statusタブでnawabari.mdが表示されない問題
+
+  ## 症状
+  Statusタブを開くと「状態を読み込み中...」のまま何も表示されない
+
+  ## 原因（ボスねこ調査済み）
+  app.js の updateSystemStatus 関数で、data.nawabari がオブジェクトなのに
+  文字列として扱っている
+
+  サーバーから送られるデータ構造:
+  ```javascript
+  {
+    nawabari: { content: '...markdown...', lastUpdate: '...' },
+    kittens: [...],
+    tasks: {...}
+  }
+  ```
+
+  つまり、data.nawabari はオブジェクトで、実際のマークダウンは
+  data.nawabari.content にある
+
+  ## 修正方法
+  app.js の updateSystemStatus 関数（行400-401付近）を修正：
+
+  ```javascript
+  // 修正前（バグ）
+  } else if (data.nawabari) {
+    content = data.nawabari;  // オブジェクトをそのまま代入！
+  }
+
+  // 修正後（正しい）
+  } else if (data.nawabari) {
+    content = data.nawabari.content || data.nawabari;
+  }
+  ```
+
+  ## 実装手順
+  1. output/chat-app/public/app.js を読み取り
+  2. updateSystemStatus 関数を探す（行400付近）
+  3. `content = data.nawabari;` の行を見つける
+  4. `content = data.nawabari.content || data.nawabari;` に修正
+  5. ファイル保存
+  6. 完了報告YAML作成
+
+  ## 修正箇所
+  output/chat-app/public/app.js の行400-401
+  - 修正前: `content = data.nawabari;`
+  - 修正後: `content = data.nawabari.content || data.nawabari;`
+
+  ## 期待される効果
+  - ✅ Statusタブでnawabari.mdの内容が正しく表示される
+  - ✅ 「状態を読み込み中...」のまま止まらない
+  - ✅ マークダウンが正しくレンダリングされる
+  - ✅ フォールバック（|| data.nawabari）で後方互換性も保証
+
+  ## 自律実行範囲
+  - ファイル編集OK（番猫自動承認）
+  - 原因判明済みなので、承認不要で修正可能
+
+  ## 注意事項
+  - フォールバック（|| data.nawabari）を必ず含めること
+  - これにより、data.nawabari が文字列の場合も動作する
+  - 後方互換性を保証
+
+context:
+  service_name: "chat-app"
+  target_dir: "/home/edgesakura/git/neko-pm/output/chat-app"
+  files_to_modify:
+    - "public/app.js"
+  bug_type: "オブジェクト構造の誤認識"
+  severity: "high"
+
+expected_outputs:
+  - "public/app.js（updateSystemStatus関数修正）"
+  - "完了報告YAML（queue/reports/report-20260131-031015-kitten1.yaml）"
+  - "動作確認報告"

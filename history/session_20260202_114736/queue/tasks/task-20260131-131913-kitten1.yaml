@@ -1,0 +1,52 @@
+task_id: "task-20260131-131913-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T13:19:13"
+priority: medium
+command_id: "cmd-20260131-131708"
+load_skills: []
+
+description: |
+  【タスク】chat-app段落分割表示機能の実装
+
+  ## 目的
+  ボスねこのメッセージが一度に飛んでくるのを、段落ごとに分割して読みやすく表示する。
+
+  ## 実装内容
+  1. server.jsの確認
+     - tmux capture-paneで取得した出力の処理部分を確認
+     - WebSocket送信部分を確認
+
+  2. 段落分割処理の実装
+     - tmux capture-paneの出力を空行で分割
+     - 段落ごとに配列化
+
+  3. WebSocket送信の改良
+     - 段落ごとに送信
+     - 各段落間に少し遅延を入れる（例: 200ms程度）
+
+  4. フロント側の確認
+     - public/index.html で受信側の処理確認
+     - 必要なら段落ごとに表示する処理を追加
+
+  5. 動作確認
+     - npm startでサーバー起動
+     - ブラウザで確認
+     - 段落ごとに分割表示されることを確認
+
+  ## 技術方針
+  - ストリーミングは不要（複雑なため）
+  - 空行（\n\n）で段落を判定
+  - 段落ごとにWebSocketで送信
+  - 各段落間に遅延を入れて読みやすく
+
+context:
+  target_dir: "/home/edgesakura/git/neko-pm/output/chat-app"
+  main_files:
+    - "server.js"
+    - "public/index.html"
+
+expected_outputs:
+  - "段落分割機能を実装したserver.js"
+  - "必要ならフロント側も修正したindex.html"
+  - "動作確認済みの報告"
+  - "queue/reports/report-20260131-131913-kitten1.yaml（報告ファイル）"

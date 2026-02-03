@@ -1,0 +1,179 @@
+task_id: "task-20260202-232335-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T23:23:35"
+priority: urgent
+command_id: "cmd-20260202-232236"
+description: |
+  【🚨緊急バグ修正】APIエンドポイント名の不一致を修正
+
+  ## 背景
+  - app.jsが `/api/login`, `/api/verify` を呼んでいる
+  - server.jsには `/api/auth` しかない
+  - 結果：404 Not Found で認証が動作しない
+
+  ## 実行手順
+
+  ### 🔍 ステップ1: server.jsのAPIエンドポイント仕様を確認
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # /api/auth の仕様を確認
+  grep -A 50 "app.post('/api/auth'" server.js
+  ```
+
+  **確認すべきこと**：
+  - `/api/auth` はPOSTメソッドか？
+  - パスワードを受け取る形式か？
+  - トークンを返す形式か？
+  - 認証チェック（verify）も同じエンドポイントか？
+
+  ### 📝 ステップ2: app.jsの現在のコードを確認
+
+  ```bash
+  # login関数の /api/login を確認
+  grep -A 10 "/api/login" public/app.js
+
+  # checkAuthentication関数の /api/verify を確認
+  grep -A 10 "/api/verify" public/app.js
+  ```
+
+  ### ✏️ ステップ3: app.jsを修正
+
+  **修正1: login関数内**
+
+  ```javascript
+  // 修正前
+  const response = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+
+  // 修正後
+  const response = await fetch('/api/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+  ```
+
+  **修正2: checkAuthentication関数内**
+
+  **パターンA**（server.jsが認証チェック機能を持つ場合）：
+  ```javascript
+  // 修正前
+  const response = await fetch('/api/verify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  // 修正後
+  const response = await fetch('/api/auth', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  ```
+
+  **パターンB**（server.jsが認証チェック機能を持たない場合）：
+  ```javascript
+  // トークンの存在チェックのみ
+  async function checkAuthentication() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (!token) {
+      // トークンなし、認証画面表示
+      if (authScreen) authScreen.classList.remove('hidden');
+      if (mainApp) mainApp.classList.add('hidden');
+      return;
+    }
+
+    // トークンあり、メインアプリ表示
+    if (authScreen) authScreen.classList.add('hidden');
+    if (mainApp) mainApp.classList.remove('hidden');
+
+    // Initialize terminal UI
+    if (typeof initTerminal === 'function') {
+      initTerminal();
+    }
+  }
+  ```
+
+  **判断基準**：
+  - server.jsの `/api/auth` が認証チェック機能を持つ → パターンA
+  - server.jsの `/api/auth` がログインのみ → パターンB（トークン存在チェックのみ）
+
+  ### 🔄 ステップ4: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ5: 動作確認
+
+  **期待される結果**：
+  - ブラウザでログイン成功（404エラーが出ない）✅
+  - 認証チェックが正常動作 ✅
+  - ターミナルUIが表示される ✅
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **server.jsの `/api/auth` の仕様**（確認結果）
+  2. **app.jsの修正内容**（修正前後のコード）
+  3. **採用したパターン**（パターンA or パターンB、理由）
+  4. **サーバー再起動確認**（server.log 最後の10行）
+  5. **動作確認結果**（ログインが成功するか）
+
+  ## 成果物
+  - app.js修正（APIエンドポイント名変更）
+  - サーバー再起動完了
+  - 動作確認結果（ご主人にブラウザ確認をお願い）
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - 🚨 緊急バグ修正（優先度高）
+  - ✅ 最小限の修正（エンドポイント名のみ）
+  - 🔍 server.jsの仕様を確認してから修正すること
+  - 📝 修正前後のコードを報告に記載すること
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_file: "public/app.js"
+  server_file: "server.js"
+  old_endpoints:
+    login: "/api/login"
+    verify: "/api/verify"
+  new_endpoint: "/api/auth"
+
+expected_outputs:
+  - "server.jsの /api/auth 仕様確認結果"
+  - "app.js修正（/api/login → /api/auth）"
+  - "app.js修正（/api/verify → /api/auth or トークン存在チェック）"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "動作確認結果"
+  - "完了報告YAML（queue/reports/task-20260202-232335-kitten3.yaml）"
+
+notes: |
+  - 🚨 緊急バグ修正（優先度：URGENT）
+  - ✅ APIエンドポイント名の不一致を解消
+  - 📝 server.jsの仕様を確認してから修正すること
+  - 完了したら必ず番猫に報告するにゃ〜

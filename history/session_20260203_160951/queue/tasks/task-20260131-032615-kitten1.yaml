@@ -1,0 +1,98 @@
+task_id: "task-20260131-032615-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T03:26:15"
+priority: high
+load_skills: []
+description: |
+  【フェーズ1】marp-agent統合作戦: リポジトリclone & 分析
+
+  ## 概要
+  https://github.com/minorun365/marp-agent をローカルにcloneし、
+  リポジトリ構造を分析する
+
+  ## 実施内容
+
+  ### 1. git clone実行
+  ```bash
+  cd /home/edgesakura/git
+  git clone https://github.com/minorun365/marp-agent.git
+  ```
+
+  保存先: /home/edgesakura/git/marp-agent
+
+  ### 2. リポジトリ構造を分析
+
+  #### 2.1 ディレクトリ構成確認
+  ```bash
+  cd /home/edgesakura/git/marp-agent
+  tree -L 2 -I 'node_modules|.git'
+  # または
+  find . -maxdepth 2 -type d | grep -v node_modules | grep -v .git
+  ```
+
+  #### 2.2 主要ファイル確認
+  以下のファイルを読み取り、分析：
+  - README.md（概要、使い方）
+  - package.json（Node.js依存関係、スクリプト）
+  - requirements.txt（Python依存関係）※存在すれば
+  - LICENSE（ライセンス確認）
+  - その他重要な設定ファイル
+
+  #### 2.3 技術スタック確認
+  - 言語: TypeScript, Python, etc.
+  - フレームワーク: AWS Amplify, Lambda, Bedrock
+  - 依存パッケージ
+  - ビルド・実行方法
+
+  ### 3. 分析結果レポート作成
+
+  以下の情報を完了報告に含める：
+
+  #### 3.1 リポジトリ概要
+  - 目的・機能
+  - 主要な技術スタック
+  - ディレクトリ構成（tree形式）
+
+  #### 3.2 依存関係
+  - Node.js パッケージ（package.json から）
+  - Python パッケージ（requirements.txt から）※存在すれば
+  - AWS サービス依存
+
+  #### 3.3 実装方針の提案
+  - Claude Code skills化に必要な情報
+  - Bedrock AgentCore実装に必要な情報
+  - 注意点・制約事項
+
+  #### 3.4 エスカレ判断
+  - npm install が必要か？
+  - pip install が必要か？
+  - 必要な場合は nawabari.md に記載
+
+  ### 4. 完了報告YAML作成
+  queue/reports/report-20260131-032615-kitten1.yaml
+
+  ## 自律実行範囲
+  - ✅ git clone（読み取り専用、外部リポジトリ）
+  - ✅ ファイル読み取り・分析
+  - ✅ ディレクトリ構成確認
+  - ⚠️ npm install / pip install → 実行せず、必要性のみ報告
+
+  ## 注意事項
+  - 夜間自律開発のため、ご主人は寝ている
+  - npm install / pip install は実行しない（報告のみ）
+  - 分析結果を詳細に報告すること
+  - 次のフェーズ（skills化、AgentCore実装）に必要な情報を抽出
+
+context:
+  source_repo: "https://github.com/minorun365/marp-agent"
+  clone_path: "/home/edgesakura/git/marp-agent"
+  operation_type: "repository_analysis"
+  phase: "フェーズ1"
+
+expected_outputs:
+  - "/home/edgesakura/git/marp-agent（cloneされたリポジトリ）"
+  - "完了報告YAML（queue/reports/report-20260131-032615-kitten1.yaml）"
+  - "リポジトリ構造分析レポート"
+  - "依存関係リスト"
+  - "実装方針の提案"
+  - "エスカレ判断（npm/pip install の必要性）"

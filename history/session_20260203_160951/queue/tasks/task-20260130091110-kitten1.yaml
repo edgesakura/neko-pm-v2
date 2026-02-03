@@ -1,0 +1,45 @@
+task_id: "task-20260130091110-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T09:11:10Z"
+priority: high
+description: |
+  【WSL/chat-app側の調査タスク】
+
+  Tailscale経由でchat-appにアクセスできない問題について、
+  WSLとchat-appのネットワーク設定を調査するにゃ。
+
+  ## 調査項目（順番に実施）
+
+  ### 1. WSL設定確認
+  - `C:\Users\<user>\.wslconfig` の内容を確認
+  - `hostAddressLoopback=true` が設定されているか確認
+  - 設定がない場合、追加して `wsl --shutdown` 後に再起動が必要
+
+  ### 2. chat-appのlisten IP確認
+  - chat-appのプロセスがどのIPアドレスでlistenしているか確認
+  - `0.0.0.0:3000` か `127.0.0.1:3000` か `192.168.x.x:3000` か
+  - 確認方法: `ss -tlnp | grep 3000` または `netstat -tlnp | grep 3000`
+  - 期待値: `0.0.0.0:3000` でlistenしていること
+
+  ## 重要な指示
+  - 承認プロンプトが出たら、選択肢2（Yes, and don't ask again...）を選ぶにゃ
+  - 調査結果は詳細にレポートに記録するにゃ
+  - 完了したら send-keys で番猫（neko:workers.0）に通知するにゃ
+  - Windowsファイルの読み取りはWSL側から `/mnt/c/Users/...` でアクセスするにゃ
+
+context:
+  command_id: "cmd-20260130-180000"
+  service_name: "chat-app"
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  references:
+    - "C:\\Users\\<user>\\.wslconfig (WSL側からは /mnt/c/Users/<user>/.wslconfig)"
+    - "/home/edgesakura/git/neko-pm/output/chat-app"
+  lessons_learned:
+    - "mirroredモード ≠ Tailscaleインターフェースも共有"
+    - "仮想NIC（Tailscale/VPN）は物理NICと違う扱いが必要"
+
+expected_outputs:
+  - "WSL .wslconfig の設定内容（hostAddressLoopbackの有無）"
+  - "chat-appのlisten IPアドレス（0.0.0.0, 127.0.0.1, その他）"
+  - "問題があれば具体的な修正提案"
+  - "レポートファイル: queue/reports/task-20260130091110-kitten1.yaml"

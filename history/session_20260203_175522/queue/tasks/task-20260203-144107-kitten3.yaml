@@ -1,0 +1,293 @@
+task_id: "task-20260203-144107-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-03T14:41:07"
+priority: medium
+command_id: "cmd-20260203-143959"
+description: |
+  【nawabari.md肥大化対策】アーカイブと軽量化
+
+  ## 背景
+  nawabari.mdが70KBに肥大化している。
+  長老猫（opus）からの改善提案を実施する。
+
+  ## 実施タスク（順次実行）
+
+  ### 🔍 ステップ0: バックアップ作成（必須）
+
+  **nawabari.mdを壊さないための安全策**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # バックアップディレクトリ作成
+  mkdir -p backup
+
+  # nawabari.mdをバックアップ
+  cp nawabari.md backup/nawabari-backup-$(date +%Y%m%d-%H%M%S).md
+
+  # バックアップ確認
+  ls -lh backup/ | tail -5
+
+  echo "✅ バックアップ完了"
+  ```
+
+  ### ✏️ ステップ1: historyディレクトリ作成
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # historyディレクトリ作成
+  mkdir -p history
+
+  # .gitkeep配置
+  touch history/.gitkeep
+
+  # 確認
+  ls -la history/
+
+  echo "✅ history/ ディレクトリ作成完了"
+  ```
+
+  ### ✏️ ステップ2: 完了作戦をアーカイブ
+
+  **nawabari.mdから「## ✅ 完了作戦」セクションを全て抽出**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # アーカイブファイル作成
+  cat > history/nawabari-20260203.md << 'EOFARCHIVE'
+  # nawabari.md アーカイブ
+
+  > アーカイブ日時: 2026-02-03T14:41:07
+  > 対象期間: 2026-01-31 〜 2026-02-03
+  > 理由: nawabari.md肥大化対策（70KB → < 50KB）
+
+  ---
+
+  EOFARCHIVE
+
+  # 完了作戦セクションを抽出（「## ✅ 完了作戦」以降、次の「##」の前まで）
+  # awkを使って抽出
+  awk '/^## ✅ 完了作戦/,/^## [^✅]/{
+    if (/^## [^✅]/) exit;
+    print
+  }' nawabari.md >> history/nawabari-20260203.md
+
+  # アーカイブファイル確認
+  echo "✅ アーカイブ作成完了"
+  wc -l history/nawabari-20260203.md
+  ls -lh history/nawabari-20260203.md
+  ```
+
+  ### ✏️ ステップ3: nawabari.md軽量化
+
+  **直近3件の完了作戦のみ残して、古い完了作戦を削除**
+
+  重要: このステップは慎重に実施すること！
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # 現在のサイズ確認
+  echo "【軽量化前】"
+  ls -lh nawabari.md
+  wc -l nawabari.md
+
+  # 完了作戦の数を確認
+  grep -c "^### 📋 作戦ID:" nawabari.md || echo "0件"
+
+  # 軽量化実施（Pythonスクリプトで実装）
+  cat > /tmp/slim_nawabari.py << 'EOFPYTHON'
+  #!/usr/bin/env python3
+  import re
+
+  # nawabari.mdを読み込む
+  with open('nawabari.md', 'r', encoding='utf-8') as f:
+      content = f.read()
+
+  # 「## ✅ 完了作戦（最新）」セクションを見つける
+  # パターン: ## ✅ 完了作戦（最新） から次の ## まで
+  pattern = r'(## ✅ 完了作戦（最新）)(.*?)(?=^## |\Z)'
+
+  def keep_latest_3_operations(match):
+      header = match.group(1)
+      section_content = match.group(2)
+
+      # 各作戦を抽出（### 📋 作戦ID: で始まるブロック）
+      operation_pattern = r'(### 📋 作戦ID:.*?)(?=### 📋 作戦ID:|\Z)'
+      operations = re.findall(operation_pattern, section_content, re.DOTALL)
+
+      # 直近3件のみ残す
+      if len(operations) > 3:
+          kept_operations = operations[:3]
+          removed_count = len(operations) - 3
+          note = f"\n\n**注**: {removed_count}件の古い完了作戦を history/nawabari-20260203.md にアーカイブしました。\n"
+          return header + '\n' + ''.join(kept_operations) + note
+      else:
+          return header + section_content
+
+  # 置換実行
+  new_content = re.sub(pattern, keep_latest_3_operations, content, flags=re.MULTILINE | re.DOTALL)
+
+  # 書き込み
+  with open('nawabari.md', 'w', encoding='utf-8') as f:
+      f.write(new_content)
+
+  print("✅ nawabari.md 軽量化完了")
+  EOFPYTHON
+
+  # スクリプト実行
+  python3 /tmp/slim_nawabari.py
+
+  # 軽量化後のサイズ確認
+  echo "【軽量化後】"
+  ls -lh nawabari.md
+  wc -l nawabari.md
+
+  # 削減量を計算
+  echo "✅ 軽量化完了"
+  ```
+
+  ### ✏️ ステップ4: instructions/guard-cat.md にルール追記
+
+  **nawabari.md運用ルールを追記**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # guard-cat.mdの最後にルールを追記
+  cat >> instructions/guard-cat.md << 'EOFRULE'
+
+  ## 🔴 nawabari.md 運用ルール（肥大化対策）
+
+  ### サイズ管理
+  - nawabari.mdは **50KB以下** を維持するにゃ
+  - 完了作戦は **直近3件のみ** 保持するにゃ
+  - 古い完了作戦は `history/nawabari-YYYYMMDD.md` にアーカイブするにゃ
+
+  ### アーカイブタイミング
+  - **作戦完了時に50KBを超えていたら自動アーカイブ**にゃ
+  - または **1週間ごと** に定期アーカイブにゃ
+
+  ### アーカイブ手順
+  1. バックアップ作成（`backup/nawabari-backup-YYYYMMDD-HHMMSS.md`）
+  2. 完了作戦を `history/nawabari-YYYYMMDD.md` に抽出
+  3. nawabari.mdから古い完了作戦を削除（直近3件のみ残す）
+  4. サイズ確認（< 50KB）
+
+  ### 確認コマンド
+  ```bash
+  # サイズ確認
+  ls -lh nawabari.md
+
+  # 完了作戦の数を確認
+  grep -c "^### 📋 作戦ID:" nawabari.md
+  ```
+
+  EOFRULE
+
+  echo "✅ guard-cat.md ルール追記完了"
+  ```
+
+  ### ✏️ ステップ5: .gitignore確認
+
+  **history/ がgit管理対象になっていることを確認**
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  # .gitignoreにhistory/が含まれていないか確認
+  if grep -q "^history/" .gitignore 2>/dev/null; then
+    echo "⚠️ .gitignoreにhistory/が含まれている。削除が必要。"
+    # history/の行を削除
+    sed -i '/^history\//d' .gitignore
+    echo "✅ .gitignoreからhistory/を削除"
+  else
+    echo "✅ history/はgit管理対象（問題なし）"
+  fi
+
+  # 確認
+  cat .gitignore | grep -E "history|backup" || echo "（history/backupの記載なし）"
+  ```
+
+  ### ✅ ステップ6: 最終確認
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm
+
+  echo "【最終確認】"
+  echo "---"
+
+  # nawabari.mdサイズ
+  echo "nawabari.md サイズ:"
+  ls -lh nawabari.md | awk '{print $5}'
+
+  # 完了作戦数
+  echo "完了作戦数:"
+  grep -c "^### 📋 作戦ID:" nawabari.md || echo "0件"
+
+  # アーカイブ確認
+  echo "アーカイブ:"
+  ls -lh history/nawabari-20260203.md | awk '{print $5}'
+
+  # history/ディレクトリ
+  echo "history/ ディレクトリ:"
+  ls -la history/
+
+  echo "---"
+  echo "✅ 全ステップ完了"
+  ```
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **バックアップ状況**（ステップ0の結果）
+  2. **history/ディレクトリ作成完了**
+  3. **アーカイブ作成完了**（history/nawabari-20260203.md のサイズ）
+  4. **nawabari.md軽量化完了**（軽量化前後のサイズ比較）
+  5. **guard-cat.md ルール追記完了**
+  6. **.gitignore確認結果**
+  7. **最終確認結果**（nawabari.mdサイズ、完了作戦数）
+
+  ## 成果物
+  - history/.gitkeep（新規）
+  - history/nawabari-20260203.md（アーカイブ、新規）
+  - nawabari.md（軽量化、更新）
+  - instructions/guard-cat.md（ルール追記、更新）
+  - backup/nawabari-backup-*.md（バックアップ）
+  - 最終確認結果
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - ✅ バックアップを取ってから実施すること
+  - ✅ 完了作戦を失わないこと（アーカイブに含まれているか確認）
+  - ✅ nawabari.mdは50KB以下にすること
+  - ✅ 直近3件の完了作戦は残すこと
+  - 🚨 RACE-001: 1匹で実装（並列化禁止）
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  current_size: "70KB"
+  target_size: "< 50KB"
+  archive_path: "history/nawabari-20260203.md"
+  nawabari_path: "/home/edgesakura/git/neko-pm/nawabari.md"
+  guard_cat_path: "/home/edgesakura/git/neko-pm/instructions/guard-cat.md"
+
+expected_outputs:
+  - "history/.gitkeep 作成完了"
+  - "history/nawabari-20260203.md 作成完了（アーカイブ）"
+  - "nawabari.md 軽量化完了（< 50KB）"
+  - "instructions/guard-cat.md ルール追記完了"
+  - ".gitignore確認完了"
+  - "最終確認結果（サイズ、完了作戦数）"
+  - "完了報告YAML（queue/reports/task-20260203-144107-kitten3.yaml）"
+
+notes: |
+  - 🎯 nawabari.mdを70KB → < 50KBに軽量化
+  - ✅ 完了作戦をアーカイブして履歴を保持
+  - ✅ 今後の肥大化を防ぐルールを追記
+  - 📝 バックアップ必須（データ保全）
+  - 🚨 RACE-001: 1匹で実装
+  - 完了したら必ず番猫に報告するにゃ〜

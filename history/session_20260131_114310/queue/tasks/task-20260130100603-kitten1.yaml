@@ -1,0 +1,102 @@
+task_id: "task-20260130100603-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T10:06:03Z"
+priority: high
+description: |
+  【chat-app バックエンド改修】Phase 1 & 2
+
+  スマホからボスねこと会話できるようにするため、バックエンド機能を拡張するにゃ。
+
+  ## Phase 1: 状態表示機能（バックエンド側）
+
+  ### 1.1 nawabari.md 読み取り機能
+  - WebSocket接続時に `/home/edgesakura/git/neko-pm/nawabari.md` を読み取り
+  - クライアントに送信（イベント名: `system-status`）
+  - 定期的な更新（ファイル監視 or 30秒ポーリング）
+
+  ### 1.2 子猫状態取得機能
+  - tmux コマンドで子猫ペインの状態を取得
+  - `tmux list-panes -t neko:workers -F "#{pane_index}: #{pane_title}"`
+  - 各ペインの最新出力を取得（`tmux capture-pane -p -t neko:workers.N | tail -5`）
+  - 稼働中/待機中を判定してクライアントに送信
+
+  ### 1.3 タスク一覧取得機能
+  - `queue/tasks/` ディレクトリのYAMLファイルを読み取り
+  - 現在実行中のタスク、完了タスクをリスト化
+  - `queue/reports/` も読み取って完了状況を確認
+
+  ## Phase 2: チャット機能（バックエンド側）
+
+  ### 2.1 ボスねこペインへの送信
+  - クライアントからのメッセージを受信（WebSocketイベント: `send-to-boss`）
+  - **2回ルール厳守**でneko:bossペインに送信：
+    ```javascript
+    execSync('tmux send-keys -t neko:boss "' + message + '" ""');
+    await sleep(1000); // 1秒待機
+    execSync('tmux send-keys -t neko:boss Enter');
+    ```
+
+  ### 2.2 ボスねこペインからの受信
+  - 定期的に `tmux capture-pane -p -t neko:boss` で出力を取得
+  - 前回との差分のみを抽出（最終行数を記録）
+  - 新しい出力をクライアントに送信（WebSocketイベント: `boss-response`）
+  - ポーリング間隔: 2秒（Claude Codeの応答待ち時間考慮）
+
+  ### 2.3 エラーハンドリング
+  - tmuxコマンド失敗時のエラー処理
+  - WebSocket切断時のクリーンアップ
+  - 過負荷防止（メッセージレート制限）
+
+  ## 実装ガイドライン
+
+  ### 必須モジュール
+  - `fs` / `fs.promises` - ファイル読み取り
+  - `child_process.execSync` - tmuxコマンド実行
+  - `ws` (既存) - WebSocket
+  - `chokidar` (推奨) - ファイル監視（nawabari.md）
+
+  ### WebSocketイベント定義
+  ```javascript
+  // クライアント → サーバー
+  ws.on('message', (data) => {
+    const event = JSON.parse(data);
+    if (event.type === 'send-to-boss') {
+      // Phase 2.1 の処理
+    }
+  });
+
+  // サーバー → クライアント
+  ws.send(JSON.stringify({
+    type: 'system-status',
+    data: { nawabari, kittens, tasks }
+  }));
+
+  ws.send(JSON.stringify({
+    type: 'boss-response',
+    data: { message: '差分出力' }
+  }));
+  ```
+
+  ## 重要な指示
+  - 承認プロンプトが出たら、選択肢2（Yes, and don't ask again...）を選ぶにゃ
+  - TDD原則：テストファーストで実装（単体テストを先に書く）
+  - セキュリティ：入力サニタイズ（コマンドインジェクション対策）
+  - 完了したら send-keys で番猫（neko:workers.0）に通知するにゃ
+
+context:
+  command_id: "cmd-20260130-190000"
+  service_name: "chat-app"
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  target_file: "server.js"
+  boss_pane: "neko:boss"
+  nawabari_path: "/home/edgesakura/git/neko-pm/nawabari.md"
+  references:
+    - "/home/edgesakura/git/neko-pm/output/chat-app/server.js"
+    - "/home/edgesakura/git/neko-pm/nawabari.md"
+    - "/home/edgesakura/git/neko-pm/queue/"
+
+expected_outputs:
+  - "server.js 更新版（状態取得API、チャット連携機能追加）"
+  - "単体テスト（tmux連携テスト含む）"
+  - "動作確認レポート"
+  - "レポートファイル: queue/reports/task-20260130100603-kitten1.yaml"
