@@ -1,0 +1,47 @@
+task_id: "task-{timestamp}-{kitten}"
+assigned_to: "kitten1"
+timestamp: "{ISO 8601 timestamp}"
+priority: high | medium | low
+load_skills: []
+
+description: |
+  # タスク名
+
+  **背景**: [タスクの背景・目的]
+
+  ## 作業内容
+
+  [具体的な作業内容を記述]
+
+  ## 完了報告
+  - queue/reports/task-{timestamp}-{kitten}.yaml を作成
+  - skill_candidate セクション必須
+  - owl_review は必要に応じて実施
+
+context:
+  related_command: "{command_id}"
+  phase: "{phase}"
+  references:
+    - "参照ファイル1"
+    - "参照ファイル2"
+
+expected_outputs:
+  - "成果物1"
+  - "成果物2"
+
+# 🔍 検証条件（Phase 2 で追加）
+expected_checks:
+  - "構文チェック通過"
+  - "既存機能への影響なし"
+  - "セキュリティリスクなし"
+
+# 🎯 受け入れ基準（Phase 2 で追加）
+acceptance_criteria:
+  - "〇〇が動作すること"
+  - "〇〇が表示されること"
+  - "〇〇がエラーにならないこと"
+
+notes: |
+  - 作業上の注意事項を記載
+  - skill_candidate は必ず記入
+  - owl_review の要否を明記

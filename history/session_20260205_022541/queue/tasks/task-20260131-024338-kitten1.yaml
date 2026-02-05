@@ -1,0 +1,105 @@
+task_id: "task-20260131-024338-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T02:43:38"
+priority: urgent
+load_skills: []
+description: |
+  【緊急バグ修正】写真アップロード100%フリーズ問題（XHR非同期エラー）
+
+  ## 症状
+  写真アップロードで進捗が100%になった後、UIがフリーズする（再発）
+
+  ## 原因（ボスねこ調査済み）
+  XHRは非同期なので、イベントハンドラ内の `throw new Error()` は
+  外側の `try-catch` で捕捉されない
+
+  ### 問題のコード（app.js 行602-629）
+  ```javascript
+  xhr.addEventListener('load', () => {
+    if (xhr.status === 200) {
+      // 成功処理
+    } else {
+      throw new Error(...);  // ← 捕捉されない！
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    throw new Error(...);  // ← 捕捉されない！
+  });
+  ```
+
+  ## 修正方法
+  throwではなく、直接エラー処理を行う：
+
+  ### 1. handleUploadError関数を追加
+  ```javascript
+  function handleUploadError(message) {
+    console.error('Upload failed:', message);
+    alert(`アップロード失敗: ${message}`);
+    uploadProgress.classList.add('hidden');
+    uploadButton.disabled = false;
+  }
+  ```
+
+  ### 2. XHRイベントハンドラを修正
+  ```javascript
+  xhr.addEventListener('load', () => {
+    if (xhr.status === 200) {
+      const response = JSON.parse(xhr.responseText);
+      if (response.success) {
+        // 成功処理（既存のまま）
+      } else {
+        handleUploadError(response.error || 'アップロードに失敗しました');
+      }
+    } else {
+      handleUploadError(`アップロードエラー: ${xhr.status}`);
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    handleUploadError('ネットワークエラーが発生しました');
+  });
+  ```
+
+  ## 実装手順
+  1. output/chat-app/public/app.js を読み取り
+  2. handleUploadError関数を追加（uploadPhoto関数の前後に配置）
+  3. 行602-629のXHRイベントハンドラを修正：
+     - `throw new Error(...)` を `handleUploadError(...)` に置き換え
+     - エラー時のUI復旧処理を追加
+  4. ファイル保存
+  5. 完了報告YAML作成
+
+  ## 修正箇所
+  output/chat-app/public/app.js
+  - 新規: handleUploadError関数追加
+  - 行602-629: XHRイベントハンドラ修正
+
+  ## 期待される効果
+  - ✅ 写真アップロードエラー時にUIがフリーズしない
+  - ✅ エラーメッセージが表示される
+  - ✅ 進捗バーが非表示になる
+  - ✅ アップロードボタンが再度有効になる
+
+  ## 自律実行範囲
+  - ファイル編集OK（番猫自動承認）
+  - 原因判明済みなので、承認不要で修正可能
+
+  ## 注意事項
+  - XHR非同期エラーの特性を理解すること
+  - throwではなく、直接エラー処理を行うこと
+  - UI復旧処理を忘れないこと
+
+context:
+  service_name: "chat-app"
+  target_dir: "/home/edgesakura/git/neko-pm/output/chat-app"
+  files_to_modify:
+    - "public/app.js"
+  bug_location: "行602-629（XHRイベントハンドラ）"
+  bug_type: "XHR非同期エラー処理"
+  severity: "urgent"
+
+expected_outputs:
+  - "public/app.js（handleUploadError追加、XHRエラー処理修正）"
+  - "完了報告YAML（queue/reports/report-20260131-024338-kitten1.yaml）"
+  - "動作確認報告"

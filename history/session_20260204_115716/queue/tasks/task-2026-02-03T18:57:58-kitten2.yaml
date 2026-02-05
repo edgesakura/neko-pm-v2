@@ -1,0 +1,59 @@
+task_id: "task-2026-02-03T18:57:58-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-03T18:57:58"
+priority: high
+load_skills: []
+
+description: |
+  【Codexスキル拡充（修正版）】
+
+  研究狸（gpt-5.2-codex）の深掘り調査機能を追加するにゃ。
+  **重要**: CLI設定ディレクトリを参照して、実際のCLIコマンドに基づいて記述するにゃ。
+
+  ## 成果物
+  `/home/edgesakura/git/.claude/skills/codex/SKILL.md`（既存ファイル拡充）
+
+  ## 参照すべき情報（必須）
+  1. **CLI設定**: `/home/edgesakura/.codex/config.toml`
+     - まず存在確認（Read tool）
+     - デフォルトモデル、承認モード等の設定を確認
+
+  2. **CLI実行**: `/usr/bin/codex`
+     - `codex --help` を実行してオプション一覧を取得（Bash tool）
+     - 特に -m/--model オプション、exec vs review コマンドを確認
+
+  3. **既存スキル**: `/home/edgesakura/git/.claude/skills/codex/SKILL.md`
+     - 現在の内容を読み取り、追記する形で拡充
+
+  ## 要件
+  1. 既存内容を維持しつつ、以下を追加：
+     - **モデル指定セクション**（新規）
+       - 目利きフクロウ: `-m codex-mini-latest` または `-m o4-mini`
+       - 研究狸: `-m gpt-5.2-codex`
+
+     - **コマンド使い分けセクション**（新規）
+       - `codex exec`: 深掘り調査、詳細分析
+       - `codex review`: コードレビュー、セキュリティ監査
+
+     - **使い分け基準**（新規）
+       - 目利きフクロウ（o4-mini）vs 研究狸（gpt-5.2-codex）
+       - 深掘り調査 vs コードレビューの判断基準
+
+  ## 注意事項
+  - 既存の内容を削除しないこと（追記のみ）
+  - **codex --help の実際の出力を確認してから記述するにゃ**
+  - ~/.codex/config.toml が存在しない場合はその旨を報告に記載するにゃ
+  - 目利きフクロウ（o4-mini）と研究狸（gpt-5.2-codex）の使い分けを明確にするにゃ
+
+context:
+  cli_paths:
+    codex_bin: "/usr/bin/codex"
+    codex_config: "/home/edgesakura/.codex/config.toml"
+  project_root: "/home/edgesakura/git"
+  skill_output_dir: "/home/edgesakura/git/.claude/skills/"
+  references:
+    - "/home/edgesakura/git/.claude/skills/codex/SKILL.md"
+
+expected_outputs:
+  - "/home/edgesakura/git/.claude/skills/codex/SKILL.md（拡充版・修正版）"
+  - "レポートYAML: queue/reports/report-2026-02-03T18:57:58-kitten2.yaml"

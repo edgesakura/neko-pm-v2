@@ -1,0 +1,44 @@
+task_id: "task-2026-02-03T18:49:56-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-03T18:49:56"
+priority: high
+load_skills: []
+
+description: |
+  【Codexスキル拡充】
+
+  研究狸（gpt-5.2-codex）の深掘り調査機能を追加するにゃ。
+
+  ## 成果物
+  `/home/edgesakura/git/.claude/skills/codex/SKILL.md`（既存ファイル拡充）
+
+  ## 要件
+  1. 既存内容を維持しつつ、以下を追加：
+     - 研究狸用の深掘り調査テンプレート
+     - gpt-5.2-codex（GPT-5.2-thinking）モデル指定方法
+     - 目利きフクロウ（o4-mini）との使い分け基準
+     - 深掘り調査 vs コードレビューの判断基準
+
+  2. 追加すべきセクション：
+     - ## モデル選択（新規）
+     - ## 深掘り調査（新規）
+     - ## 使い分け基準（新規）
+
+  ## 参照資料
+  - `/home/edgesakura/git/.claude/skills/codex/SKILL.md`（既存ファイル）
+  - `/home/edgesakura/git/neko-pm/instructions/boss-cat.md`（使い分け基準）
+
+  ## 注意事項
+  - 既存の内容を削除しないこと（追記のみ）
+  - codex-cli の実際のモデル指定オプションを確認してから記述するにゃ
+  - 目利きフクロウ（o4-mini）と研究狸（gpt-5.2-codex）の使い分けを明確にするにゃ
+
+context:
+  project_root: "/home/edgesakura/git"
+  references:
+    - "/home/edgesakura/git/.claude/skills/codex/SKILL.md"
+    - "/home/edgesakura/git/neko-pm/instructions/boss-cat.md"
+
+expected_outputs:
+  - "/home/edgesakura/git/.claude/skills/codex/SKILL.md（拡充版）"
+  - "レポートYAML: queue/reports/report-2026-02-03T18:49:56-kitten2.yaml"

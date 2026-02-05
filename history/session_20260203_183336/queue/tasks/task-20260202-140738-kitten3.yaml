@@ -1,0 +1,135 @@
+task_id: "task-20260202-140738-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T14:07:38"
+priority: urgent
+command_id: "cmd-20260202-140632"
+description: |
+  【🚨緊急バグ修正】chat-app 認証後にページ遷移しない問題
+
+  ## 目的
+  パスワード認証後にターミナルUIが正常に表示されるように修正するにゃ。
+
+  ## 現象
+  - パスワード認証後にページ遷移しない
+  - ログイン画面のまま止まる
+
+  ## 原因
+  terminal.js がページロード時に即座に実行され、
+  認証前（mainApp が hidden 状態）で xterm.js をマウントしようとしてエラー
+
+  問題のコード（terminal.js）:
+  ```javascript
+  const term = new Terminal({...});  // 認証前に実行される
+  term.open(terminalContainer);      // mainAppがhiddenでサイズ0 → エラー
+  ```
+
+  ## 修正内容
+
+  ### 修正1: terminal.js を関数化
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  現在のコードを `initTerminal()` 関数でラップするにゃ：
+
+  ```javascript
+  // terminal.js
+  function initTerminal() {
+    // 既存のターミナル初期化コードをここに移動
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      theme: {
+        background: '#1e1e1e',
+        foreground: '#d4d4d4'
+      }
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+
+    const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+    term.loadAddon(webLinksAddon);
+
+    const terminalContainer = document.getElementById('terminal-container');
+    term.open(terminalContainer);
+    fitAddon.fit();
+
+    // リサイズ対応
+    window.addEventListener('resize', () => {
+      fitAddon.fit();
+    });
+
+    // WebSocket接続
+    connect();
+
+    function connect() {
+      // ... 既存のWebSocket接続ロジック
+    }
+
+    // ... その他の既存コード
+  }
+
+  // グローバルに公開
+  window.initTerminal = initTerminal;
+  ```
+
+  **ポイント**:
+  - 全てのコードを `initTerminal()` 関数内に移動
+  - `window.initTerminal = initTerminal;` でグローバルに公開
+  - ページロード時には実行されない
+
+  ### 修正2: app.js の認証成功時に呼び出し
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/app.js
+
+  認証成功後（line 99-100付近）に `initTerminal()` を呼び出すにゃ：
+
+  ```javascript
+  // app.js の認証成功後
+  authScreen.classList.add('hidden');
+  mainApp.classList.remove('hidden');
+
+  // ターミナル初期化を追加
+  if (typeof initTerminal === 'function') {
+    initTerminal();
+  }
+  ```
+
+  **ポイント**:
+  - `mainApp.classList.remove('hidden')` の直後に呼び出す
+  - `typeof initTerminal === 'function'` でチェックしてから実行
+
+  ## 動作確認
+
+  修正後、以下を確認するにゃ：
+  1. サーバー再起動（必要なら）
+  2. ブラウザでアクセス（http://localhost:3000）
+  3. パスワード入力 → ログイン成功
+  4. ターミナルUIが正常に表示されること
+  5. WebSocket接続が確立されること
+  6. キー入力が tmux に送信されること
+
+  ## 注意事項
+  - 認証機能（auth.js）は触らない
+  - 既存の Alerts タブ機能は維持
+  - terminal.js の既存ロジックはそのまま（構造だけ変更）
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "public/terminal.js"
+    - "public/app.js"
+  references:
+    - "public/index.html"（参考）
+    - "public/auth.js"（参考、修正不要）
+
+expected_outputs:
+  - "public/terminal.js（initTerminal関数化）"
+  - "public/app.js（認証成功時に呼び出し追加）"
+  - "動作確認完了報告"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - 緊急修正なので最優先で対応するにゃ
+  - サーバー再起動は不要（クライアント側のみ修正）
+  - ブラウザのキャッシュクリアが必要かもにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

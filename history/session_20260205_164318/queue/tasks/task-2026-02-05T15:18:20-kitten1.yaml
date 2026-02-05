@@ -1,0 +1,48 @@
+task_id: "task-2026-02-05T15:18:20-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T15:18:20"
+priority: medium
+load_skills: []
+
+description: |
+  フクロウ自動レビュー改善作戦にゃ。
+
+  ## 問題
+  owl-watcher.sh がレビュー呼び出し時、範囲を指定していないため
+  「レビュー対象の範囲を教えてホー」と質問モードになってしまい、
+  レビューが完了しない。
+
+  ## 作業内容
+  1. owl-watcher.sh を読み取り、レビュー呼び出し部分を特定
+     - codex exec のコマンド実行箇所を探す
+
+  2. レビュー対象を明示的に指定するよう修正（案A推奨）
+     - 変更前：プロンプトに範囲指定なし
+     - 変更後：「git diff HEAD~1 の変更をレビューして」と明示
+
+  3. 動作確認（可能であれば）
+     - 修正後のコマンドが正しく動作するか確認
+     - 実際にフクロウを呼び出すテストはしなくてOK（構文チェックのみ）
+
+  4. 完了報告YAML作成（queue/reports/task-2026-02-05T15:18:20-kitten1.yaml）
+     - skill_candidate セクション必須
+     - owl_review は不要（シェルスクリプト修正のため）
+
+context:
+  related_command: "cmd-20260205T151719"
+  target_file: "owl-watcher.sh"
+  related_issue: "nawabari.md の要対応セクション"
+  recommendation: "案A: git diff を明示的に指定"
+  references:
+    - "owl-watcher.sh"
+    - "nawabari.md"
+
+expected_outputs:
+  - "owl-watcher.sh（レビュー呼び出し改善）"
+  - "完了報告YAML（queue/reports/task-2026-02-05T15:18:20-kitten1.yaml）"
+
+notes: |
+  - Read→Edit の順で実施
+  - 案A推奨：「git diff HEAD~1 の変更をレビューして」
+  - skill_candidate は必ず記入
+  - owl_review は不要（シェルスクリプト修正）

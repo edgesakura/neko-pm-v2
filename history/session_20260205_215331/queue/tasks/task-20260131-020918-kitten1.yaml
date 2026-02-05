@@ -1,0 +1,150 @@
+task_id: "task-20260131-020918-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T02:09:18"
+priority: high
+load_skills: []
+description: |
+  【写真送信機能追加作戦 〜スマホから画像でデバッグ〜】
+
+  ## 概要
+  スマホから撮った写真をchat-appにアップロードし、ボスねこに見せる機能を追加するにゃ
+
+  ## ユースケース
+  - UIの不具合をスクショで報告
+  - エラー画面を撮影して共有
+  - 手書きメモの画像を送る
+
+  ## 技術方針
+  Claude CodeのReadツールは画像ファイルを読める（マルチモーダル）ので：
+  1. フロントエンド: 画像アップロードUI
+  2. バックエンド: 画像受信 → 一時ファイル保存
+  3. ボスねこ通知: 画像パスを含めてsend-keys
+
+  ## 実装内容
+
+  ### 1. フロントエンド（public/）
+
+  #### index.html
+  - 📷ボタンを入力欄の横に追加
+  - ファイル選択用の <input type="file" accept="image/*">
+  - 画像プレビュー用の領域
+
+  #### app.js
+  - ファイル選択イベント処理
+  - 画像プレビュー表示
+  - FormDataでアップロード（/api/uploadにPOST）
+  - アップロード中の進捗表示
+  - アップロード完了/エラー通知
+
+  #### styles.css
+  - 📷ボタンのスタイル（アイコンボタン、ネオングロー）
+  - プレビューエリアのスタイル（ガラスモーフィズム）
+  - アップロード進捗バーのスタイル
+
+  ### 2. バックエンド（server.js）
+
+  #### multer設定
+  - **🚨 重要**: npm install multerが必要にゃ！
+    - **階層化承認フローに従い、ボスねこに承認依頼すること**にゃ！
+    - 承認依頼方法:
+      1. 報告YAMLに `escalation` セクションを記載
+      2. send-keys で番猫に通知（2回ルール）
+      3. 番猫が nawabari.md の「🚨要対応」セクションに記載
+      4. 番猫がボスねこにエスカレ（send-keys）
+      5. ボスねこが判断（技術的な依存関係なので承認するはず）
+      6. ボスねこが番猫に回答
+      7. 番猫が子猫に指示
+
+  #### ファイル保存設定
+  - 保存先: `output/chat-app/uploads/`
+  - ファイル名: `{timestamp}_{original_name}`
+  - ストレージ: ディスク（メモリではなく）
+
+  #### POST /api/upload エンドポイント
+  - multer.single('image') でファイル受信
+  - ファイルサイズチェック（5MB上限）
+  - ファイルタイプチェック（jpg, png, gif, webp のみ）
+  - 認証済みユーザーのみ（sessionCheck ミドルウェア）
+  - ファイル保存後、ボスねこに通知（send-keys）
+
+  ### 3. 通知フロー
+  ```
+  スマホ → POST /api/upload → ファイル保存
+                                ↓
+  ボスねこ ← send-keys "画像が送られたにゃ: {path}"
+  ```
+
+  ### 4. ボスねこ側の処理
+  ボスねこは画像パスを受け取ったら、Readツールで画像を読んで内容を理解
+
+  ## セキュリティ
+  - **画像ファイルのみ許可**: jpg, png, gif, webp
+  - **ファイルサイズ上限**: 5MB
+  - **認証済みユーザーのみ**: sessionCheck ミドルウェア適用
+  - **ファイル名サニタイズ**: タイムスタンプ + オリジナル名
+  - **パストラバーサル対策**: uploadsディレクトリ外への書き込み禁止
+
+  ## ファイル構成
+  ```
+  output/chat-app/
+  ├── uploads/           # 新規: アップロード画像保存先
+  │   └── .gitkeep       # 新規: ディレクトリ維持用
+  ├── server.js          # 改修: multer設定、/api/upload追加
+  ├── public/
+  │   ├── index.html     # 改修: 📷ボタン、プレビュー領域
+  │   ├── app.js         # 改修: アップロード処理、プレビュー表示
+  │   └── styles.css     # 改修: アップロードUI
+  └── package.json       # 改修: multer追加（ボスねこ承認待ち）
+  ```
+
+  ## 実装手順
+  1. uploads/ディレクトリ作成 + .gitkeep
+  2. **npm install multer の承認依頼**（階層化承認フロー）
+     - 報告YAMLに escalation セクション記載
+     - 番猫に通知（send-keys 2回ルール）
+     - 承認待ち
+  3. 承認後、package.jsonに multer 追加（ボスねこがnpm installを実行する想定）
+  4. server.jsにmulter設定、/api/uploadエンドポイント追加
+  5. index.htmlに📷ボタン、プレビュー領域追加
+  6. app.jsにアップロード処理、プレビュー表示追加
+  7. styles.cssにアップロードUIスタイル追加
+  8. 動作確認（ローカルテスト）
+  9. 完了報告YAML作成
+
+  ## 注意事項
+  - **multerのインストールは階層化承認フローに従うこと**にゃ！
+  - セキュリティ制限（ファイルタイプ、サイズ）は必須にゃ
+  - エラーハンドリング（ファイルサイズ超過、タイプ不正）を丁寧に
+  - 既存のチャット機能を壊さないこと
+
+  ## 自律実行範囲
+  - ディレクトリ作成: OK
+  - ファイル作成・編集: OK
+  - npm install multer: **NG（ボスねこ承認必須）**
+
+context:
+  service_name: "chat-app"
+  target_dir: "/home/edgesakura/git/neko-pm/output/chat-app"
+  files_to_modify:
+    - "server.js"
+    - "public/index.html"
+    - "public/app.js"
+    - "public/styles.css"
+  new_files:
+    - "uploads/.gitkeep"
+  dependencies:
+    - name: "multer"
+      reason: "ファイルアップロード処理"
+      approval_required: true
+      escalation_target: "boss-cat"
+
+expected_outputs:
+  - "uploads/ディレクトリ作成"
+  - "uploads/.gitkeep"
+  - "server.js（multer設定、/api/upload追加）"
+  - "public/index.html（📷ボタン、プレビュー領域）"
+  - "public/app.js（アップロード処理、プレビュー表示）"
+  - "public/styles.css（アップロードUIスタイル）"
+  - "package.json（multer追加、ボスねこ承認後）"
+  - "完了報告YAML（queue/reports/report-20260131-020918-kitten1.yaml）"
+  - "multer承認依頼（escalationセクション付き報告YAML）"

@@ -1,0 +1,197 @@
+task_id: "task-2026-02-04T00:13:27-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-04T00:13:27"
+priority: high
+command_id: "cmd-2026-02-04T00:01:13"
+description: |
+  【CLI スキル作成】research-tanuki（研究狸）- Codex CLI用
+
+  ## 🎯 目的
+  ボスねこが specialists を呼び出す際、Codex CLI が research-tanuki ロールを
+  正しく認識して動作するようにする。
+
+  ## 🚨 重要事項
+  - **Claude Code のスキル（.claude/skills/）ではない**
+  - **Codex CLI 自体のスキル機能**を使う
+  - Codex CLI のスキル作成ガイドを必ず参照せよ
+
+  ---
+
+  ## 📚 参照すべき情報（必読）
+
+  ### 1. Codex CLI スキル作成ガイド
+  ```bash
+  # スキル作成ガイドの場所
+  ~/.codex/skills/.system/skill-creator/SKILL.md
+  ```
+
+  ### 2. Codex CLI スキル初期化スクリプト
+  ```bash
+  # init_skill.py の場所
+  ~/.codex/skills/.system/skill-creator/scripts/init_skill.py
+  ```
+
+  ---
+
+  ## 📁 配置先ディレクトリ
+  ```
+  ~/.codex/skills/research-tanuki/
+  ```
+
+  ## 📝 ファイル構成
+
+  ### 必須ファイル
+  1. **SKILL.md**（ロール定義）
+     - name: research-tanuki
+     - description: neko-pm の研究狸。深掘り調査・アーキテクチャ分析・技術判断の専門家。ボスねこの相談相手。
+     - 調査プロセス: 仮説→証拠収集→反証→結論
+     - 出力形式: 調査レポート（エグゼクティブサマリー付き）
+     - 禁止事項: Claude Code仕様で動かない
+
+  2. **agents/openai.yaml**（UIメタデータ）
+     - モデル: gpt-5.2-codex（深い推論用）
+     - 役割: 深掘り調査専門家
+
+  3. **scripts/investigation.py**（仮説→検証→結論プロセス）
+     - 入力: 調査依頼
+     - 処理: 仮説生成 → 証拠収集 → 反証検討 → 結論
+     - 出力: 調査レポート
+
+  4. **references/neko-pm-context.md**（システム説明）
+     - neko-pm の構成（ボスねこ、番猫、子猫、スペシャリスト）
+     - 役割分担
+     - 通信方法（YAML、send-keys）
+
+  ---
+
+  ## 🔧 実装手順
+
+  ### ステップ1: スキル作成ガイドを読む（必須）
+  ```bash
+  # スキル作成ガイドを確認
+  cat ~/.codex/skills/.system/skill-creator/SKILL.md
+
+  # init_skill.py のヘルプを確認
+  python ~/.codex/skills/.system/skill-creator/scripts/init_skill.py --help
+  ```
+
+  ### ステップ2: research-tanuki スキルを初期化
+  ```bash
+  # init_skill.py を使ってスキル雛形を作成
+  python ~/.codex/skills/.system/skill-creator/scripts/init_skill.py \
+    research-tanuki \
+    --path ~/.codex/skills/ \
+    --resources scripts,references
+  ```
+
+  ### ステップ3: SKILL.md を編集
+  ```bash
+  # research-tanuki/SKILL.md を編集
+  # 以下の内容を含める:
+  # - name: research-tanuki
+  # - description: 研究狸の役割説明
+  # - 調査プロセス: 仮説→証拠→反証→結論
+  # - 入力形式: ボスねこからの調査依頼
+  # - 出力形式: 調査レポート（エグゼクティブサマリー付き）
+  # - 禁止事項: Claude Code仕様で動かない
+  ```
+
+  ### ステップ4: agents/openai.yaml を作成
+  ```bash
+  # UIメタデータを作成
+  # - モデル: gpt-5.2-codex
+  # - 役割: 深掘り調査専門家
+  ```
+
+  ### ステップ5: scripts/investigation.py を作成
+  ```bash
+  # 調査プロセススクリプトを作成
+  # - 仮説生成
+  # - 証拠収集
+  # - 反証検討
+  # - 結論導出
+  ```
+
+  ### ステップ6: references/neko-pm-context.md を作成
+  ```bash
+  # neko-pm システムの説明を記述
+  # - ボスねこ、番猫、子猫、スペシャリスト
+  # - 役割分担
+  # - 通信方法
+  ```
+
+  ### ステップ7: スキル検証
+  ```bash
+  # quick_validate.py で検証（存在する場合）
+  python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+    ~/.codex/skills/research-tanuki
+  ```
+
+  ### ステップ8: 配置確認
+  ```bash
+  # スキルディレクトリの構成を確認
+  tree ~/.codex/skills/research-tanuki
+  ```
+
+  ---
+
+  ## ✅ 成果物
+
+  ### 作成するファイル
+  - `~/.codex/skills/research-tanuki/SKILL.md`（ロール定義）
+  - `~/.codex/skills/research-tanuki/agents/openai.yaml`（UIメタデータ）
+  - `~/.codex/skills/research-tanuki/scripts/investigation.py`（調査プロセス）
+  - `~/.codex/skills/research-tanuki/references/neko-pm-context.md`（システム説明）
+
+  ### 配置状態
+  - `~/.codex/skills/research-tanuki/` に上記ファイルが配置される
+
+  ---
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **スキル作成ガイド確認結果**
+  2. **init_skill.py の実行結果**
+  3. **SKILL.md の内容サマリー**
+  4. **agents/openai.yaml の内容**
+  5. **scripts/investigation.py の作成結果**
+  6. **references/neko-pm-context.md の作成結果**
+  7. **quick_validate.py の検証結果**（存在する場合）
+  8. **配置確認結果**（tree出力）
+  9. **skill_candidate の検討**（必須）
+  10. **improvement_proposals の検討**（必須）
+
+  ---
+
+  ## ⚠️ 注意事項
+
+  - ✅ Codex CLI のスキル作成ガイドを必ず読むこと
+  - ✅ init_skill.py の --resources オプションを使うこと
+  - ✅ SKILL.md の内容は neko-pm の役割に合わせること
+  - ✅ 調査プロセス（仮説→証拠→反証→結論）を実装すること
+  - 🚨 Claude Code のスキル（.claude/skills/）ではない！
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  codex_skill_creator: "/home/edgesakura/.codex/skills/.system/skill-creator/"
+  skill_name: "research-tanuki"
+  cli_type: "Codex CLI"
+  role: "研究狸（深掘り調査・技術判断専門家）"
+  model: "gpt-5.2-codex"
+
+expected_outputs:
+  - "~/.codex/skills/research-tanuki/SKILL.md"
+  - "~/.codex/skills/research-tanuki/agents/openai.yaml"
+  - "~/.codex/skills/research-tanuki/scripts/investigation.py"
+  - "~/.codex/skills/research-tanuki/references/neko-pm-context.md"
+  - "完了報告YAML（queue/reports/task-2026-02-04T00:13:27-kitten2.yaml）"
+
+notes: |
+  - 🎯 Codex CLI ネイティブのスキル作成
+  - ✅ スキル作成ガイドを必ず参照
+  - ✅ neko-pm システムの説明を含める
+  - 📝 調査プロセススクリプトを作成（仮説→証拠→反証→結論）
+  - 🚨 Claude Code のスキルではない！
+  - 完了したら必ず番猫に報告するにゃ〜

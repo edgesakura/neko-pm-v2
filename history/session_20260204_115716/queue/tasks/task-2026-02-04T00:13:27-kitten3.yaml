@@ -1,0 +1,198 @@
+task_id: "task-2026-02-04T00:13:27-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-04T00:13:27"
+priority: high
+command_id: "cmd-2026-02-04T00:01:13"
+description: |
+  【CLI スキル作成】owl-reviewer（目利きフクロウ）- Codex CLI用
+
+  ## 🎯 目的
+  ボスねこが specialists を呼び出す際、Codex CLI が owl-reviewer ロールを
+  正しく認識して動作するようにする。
+
+  ## 🚨 重要事項
+  - **Claude Code のスキル（.claude/skills/）ではない**
+  - **Codex CLI 自体のスキル機能**を使う
+  - Codex CLI のスキル作成ガイドを必ず参照せよ
+
+  ---
+
+  ## 📚 参照すべき情報（必読）
+
+  ### 1. Codex CLI スキル作成ガイド
+  ```bash
+  # スキル作成ガイドの場所
+  ~/.codex/skills/.system/skill-creator/SKILL.md
+  ```
+
+  ### 2. Codex CLI スキル初期化スクリプト
+  ```bash
+  # init_skill.py の場所
+  ~/.codex/skills/.system/skill-creator/scripts/init_skill.py
+  ```
+
+  ---
+
+  ## 📁 配置先ディレクトリ
+  ```
+  ~/.codex/skills/owl-reviewer/
+  ```
+
+  ## 📝 ファイル構成
+
+  ### 必須ファイル
+  1. **SKILL.md**（ロール定義）
+     - name: owl-reviewer
+     - description: neko-pm の目利きフクロウ。コードレビュー・セキュリティ監査の専門家。
+     - チェック項目: OWASP Top 10、コーディング規約、パフォーマンス
+     - 出力形式: レビューレポート（重要度別: CRITICAL/HIGH/MEDIUM/LOW）
+     - 禁止事項: Claude Code仕様で動かない
+
+  2. **agents/openai.yaml**（UIメタデータ）
+     - モデル: codex-mini-latest（o4-mini）
+     - 役割: コードレビュー専門家
+
+  3. **scripts/security_check.py**（セキュリティチェック）
+     - 入力: コードファイルパス
+     - 処理: OWASP Top 10 チェック、コーディング規約チェック
+     - 出力: レビューレポート（重要度別）
+
+  4. **references/security-checklist.md**（セキュリティチェックリスト）
+     - OWASP Top 10
+     - コーディング規約
+     - パフォーマンスチェック項目
+
+  ---
+
+  ## 🔧 実装手順
+
+  ### ステップ1: スキル作成ガイドを読む（必須）
+  ```bash
+  # スキル作成ガイドを確認
+  cat ~/.codex/skills/.system/skill-creator/SKILL.md
+
+  # init_skill.py のヘルプを確認
+  python ~/.codex/skills/.system/skill-creator/scripts/init_skill.py --help
+  ```
+
+  ### ステップ2: owl-reviewer スキルを初期化
+  ```bash
+  # init_skill.py を使ってスキル雛形を作成
+  python ~/.codex/skills/.system/skill-creator/scripts/init_skill.py \
+    owl-reviewer \
+    --path ~/.codex/skills/ \
+    --resources scripts,references
+  ```
+
+  ### ステップ3: SKILL.md を編集
+  ```bash
+  # owl-reviewer/SKILL.md を編集
+  # 以下の内容を含める:
+  # - name: owl-reviewer
+  # - description: 目利きフクロウの役割説明
+  # - チェック項目: OWASP Top 10、コーディング規約、パフォーマンス
+  # - 入力形式: コードファイルパス or git diff
+  # - 出力形式: レビューレポート（重要度別）
+  # - 禁止事項: Claude Code仕様で動かない
+  ```
+
+  ### ステップ4: agents/openai.yaml を作成
+  ```bash
+  # UIメタデータを作成
+  # - モデル: codex-mini-latest（o4-mini）
+  # - 役割: コードレビュー専門家
+  ```
+
+  ### ステップ5: scripts/security_check.py を作成
+  ```bash
+  # セキュリティチェックスクリプトを作成
+  # - OWASP Top 10 チェック
+  # - コーディング規約チェック
+  # - パフォーマンスチェック
+  # - 出力: 重要度別レポート（CRITICAL/HIGH/MEDIUM/LOW）
+  ```
+
+  ### ステップ6: references/security-checklist.md を作成
+  ```bash
+  # セキュリティチェックリストを作成
+  # - OWASP Top 10 の詳細
+  # - コーディング規約
+  # - パフォーマンスチェック項目
+  ```
+
+  ### ステップ7: スキル検証
+  ```bash
+  # quick_validate.py で検証（存在する場合）
+  python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+    ~/.codex/skills/owl-reviewer
+  ```
+
+  ### ステップ8: 配置確認
+  ```bash
+  # スキルディレクトリの構成を確認
+  tree ~/.codex/skills/owl-reviewer
+  ```
+
+  ---
+
+  ## ✅ 成果物
+
+  ### 作成するファイル
+  - `~/.codex/skills/owl-reviewer/SKILL.md`（ロール定義）
+  - `~/.codex/skills/owl-reviewer/agents/openai.yaml`（UIメタデータ）
+  - `~/.codex/skills/owl-reviewer/scripts/security_check.py`（セキュリティチェック）
+  - `~/.codex/skills/owl-reviewer/references/security-checklist.md`（チェックリスト）
+
+  ### 配置状態
+  - `~/.codex/skills/owl-reviewer/` に上記ファイルが配置される
+
+  ---
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **スキル作成ガイド確認結果**
+  2. **init_skill.py の実行結果**
+  3. **SKILL.md の内容サマリー**
+  4. **agents/openai.yaml の内容**
+  5. **scripts/security_check.py の作成結果**
+  6. **references/security-checklist.md の作成結果**
+  7. **quick_validate.py の検証結果**（存在する場合）
+  8. **配置確認結果**（tree出力）
+  9. **skill_candidate の検討**（必須）
+  10. **improvement_proposals の検討**（必須）
+
+  ---
+
+  ## ⚠️ 注意事項
+
+  - ✅ Codex CLI のスキル作成ガイドを必ず読むこと
+  - ✅ init_skill.py の --resources オプションを使うこと
+  - ✅ SKILL.md の内容は neko-pm の役割に合わせること
+  - ✅ OWASP Top 10 のチェック項目を含めること
+  - ✅ 重要度別レポート形式（CRITICAL/HIGH/MEDIUM/LOW）を実装すること
+  - 🚨 Claude Code のスキル（.claude/skills/）ではない！
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  codex_skill_creator: "/home/edgesakura/.codex/skills/.system/skill-creator/"
+  skill_name: "owl-reviewer"
+  cli_type: "Codex CLI"
+  role: "目利きフクロウ（コードレビュー・セキュリティ監査専門家）"
+  model: "codex-mini-latest（o4-mini）"
+
+expected_outputs:
+  - "~/.codex/skills/owl-reviewer/SKILL.md"
+  - "~/.codex/skills/owl-reviewer/agents/openai.yaml"
+  - "~/.codex/skills/owl-reviewer/scripts/security_check.py"
+  - "~/.codex/skills/owl-reviewer/references/security-checklist.md"
+  - "完了報告YAML（queue/reports/task-2026-02-04T00:13:27-kitten3.yaml）"
+
+notes: |
+  - 🎯 Codex CLI ネイティブのスキル作成
+  - ✅ スキル作成ガイドを必ず参照
+  - ✅ OWASP Top 10 チェック項目を含める
+  - 📝 セキュリティチェックスクリプトを作成
+  - 🚨 Claude Code のスキルではない！
+  - 完了したら必ず番猫に報告するにゃ〜

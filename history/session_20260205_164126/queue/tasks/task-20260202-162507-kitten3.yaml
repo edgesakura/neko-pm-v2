@@ -1,0 +1,226 @@
+task_id: "task-20260202-162507-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T16:25:07"
+priority: urgent
+command_id: "cmd-20260202-162406"
+description: |
+  【🚨緊急バグ修正】chat-app 写真送信＆ページ遷移の問題
+
+  ## ご主人からの報告
+  1. **📷 写真をsendしても送られない**
+  2. **🔄 ページも遷移しない**
+
+  ## 調査＆修正タスク
+
+  ### フェーズ1: 原因調査（必須）
+
+  #### 1-1. server.log でエラー確認
+  ```bash
+  tail -100 /home/edgesakura/git/neko-pm/output/chat-app/server.log
+  ```
+  - エラーログがないか確認
+  - /api/boss-chat へのリクエストが来ているか確認
+  - multer のエラーがないか確認
+
+  #### 1-2. terminal.js の send-btn ハンドラー確認
+  **ファイル**: `/home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js`
+
+  確認ポイント：
+  - `send-btn` の `addEventListener` が正しく設定されているか
+  - `screenshot-input` の `files[0]` が取得できているか
+  - `FormData` の構築が正しいか
+  - `fetch('/api/boss-chat', { ... })` の設定が正しいか
+  - 認証トークン（Authorization ヘッダー）が送信されているか
+  - レスポンスの処理（成功時・エラー時）が正しいか
+
+  #### 1-3. server.js の /api/boss-chat エンドポイント確認
+  **ファイル**: `/home/edgesakura/git/neko-pm/output/chat-app/server.js`
+
+  確認ポイント：
+  - `/api/boss-chat` エンドポイントが存在するか
+  - `sessionCheck` ミドルウェアが正しく動作しているか
+  - `multer` の `upload.single('image')` が正しく設定されているか
+  - リクエストボディの取得（`req.body.message`、`req.file`）が正しいか
+  - レスポンスの返却が正しいか
+
+  ### フェーズ2: バグ修正
+
+  #### 調査結果に基づいて修正を実施
+
+  **よくあるバグパターン**:
+  1. **send-btn のイベントリスナーが重複登録されている**
+     - 解決：既存のリスナーを削除してから再登録
+     - または：`addEventListener` の前に `removeEventListener`
+
+  2. **FormData の構築ミス**
+     - 解決：`formData.append('image', file)` が正しいか確認
+     - 解決：`formData.append('message', messageText)` が正しいか確認
+
+  3. **fetch のヘッダー設定ミス**
+     - 解決：`Authorization: Bearer ${token}` が正しいか確認
+     - ⚠️ 注意：`Content-Type` は **設定しない**（multipart/form-data は自動設定）
+
+  4. **エラーハンドリングの不備**
+     - 解決：`catch` ブロックで適切にエラーを処理
+     - 解決：ユーザーにエラーメッセージを表示
+
+  5. **送信成功後の処理が実装されていない**
+     - 解決：送信成功時に画像プレビューをクリア
+     - 解決：送信成功時に input をリセット
+     - 解決：送信成功時にメッセージを表示（例：「送信しました」）
+
+  #### 修正例（terminal.js）
+
+  ```javascript
+  // send-btn のイベントリスナー（重複登録を防ぐ）
+  const sendBtn = document.getElementById('send-btn');
+  if (sendBtn && !sendBtn.dataset.listenerAdded) {
+    sendBtn.addEventListener('click', async () => {
+      const screenshotInput = document.getElementById('screenshot-input');
+      const chatInput = document.getElementById('chat-input');
+
+      const file = screenshotInput?.files[0];
+      const messageText = chatInput?.value || '';
+
+      // 画像もメッセージもない場合は何もしない
+      if (!file && !messageText.trim()) {
+        console.log('No image or message to send');
+        return;
+      }
+
+      // FormData 構築
+      const formData = new FormData();
+      if (file) {
+        formData.append('image', file);
+      }
+      if (messageText.trim()) {
+        formData.append('message', messageText);
+      }
+
+      try {
+        // 認証トークン取得
+        const token = sessionStorage.getItem('auth_token');
+        if (!token) {
+          alert('認証トークンがありません。再ログインしてください。');
+          return;
+        }
+
+        // 送信
+        const response = await fetch('/api/boss-chat', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+            // Content-Type は設定しない（FormData が自動設定）
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('送信成功:', data);
+
+          // 送信成功後の処理
+          // 1. プレビュークリア
+          const previewContainer = document.getElementById('image-preview-container');
+          if (previewContainer) {
+            previewContainer.remove();
+          }
+
+          // 2. input リセット
+          if (screenshotInput) {
+            screenshotInput.value = '';
+          }
+          if (chatInput) {
+            chatInput.value = '';
+          }
+
+          // 3. ユーザーにフィードバック（オプション）
+          // alert('送信しました！');
+
+          // 4. チャットメッセージエリアに追加（オプション）
+          const chatMessages = document.getElementById('chat-messages');
+          if (chatMessages) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message';
+            msgDiv.textContent = `${messageText || '画像を送信しました'}`;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } else {
+          console.error('送信失敗:', data.error);
+          alert(`送信失敗: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('送信エラー:', error);
+        alert(`送信エラー: ${error.message}`);
+      }
+    });
+
+    // 重複登録を防ぐフラグ
+    sendBtn.dataset.listenerAdded = 'true';
+  }
+  ```
+
+  ### フェーズ3: サーバー再起動＆動作確認
+
+  #### 3-1. サーバー再起動
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（3秒待機）
+  sleep 3
+  tail -20 server.log
+  ```
+
+  #### 3-2. 動作確認手順（ログに記載）
+  報告YAMLに以下を記載：
+  1. ブラウザで http://localhost:3000 にアクセス
+  2. ログイン
+  3. 📷 ボタンをクリックして画像を選択
+  4. 送信ボタンをクリック
+  5. 期待される動作：
+     - 画像が /api/boss-chat に送信される
+     - プレビューがクリアされる
+     - input がリセットされる
+     - チャットエリアにメッセージが追加される（実装した場合）
+
+  ### 成果物
+  - 修正済みファイル（terminal.js または server.js）
+  - server.log の最後の20行
+  - 動作確認手順
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ### 注意事項
+  - 最小限の修正にとどめること（既存機能を壊さない）
+  - エラーハンドリングを適切に実装すること
+  - ユーザーへのフィードバックを忘れずに
+  - 完了したら queue/reports/ に報告YAML作成にゃ
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "public/terminal.js"
+    - "server.js"
+    - "server.log"
+  references:
+    - "前回のタスク: task-20260202-152656-kitten3（画像アップロード実装）"
+
+expected_outputs:
+  - "バグの原因特定レポート"
+  - "修正済み terminal.js または server.js"
+  - "サーバー再起動完了（server.log 最後の20行）"
+  - "動作確認手順"
+  - "完了報告YAML（queue/reports/task-20260202-162507-kitten3.yaml）"
+
+notes: |
+  - 🚨 緊急バグ修正タスクにゃ
+  - ご主人が待っているので迅速に対応するにゃ
+  - 調査→修正→検証の順序で進めるにゃ
+  - 完了したら必ず番猫に報告するにゃ〜

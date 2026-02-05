@@ -1,0 +1,108 @@
+# 子猫2へのタスク配分
+task_id: "task-2026-02-04T00:59:41-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-04T00:59:41"
+priority: high
+operation_id: "cmd-2026-02-04T00:56:23"
+skill_load: []
+
+description: |
+  shuugou.sh のセキュリティ脆弱性を修正するにゃ。
+
+  **目的**：入力バリデーション不足を修正して、不正な値を拒否するにゃ。
+
+context:
+  target_file: "/home/edgesakura/git/neko-pm/shuugou.sh"
+  vulnerability_type: "入力バリデーション不足"
+  detection_source: "目利きフクロウ（2026-02-04T00:08:36）"
+
+  medium_issue:
+    title: "WORKERS変数の整数チェックなし"
+    description: |
+      WORKERS変数が整数であることをチェックしていないため、
+      不正な値（文字列、負数等）が入る可能性があるにゃ。
+
+    current_code: |
+      # 現在の脆弱なコード（推測）
+      WORKERS=$1
+      # そのまま使用（検証なし）
+
+    fix_strategy: |
+      1. WORKERS変数の整数チェック
+      2. 引数の存在チェック
+      3. 範囲チェック（0以上、妥当な上限）
+
+      例：
+      # 引数の存在チェック
+      if [ -z "$1" ]; then
+        echo "Usage: $0 <WORKERS>" >&2
+        exit 1
+      fi
+
+      WORKERS=$1
+
+      # 整数チェック
+      if ! [[ "$WORKERS" =~ ^[0-9]+$ ]]; then
+        echo "Error: WORKERS must be a positive integer" >&2
+        exit 1
+      fi
+
+      # 範囲チェック（例：0〜10）
+      if [ "$WORKERS" -lt 0 ] || [ "$WORKERS" -gt 10 ]; then
+        echo "Error: WORKERS must be between 0 and 10" >&2
+        exit 1
+      fi
+
+  additional_check:
+    title: "引数欠落時のエラーハンドリング強化"
+    description: |
+      引数が不足している場合のエラーメッセージを改善するにゃ。
+
+task_steps:
+  step1:
+    action: "shuugou.sh を読み取って現状を把握するにゃ"
+    command: "Read tool で /home/edgesakura/git/neko-pm/shuugou.sh を読む"
+
+  step2:
+    action: "WORKERS変数の検証ロジックを追加するにゃ"
+    details: |
+      - 引数の存在チェック
+      - 整数チェック（正規表現）
+      - 範囲チェック（妥当な上限設定）
+
+  step3:
+    action: "エラーハンドリングを強化するにゃ"
+    details: |
+      - 分かりやすいエラーメッセージ
+      - 使用方法（Usage）の表示
+
+  step4:
+    action: "shellcheck で検証するにゃ"
+    command: "shellcheck /home/edgesakura/git/neko-pm/shuugou.sh"
+
+  step5:
+    action: "不正な入力パターンでテストするにゃ"
+    test_cases:
+      - "shuugou.sh（引数なし）"
+      - "shuugou.sh abc（文字列）"
+      - "shuugou.sh -1（負数）"
+      - "shuugou.sh 100（上限超え）"
+      - "shuugou.sh 3（正常値）"
+    expected: |
+      - 引数なし、文字列、負数、上限超え → エラーで終了
+      - 正常値 → 成功
+
+  step6:
+    action: "修正結果を報告するにゃ"
+
+expected_outputs:
+  - "/home/edgesakura/git/neko-pm/shuugou.sh（修正済み）"
+  - "shellcheck検証結果"
+  - "不正な入力テスト結果"
+
+dependencies: []
+
+notes: |
+  - WORKERSの妥当な上限を考慮するにゃ（例：0〜10）
+  - エラーメッセージは明確で分かりやすくするにゃ
+  - 既存の機能を壊さないように注意するにゃ〜

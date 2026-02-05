@@ -1,0 +1,114 @@
+task_id: "task-2026-02-05T15:52:21-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T15:52:21"
+priority: high
+load_skills: []
+
+description: |
+  # neko-pm 改善計画 Phase 2-1+2-3: 品質ゲート導入（統合タスク）
+
+  **背景**: Phase 1（レート制限対策）完了。Phase 2 は「事後→事前」の品質ゲートを導入するにゃ。
+
+  **番猫の判断**: Task 2-1 と Task 2-3 が guard-cat.md を編集するため、
+  RACE-001（同一ファイル書き込み禁止）に従い統合したにゃ。
+
+  ## 作業内容
+
+  instructions/ 配下の3ファイルに品質ゲート関連のセクションを追加するにゃ：
+
+  ### ファイル1: instructions/kitten.md（事前検証チェックリスト）
+
+  ファイル末尾（「レート制限対応ルール」の後）に以下を追加：
+
+  ```markdown
+  ## 🔍 事前検証チェックリスト（完了前必須）
+
+  タスク完了を報告する前に、以下を必ず確認するにゃ：
+
+  ### コード変更の場合
+  - [ ] 構文チェック通過（bash -n / tsc --noEmit 等）
+  - [ ] 既存機能を壊していない（関連ファイル確認）
+  - [ ] セキュリティリスクなし（ハードコード秘密、injection等）
+
+  ### ドキュメント変更の場合
+  - [ ] 内容が正確（事実確認済み）
+  - [ ] フォーマット統一（既存スタイルに合致）
+
+  ### 全タスク共通
+  - [ ] タスク目的を達成している
+  - [ ] 副作用がない or 副作用を明記
+
+  **チェック未完了での完了報告は禁止にゃ。**
+  ```
+
+  ### ファイル2: instructions/guard-cat.md（レビューチェックポイント + TaskUpdate追跡ルール）
+
+  ファイル末尾（「レート制限対応ルール」の後）に以下の2セクションを追加：
+
+  ```markdown
+  ## 🔍 レビュー時のチェックポイント
+
+  子猫からの完了報告を受けたら、以下を確認するにゃ：
+
+  1. **事前チェックリスト確認**: 子猫がチェックリストを実施したか
+  2. **タスク目的達成**: expected_outputs と実際の成果物が一致するか
+  3. **副作用確認**: 予期しない変更がないか
+
+  チェックリスト未実施の報告は差し戻すにゃ。
+
+  ## 📊 タスク追跡ルール（TaskUpdate）
+
+  大きなタスクは TaskCreate/TaskUpdate で進捗を追跡するにゃ：
+
+  1. **タスク開始時**: status を `in_progress` に更新
+  2. **中間報告時**: description に進捗を追記
+  3. **完了時**: status を `completed` に更新
+  4. **中断時**: 現在の状態を description に保存
+
+  これにより、セッション中断後も状態を復元できるにゃ。
+  ```
+
+  ### ファイル3: instructions/boss-cat.md（TaskUpdate追跡ルール）
+
+  ファイル末尾（「レート制限対応ルール」の後）に以下を追加：
+
+  ```markdown
+  ## 📊 タスク追跡ルール（TaskUpdate）
+
+  大きなタスクは TaskCreate/TaskUpdate で進捗を追跡するにゃ：
+
+  1. **タスク開始時**: status を `in_progress` に更新
+  2. **中間報告時**: description に進捗を追記
+  3. **完了時**: status を `completed` に更新
+  4. **中断時**: 現在の状態を description に保存
+
+  これにより、セッション中断後も状態を復元できるにゃ。
+  ```
+
+  ## 完了報告
+  - queue/reports/task-2026-02-05T15:52:21-kitten1.yaml を作成
+  - skill_candidate セクション必須
+  - owl_review は不要（ドキュメント修正のため）
+
+context:
+  related_command: "cmd-20260205T155040"
+  phase: "2/4"
+  source: "Claude Code インサイト + 研究狸分析"
+  race_condition_avoided: "Task 2-1 と 2-3 を統合して競合回避"
+  references:
+    - "instructions/kitten.md"
+    - "instructions/guard-cat.md"
+    - "instructions/boss-cat.md"
+
+expected_outputs:
+  - "instructions/kitten.md（事前検証チェックリスト追加）"
+  - "instructions/guard-cat.md（レビューチェックポイント + TaskUpdate追跡ルール追加）"
+  - "instructions/boss-cat.md（TaskUpdate追跡ルール追加）"
+  - "完了報告YAML（queue/reports/task-2026-02-05T15:52:21-kitten1.yaml）"
+
+notes: |
+  - Read→Edit の順で実施
+  - 3ファイルをまとめて編集
+  - ドキュメント修正のため構文チェック不要
+  - skill_candidate は必ず記入
+  - owl_review は不要

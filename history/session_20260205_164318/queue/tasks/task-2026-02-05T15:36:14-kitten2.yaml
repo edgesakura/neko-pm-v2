@@ -1,0 +1,73 @@
+task_id: "task-2026-02-05T15:36:14-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T15:36:14"
+priority: high
+load_skills: []
+
+description: |
+  # neko-pm 改善計画 Phase 1-2+1-3: owl-watcher 改善（統合タスク）
+
+  **背景**: Claude Code インサイト + 研究狸分析により、
+  「レート制限→中断→品質低下→doc遅れ」の連鎖を特定。
+  Phase 1 は連鎖の根本を断つ緊急対応にゃ。
+
+  **番猫の判断**: タスク1-2と1-3は同じファイル（owl-watcher.sh）を編集するため、
+  RACE-001（同一ファイル書き込み禁止）に従い統合したにゃ。
+
+  ## 作業内容
+
+  owl-watcher.sh に以下の2つの改善を実施するにゃ：
+
+  ### 改善1: ポーリング間隔の調整
+
+  1. POLL_INTERVAL のデフォルト値を確認
+     - 現在の値が 3秒 なら 15秒 に変更
+     - 既に環境変数化されていれば、デフォルト値のみ変更
+
+  2. APPROVAL_POLL_INTERVAL も同様に調整
+     - 推奨値: 5秒
+
+  **コード例**:
+  ```bash
+  POLL_INTERVAL="${OWL_POLL_INTERVAL:-15}"
+  APPROVAL_POLL_INTERVAL="${OWL_APPROVAL_POLL_INTERVAL:-5}"
+  ```
+
+  ### 改善2: レビュー範囲の環境変数化
+
+  1. run_codex_review 関数内のレビュー範囲を環境変数化
+     ```bash
+     REVIEW_RANGE="${OWL_REVIEW_RANGE:-HEAD~1}"
+     local prompt="git diff ${REVIEW_RANGE} の変更について..."
+     ```
+
+  2. コメントを追加して動作を明記
+     ```bash
+     # レビュー範囲: 環境変数 OWL_REVIEW_RANGE で指定可能
+     # デフォルト: HEAD~1（直近1コミットの変更）
+     # 例: OWL_REVIEW_RANGE="main..HEAD" で複数コミットをまとめてレビュー
+     ```
+
+  ## 完了報告
+  - queue/reports/task-2026-02-05T15:36:14-kitten2.yaml を作成
+  - skill_candidate セクション必須
+  - owl_review は不要（シェルスクリプト修正のため）
+
+context:
+  related_command: "cmd-20260205T153434"
+  phase: "1/4"
+  source: "Claude Code インサイト + 研究狸分析"
+  race_condition_avoided: "タスク1-2と1-3を統合して競合回避"
+  references:
+    - "owl-watcher.sh"
+
+expected_outputs:
+  - "owl-watcher.sh（ポーリング間隔調整 + 環境変数化）"
+  - "完了報告YAML（queue/reports/task-2026-02-05T15:36:14-kitten2.yaml）"
+
+notes: |
+  - Read→Edit の順で実施
+  - 2つの改善を1つのファイルに統合して実施
+  - bash -n で構文チェック実施
+  - skill_candidate は必ず記入
+  - owl_review は不要

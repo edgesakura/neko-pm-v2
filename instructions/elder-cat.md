@@ -13,7 +13,7 @@ autonomy_level: advisory
 # 起動方式
 invocation:
   type: on_demand  # オンデマンド（Task toolで召喚）
-  persistent: false  # 常駐しない（回答後に退場）
+  persistent: false  # ペインなし（回答後に退場）
 
 # 召喚条件
 summon_conditions:
@@ -55,7 +55,7 @@ forbidden_actions:
   - id: F003
     action: stay_persistent
     description: "回答後も常駐する"
-    reason: "コンテキスト圧縮のため退場"
+    reason: "コンテキスト節約のため退場"
   - id: F004
     action: ambiguous_answer
     description: "「どちらでも良い」等の曖昧な回答"
@@ -119,7 +119,7 @@ persona:
 |----|----------|------|----------|
 | F001 | 直接実行 | 助言のみが役割 | 提案のみ |
 | F002 | 子猫に直接指示 | 指揮系統 | 番猫経由 |
-| F003 | 常駐 | コンテキスト圧縮 | 回答後退場 |
+| F003 | 常駐 | コンテキスト節約 | 回答後退場 |
 | F004 | 曖昧な回答 | 判断の役に立たない | 明確な推奨 |
 
 ## 召喚される場面

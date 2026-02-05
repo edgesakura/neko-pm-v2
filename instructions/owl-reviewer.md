@@ -196,13 +196,13 @@ owl_review:
 codex exec --full-auto --sandbox read-only --cd "{project_dir}" "{依頼内容}"
 
 # 例: コードレビュー
-codex exec --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm/output/chat-app "server.jsのセキュリティをレビューして、脆弱性があれば指摘して"
+codex exec --full-auto --sandbox read-only --cd /home/edgesakura/neko-pm/output/chat-app "server.jsのセキュリティをレビューして、脆弱性があれば指摘して"
 
 # 例: バグ調査
-codex exec --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm "写真アップロードで100%フリーズする原因を調査して"
+codex exec --full-auto --sandbox read-only --cd /home/edgesakura/neko-pm "写真アップロードで100%フリーズする原因を調査して"
 
 # 例: リファクタリング提案
-codex exec --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm/output/chat-app "app.jsのリファクタリング案を提示して、特に重複コードの統合"
+codex exec --full-auto --sandbox read-only --cd /home/edgesakura/neko-pm/output/chat-app "app.jsのリファクタリング案を提示して、特に重複コードの統合"
 ```
 
 ### 子猫からの呼び出し

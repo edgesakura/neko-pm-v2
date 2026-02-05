@@ -1,0 +1,109 @@
+task_id: "task-2026-02-05T15:52:21-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T15:52:21"
+priority: high
+load_skills: []
+
+description: |
+  # neko-pm 改善計画 Phase 2-2: タスクYAML検証条件テンプレート
+
+  **背景**: Phase 2 は「事後→事前」の品質ゲートを導入するにゃ。
+  このタスクではタスクYAMLの標準テンプレートを作成するにゃ。
+
+  ## 作業内容
+
+  queue/templates/task-template.yaml を新規作成するにゃ。
+
+  ### テンプレート内容
+
+  ```yaml
+  task_id: "task-{timestamp}-{kitten}"
+  assigned_to: "kitten1"
+  timestamp: "{ISO 8601 timestamp}"
+  priority: high | medium | low
+  load_skills: []
+
+  description: |
+    # タスク名
+
+    **背景**: [タスクの背景・目的]
+
+    ## 作業内容
+
+    [具体的な作業内容を記述]
+
+    ## 完了報告
+    - queue/reports/task-{timestamp}-{kitten}.yaml を作成
+    - skill_candidate セクション必須
+    - owl_review は必要に応じて実施
+
+  context:
+    related_command: "{command_id}"
+    phase: "{phase}"
+    references:
+      - "参照ファイル1"
+      - "参照ファイル2"
+
+  expected_outputs:
+    - "成果物1"
+    - "成果物2"
+
+  # 🔍 検証条件（Phase 2 で追加）
+  expected_checks:
+    - "構文チェック通過"
+    - "既存機能への影響なし"
+    - "セキュリティリスクなし"
+
+  # 🎯 受け入れ基準（Phase 2 で追加）
+  acceptance_criteria:
+    - "〇〇が動作すること"
+    - "〇〇が表示されること"
+    - "〇〇がエラーにならないこと"
+
+  notes: |
+    - 作業上の注意事項を記載
+    - skill_candidate は必ず記入
+    - owl_review の要否を明記
+  ```
+
+  ### ディレクトリ作成
+
+  queue/templates/ ディレクトリが存在しない場合は作成するにゃ：
+
+  ```bash
+  mkdir -p queue/templates
+  ```
+
+  ## 完了報告
+  - queue/reports/task-2026-02-05T15:52:21-kitten2.yaml を作成
+  - skill_candidate セクション必須
+  - owl_review は不要（YAMLテンプレート作成のため）
+
+context:
+  related_command: "cmd-20260205T155040"
+  phase: "2/4"
+  source: "Claude Code インサイト + 研究狸分析"
+  references:
+    - "queue/tasks/"
+
+expected_outputs:
+  - "queue/templates/task-template.yaml（新規作成）"
+  - "完了報告YAML（queue/reports/task-2026-02-05T15:52:21-kitten2.yaml）"
+
+# 🔍 検証条件
+expected_checks:
+  - "queue/templates/ ディレクトリが作成されている"
+  - "task-template.yaml が正しいYAMLフォーマット"
+  - "expected_checks と acceptance_criteria フィールドが含まれている"
+
+# 🎯 受け入れ基準
+acceptance_criteria:
+  - "task-template.yaml が存在すること"
+  - "YAMLパーサーでエラーが出ないこと"
+  - "必須フィールドが全て含まれていること"
+
+notes: |
+  - Write ツールで新規ファイル作成
+  - YAMLフォーマットに注意
+  - skill_candidate は必ず記入
+  - owl_review は不要

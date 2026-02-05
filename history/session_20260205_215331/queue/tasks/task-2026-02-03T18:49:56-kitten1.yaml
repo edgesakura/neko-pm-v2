@@ -1,0 +1,43 @@
+task_id: "task-2026-02-03T18:49:56-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-03T18:49:56"
+priority: high
+load_skills: []
+
+description: |
+  【Geminiスキル新規作成】
+
+  賢者キツネ（Gemini 3 Pro）を活用するための新規スキルを作成するにゃ。
+
+  ## 成果物
+  `/home/edgesakura/git/.claude/skills/gemini/SKILL.md`（新規作成）
+
+  ## 要件
+  1. YAML Front Matter を含める（name, description, allowed-tools）
+  2. トリガー（"gemini", "リサーチ", "調査して", "/gemini"など）
+  3. 実行コマンド（gemini-cli の使い方）
+  4. パラメータ説明
+  5. 使用例（リサーチ、トレンド調査、概要把握）
+  6. 使用場面（どういう時に呼ぶべきか）
+  7. 賢者キツネとの連携方法
+
+  ## 参照資料
+  - `/home/edgesakura/git/.claude/skills/codex/SKILL.md`（フォーマット参考）
+  - `/home/edgesakura/git/.claude/skills/datadog/SKILL.md`（フォーマット参考）
+  - `/home/edgesakura/git/neko-pm/instructions/boss-cat.md`（使い分け基準）
+
+  ## 注意事項
+  - 既存スキルファイルと統一フォーマットで作成するにゃ
+  - gemini-cli の実際のコマンド形式を確認してから記述するにゃ
+  - 具体的な使用例を含めて実用的にするにゃ
+
+context:
+  project_root: "/home/edgesakura/git"
+  references:
+    - "/home/edgesakura/git/.claude/skills/codex/SKILL.md"
+    - "/home/edgesakura/git/.claude/skills/datadog/SKILL.md"
+    - "/home/edgesakura/git/neko-pm/instructions/boss-cat.md"
+
+expected_outputs:
+  - "/home/edgesakura/git/.claude/skills/gemini/SKILL.md（新規作成）"
+  - "レポートYAML: queue/reports/report-2026-02-03T18:49:56-kitten1.yaml"

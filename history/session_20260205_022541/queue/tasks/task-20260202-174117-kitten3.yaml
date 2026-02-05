@@ -1,0 +1,205 @@
+task_id: "task-20260202-174117-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T17:41:17"
+priority: urgent
+command_id: "cmd-20260202-174005"
+description: |
+  【🚨追加修正】app.js の関数内でも変数を使っている
+
+  ## 新しいエラー（ご主人報告）
+
+  ```
+  app.js:858 ReferenceError: messageInput is not defined
+  app.js:403 ReferenceError: messagesContainer is not defined (addSystemMessage)
+  app.js:480 ReferenceError: statusBoard is not defined (updateSystemStatus)
+  app.js:278 ReferenceError: messagesContainer is not defined (handleClaudeResponse)
+  ```
+
+  ## 問題
+
+  前回、変数定義をコメントアウトしたが、**関数内でその変数を使っている箇所が残っている**にゃ。
+
+  変数定義がコメントアウトされているので、その変数を使っている関数が
+  ReferenceErrorを起こしているにゃ〜。
+
+  ## 修正タスク
+
+  以下の関数を**まるごとコメントアウト**するにゃ：
+
+  ### 🔧 ステップ1: エラー箇所の確認
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  grep -n "messageInput\|messagesContainer\|statusBoard" public/app.js | grep -v "^[[:space:]]*//\|^[[:space:]]*/\*"
+  ```
+
+  ### 🔧 ステップ2: 関数定義の確認
+
+  ```bash
+  grep -n "function addSystemMessage\|function updateSystemStatus\|function handleClaudeResponse" public/app.js
+  ```
+
+  ### 🔧 ステップ3: 修正対象（4つの関数 + 1行）
+
+  #### 1. addSystemMessage関数（line 403付近）
+
+  ```bash
+  sed -n '395,415p' public/app.js
+  ```
+
+  **対応**: 関数全体を `/* ... */` でコメントアウト
+
+  ```javascript
+  // 修正前
+  function addSystemMessage(text) {
+    const messageEl = createMessageElement('system', text);
+    if (messagesContainer) {
+      messagesContainer.appendChild(messageEl);
+      scrollToBottom();
+    }
+    addToHistory('system', text);
+  }
+
+  // 修正後
+  /*
+  function addSystemMessage(text) {
+    const messageEl = createMessageElement('system', text);
+    if (messagesContainer) {
+      messagesContainer.appendChild(messageEl);
+      scrollToBottom();
+    }
+    addToHistory('system', text);
+  }
+  */ // タブUI化で不要（terminal.jsが管理）
+  ```
+
+  #### 2. updateSystemStatus関数（line 480付近）
+
+  ```bash
+  sed -n '475,495p' public/app.js
+  ```
+
+  **対応**: 関数全体を `/* ... */` でコメントアウト
+
+  ```javascript
+  // 修正前
+  function updateSystemStatus(content) {
+    if (statusBoard) {
+      statusBoard.innerHTML = marked.parse(content);
+    }
+    if (statusTimestamp) {
+      const now = new Date();
+      statusTimestamp.textContent = `更新: ${now.toLocaleTimeString('ja-JP')}`;
+    }
+  }
+
+  // 修正後
+  /*
+  function updateSystemStatus(content) {
+    if (statusBoard) {
+      statusBoard.innerHTML = marked.parse(content);
+    }
+    if (statusTimestamp) {
+      const now = new Date();
+      statusTimestamp.textContent = `更新: ${now.toLocaleTimeString('ja-JP')}`;
+    }
+  }
+  */ // タブUI化で不要（削除済み）
+  ```
+
+  #### 3. handleClaudeResponse関数（line 278付近）
+
+  ```bash
+  sed -n '270,290p' public/app.js
+  ```
+
+  **対応**: 関数内の問題箇所をコメントアウトまたは関数全体をコメントアウト
+
+  **注意**: handleClaudeResponse関数は大きいので、messagesContainerを使っている箇所だけをコメントアウトするか、関数全体をコメントアウトするか判断が必要にゃ。
+
+  #### 4. line 858付近: messageInput
+
+  ```bash
+  sed -n '853,863p' public/app.js
+  ```
+
+  **対応**: messageInputを使っている行をコメントアウト
+
+  ### 🔧 ステップ4: 関数呼び出し箇所もコメントアウト
+
+  ```bash
+  grep -n "addSystemMessage\|updateSystemStatus\|handleClaudeResponse" public/app.js | grep -v "function "
+  ```
+
+  **対応**: 上記の関数を呼び出している箇所もコメントアウトするにゃ
+
+  ### 🔄 ステップ5: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ6: 動作確認
+
+  **期待される結果**：
+  - ブラウザのコンソールでReferenceErrorが出ない ✅
+  - 写真送信が正常に動作する ✅
+  - terminal.js の機能が正常に動作する ✅
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **コメントアウトした関数の詳細**（修正前後のコード、行番号）
+  2. **grep結果**（コメントアウト前後の確認）
+  3. **ReferenceErrorが消えたこと**の確認
+  4. **写真送信が動作すること**の確認
+
+  ## 成果物
+  - 修正済み app.js（関数コメントアウト）
+  - grep結果（ReferenceError箇所の確認）
+  - server.log の最後の10行
+  - 動作確認レポート（コンソールエラーなし + 写真送信動作）
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - 🚨 ReferenceErrorを完全に解消すること
+  - 📝 関数全体をコメントアウトする場合は `/* ... */` を使用
+  - ✅ 修正後はコンソールエラーが出ないことを必ず確認
+  - 🔍 写真送信が正常に動作することを確認
+  - 🐱 terminal.js は正常動作している（修正不要）
+  - 完了したら queue/reports/ に報告YAML作成にゃ
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_file: "public/app.js"
+  functions_to_comment_out:
+    - "addSystemMessage (line 403付近)"
+    - "updateSystemStatus (line 480付近)"
+    - "handleClaudeResponse内のmessagesContainer使用箇所 (line 278付近)"
+  additional_lines:
+    - "line 858: messageInput"
+
+expected_outputs:
+  - "修正済み app.js（関数コメントアウト）"
+  - "grep結果（ReferenceError箇所の確認）"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "ReferenceErrorが消えたことの確認"
+  - "写真送信が正常に動作することの確認"
+  - "完了報告YAML（queue/reports/task-20260202-174117-kitten3.yaml）"
+
+notes: |
+  - 🚨 ReferenceErrorを完全に解消することが最優先
+  - ✅ terminal.js は正常動作（修正不要）
+  - 📝 関数全体をコメントアウトするのが安全
+  - 完了したら必ず番猫に報告するにゃ〜

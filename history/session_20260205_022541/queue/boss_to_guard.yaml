@@ -1,0 +1,303 @@
+commands:
+  - command_id: "cmd-2026-02-03T16:15:15"
+    status: done
+
+  - command_id: "cmd-2026-02-03T18:48:24"
+    status: superseded
+
+  - command_id: "cmd-2026-02-03T18:56:40"
+    status: done
+    completed_at: "2026-02-04T00:06:28"
+
+  - command_id: "cmd-2026-02-04T00:01:13"
+    timestamp: "2026-02-04T00:01:13"
+    started_at: "2026-02-04T00:15:40"
+    completed_at: "2026-02-04T00:56:23"
+    type: cli-skill-creation
+    priority: high
+    status: done
+    verified_deliverables:
+      - "~/.gemini/skills/sage-fox/ (installed)"
+      - "~/.codex/skills/research-tanuki/ (validated)"
+      - "~/.codex/skills/owl-reviewer/ (validated)"
+    description: |
+      CLI スキル整備作戦（ロール定義）
+
+      **目的**: ボスねこが specialists を呼び出す際、各CLIがロールを正しく認識して動作するようにする
+
+      **重要**:
+      - Claude Code のスキル（.claude/skills/）ではない
+      - Gemini CLI / Codex CLI 自体のスキル機能を使う
+      - 各CLI のスキル作成ガイドを必ず参照せよ
+
+      ---
+
+      【子猫1担当】sage-fox（賢者キツネ）- Gemini CLI用
+
+      配置先: ~/.gemini/skills/sage-fox/
+
+      参照すべき情報:
+      - /usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/SKILL.md
+      - gemini skills --help
+
+      ファイル構成:
+      - SKILL.md（ロール定義）
+      - scripts/format_report.py（neko-pm形式レポート出力）
+      - references/neko-pm-context.md（システム説明）
+
+      SKILL.md 内容:
+      - name: sage-fox
+      - description: neko-pm の賢者キツネ。リサーチ・トレンド調査・概要把握の専門家。
+      - 役割: 高速リサーチ、情報収集、概要把握
+      - 出力形式: nawabari.md 互換
+      - 禁止: Claude Code仕様で動かない、ファイル編集しない
+
+      インストール:
+      - node .../scripts/init_skill.cjs sage-fox --path ~/.gemini/skills/
+      - 編集後、package_skill.cjs でパッケージ
+      - gemini skills install sage-fox.skill --scope user
+
+      ---
+
+      【子猫2担当】research-tanuki（研究狸）- Codex CLI用
+
+      配置先: ~/.codex/skills/research-tanuki/
+
+      参照すべき情報:
+      - ~/.codex/skills/.system/skill-creator/SKILL.md
+      - ~/.codex/skills/.system/skill-creator/scripts/init_skill.py
+
+      ファイル構成:
+      - SKILL.md（ロール定義）
+      - agents/openai.yaml（UIメタデータ）
+      - scripts/investigation.py（仮説→検証→結論プロセス）
+      - references/neko-pm-context.md
+
+      SKILL.md 内容:
+      - name: research-tanuki
+      - description: neko-pm の研究狸。深掘り調査・アーキテクチャ分析・技術判断の専門家。ボスねこの相談相手。
+      - 調査プロセス: 仮説→証拠収集→反証→結論
+      - 出力形式: 調査レポート（エグゼクティブサマリー付き）
+      - 禁止: Claude Code仕様で動かない
+
+      インストール:
+      - python .../init_skill.py research-tanuki --path ~/.codex/skills/ --resources scripts,references
+      - quick_validate.py で検証
+
+      ---
+
+      【子猫3担当】owl-reviewer（目利きフクロウ）- Codex CLI用
+
+      配置先: ~/.codex/skills/owl-reviewer/
+
+      参照すべき情報:
+      - ~/.codex/skills/.system/skill-creator/SKILL.md
+
+      ファイル構成:
+      - SKILL.md（ロール定義）
+      - agents/openai.yaml
+      - scripts/security_check.py（セキュリティチェック）
+      - references/security-checklist.md
+
+      SKILL.md 内容:
+      - name: owl-reviewer
+      - description: neko-pm の目利きフクロウ。コードレビュー・セキュリティ監査の専門家。
+      - チェック項目: OWASP Top 10、コーディング規約、パフォーマンス
+      - 出力形式: レビューレポート（重要度別: CRITICAL/HIGH/MEDIUM/LOW）
+      - 禁止: Claude Code仕様で動かない
+
+      インストール:
+      - python .../init_skill.py owl-reviewer --path ~/.codex/skills/ --resources scripts,references
+
+    context:
+      gemini_skill_creator: "/usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/"
+      codex_skill_creator: "/home/edgesakura/.codex/skills/.system/skill-creator/"
+      plan_file: "/home/edgesakura/.claude/plans/lively-seeking-starlight.md"
+    expected_outputs:
+      - "~/.gemini/skills/sage-fox/（インストール済み）"
+      - "~/.codex/skills/research-tanuki/（配置済み）"
+      - "~/.codex/skills/owl-reviewer/（配置済み）"
+    parallel_execution: true
+
+  - command_id: "cmd-2026-02-04T00:56:23"
+    timestamp: "2026-02-04T00:56:23"
+    started_at: "2026-02-04T00:59:41"
+    completed_at: "2026-02-04T01:10:30"
+    type: security-fix
+    priority: high
+    status: done
+    description: |
+      セキュリティ修正作戦：運用スクリプトのコマンド注入脆弱性を修正
+
+      **検出元**: 目利きフクロウ（2026-02-04T00:08:36）
+
+      **対象ファイル**:
+      1. /home/edgesakura/git/neko-pm/owl-watcher.sh
+      2. /home/edgesakura/git/neko-pm/shuugou.sh
+      3. /home/edgesakura/git/neko-pm/resume.sh
+
+      ---
+
+      【HIGH問題】owl-watcher.sh の自動承認ロジック
+
+      問題: `should_auto_approve` が文字列に `npm` などが含まれるかで許可しているため、
+      `npm; rm -rf /` のような連結コマンドが通ってしまう
+
+      修正方針:
+      - シェルメタ文字（`;`, `&&`, `||`, `` ` ``, `$()`）を含む場合は即拒否
+      - 許可対象コマンドは正規表現で「コマンド全体が安全パターンに一致する」方式に変更
+
+      ---
+
+      【MEDIUM問題】入力バリデーション不足
+
+      問題:
+      - WORKERS変数の整数チェックなし
+      - 引数欠落時のエラーハンドリングが弱い
+
+      修正方針:
+      - WORKERS変数の整数チェック（`[[ "$WORKERS" =~ ^[0-9]+$ ]]`）
+      - 引数の存在チェック強化
+
+      ---
+
+      【修正後の検証】
+
+      - shellcheck でスクリプトを検証
+      - 悪意のある入力パターンでテスト（`;`, `&&`, `||` 等）
+
+    context:
+      owl_detection: "2026-02-04T00:08:36"
+      related_operation: "cmd-2026-02-03T18:56:40"
+    expected_outputs:
+      - "owl-watcher.sh（修正済み）"
+      - "shuugou.sh（修正済み）"
+      - "resume.sh（修正済み）"
+    parallel_execution: false
+    status: done
+    completed_at: "2026-02-04T01:10:30"
+
+  - command_id: "cmd-2026-02-04T01:13:28"
+    timestamp: "2026-02-04T01:13:28"
+    started_at: "2026-02-04T01:14:23"
+    completed_at: "2026-02-04T01:16:30"
+    type: documentation
+    priority: medium
+    status: done
+    description: |
+      CLAUDE.md 更新作戦：新規スキルをドキュメントに追加
+
+      **目的**: 作成した CLI スキルを neko-pm/CLAUDE.md に記載し、他のエージェントも利用できるようにする
+
+      **追加対象**:
+      1. sage-fox（賢者キツネ）- Gemini CLI用
+         - 配置: ~/.gemini/skills/sage-fox/
+         - 用途: 高速リサーチ、トレンド調査、概要把握
+      2. research-tanuki（研究狸）- Codex CLI用
+         - 配置: ~/.codex/skills/research-tanuki/
+         - 用途: 深掘り調査、アーキテクチャ分析、技術判断
+      3. owl-reviewer（目利きフクロウ）- Codex CLI用
+         - 配置: ~/.codex/skills/owl-reviewer/
+         - 用途: コードレビュー、セキュリティ監査
+
+      **更新対象ファイル**:
+      - /home/edgesakura/git/neko-pm/CLAUDE.md
+
+      **追加セクション案**:
+      「## neko-pm スペシャリスト（CLI ネイティブスキル）」
+
+    context:
+      skill_locations:
+        - "~/.gemini/skills/sage-fox/"
+        - "~/.codex/skills/research-tanuki/"
+        - "~/.codex/skills/owl-reviewer/"
+    expected_outputs:
+      - "neko-pm/CLAUDE.md（更新済み）"
+    parallel_execution: false
+    status: done
+    completed_at: "2026-02-04T01:16:30"
+
+  - command_id: "cmd-2026-02-04T02:16:44"
+    timestamp: "2026-02-04T02:16:44"
+    started_at: "2026-02-04T02:17:52"
+    completed_at: "2026-02-04T11:50:04"
+    type: skill-verification
+    priority: high
+    status: done
+    description: |
+      スキル動作確認作戦：CLI ネイティブスキルの実動作テスト
+
+      **目的**: 作成した3つのCLIスキルが正しく動作することを確認する
+
+      **フクロウ状態**: ✅ 再起動済み（PID: 4051946）
+
+      ---
+
+      【子猫1担当】sage-fox（賢者キツネ）動作確認
+
+      テスト内容:
+      1. gemini skills list で sage-fox が表示されるか確認
+      2. 実際に呼び出してリサーチ動作を確認
+         ```bash
+         gemini -p "neko-pmシステムの概要を簡潔に説明して" --approval-mode plan
+         ```
+      3. 出力がnawabari.md互換形式か確認
+
+      成功基準:
+      - スキル一覧に表示される
+      - 「賢者キツネ」としてのロールで応答する
+      - ファイル編集せずにリサーチのみ実行
+
+      ---
+
+      【子猫2担当】research-tanuki（研究狸）動作確認
+
+      テスト内容:
+      1. ~/.codex/skills/research-tanuki/ の存在確認
+      2. 実際に呼び出して調査動作を確認
+         ```bash
+         codex exec -m gpt-5.2-codex --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm "neko-pmのアーキテクチャを簡潔に分析して"
+         ```
+      3. 仮説→検証→結論の形式で出力されるか確認
+
+      成功基準:
+      - スキルが認識される
+      - 「研究狸」としてのロールで応答する
+      - 調査レポート形式で出力
+
+      ---
+
+      【子猫3担当】owl-reviewer（目利きフクロウ）動作確認
+
+      テスト内容:
+      1. ~/.codex/skills/owl-reviewer/ の存在確認
+      2. 実際に呼び出してレビュー動作を確認
+         ```bash
+         codex review --uncommitted
+         ```
+      3. 重要度別（CRITICAL/HIGH/MEDIUM/LOW）形式で出力されるか確認
+
+      成功基準:
+      - スキルが認識される
+      - 「目利きフクロウ」としてのロールで応答する
+      - セキュリティチェックリストに基づくレビュー
+
+    context:
+      owl_watcher_pid: 4051946
+      test_project: "/home/edgesakura/git/neko-pm"
+    expected_outputs:
+      - "sage-fox 動作確認レポート"
+      - "research-tanuki 動作確認レポート"
+      - "owl-reviewer 動作確認レポート"
+    parallel_execution: true
+    verified_deliverables:
+      - "queue/reports/task-2026-02-04T02:17:52-kitten1.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten2.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten3.yaml (✅ 承認)"
+    verification_summary: |
+      全3スキルの動作確認を完了したにゃ：
+      - 🦊 sage-fox: ✅ nawabari.md互換形式で高品質レポート出力
+      - 🦝 research-tanuki: ✅ gpt-5.2-codex で深掘り調査可能
+      - 🦉 owl-reviewer: ✅ 実際のバグ検出（P1/P2/P3形式）
+
+      ボスねこが specialists ペインで呼び出し可能な状態にゃ〜

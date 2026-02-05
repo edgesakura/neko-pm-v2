@@ -1,0 +1,48 @@
+task_id: "task-20260131-013114-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T01:31:14"
+priority: urgent
+load_skills: []
+description: |
+  【緊急バグ修正】chat-app ボス応答が表示されない問題
+
+  ## 問題
+  スマホからchat-appでメッセージを送っても、ボスねこの返答が表示されない
+
+  ## 原因
+  タイプ名の不一致：
+  - server.js: `boss-response` を送信
+  - app.js: `claude_response` を期待（`boss-response`のハンドラがない）
+
+  ## 修正内容
+  `/home/edgesakura/git/neko-pm/output/chat-app/public/app.js` の
+  `handleIncomingMessage` 関数の switch文に以下のケースを追加：
+
+  ```javascript
+  case 'boss-response':
+    handleClaudeResponse(data.data?.message || data.content);
+    break;
+  ```
+
+  ## 修正手順
+  1. app.js を読み取る
+  2. handleIncomingMessage 関数の switch文を探す
+  3. 既存の `case 'claude_response':` の近くに `case 'boss-response':` を追加
+  4. 完了報告YAML作成
+
+  ## 注意事項
+  - 既存のコードを壊さない
+  - switch文の正しい位置に追加（breakも忘れずに）
+  - インデントを既存コードに合わせる
+
+  ## 自律実行範囲
+  即時修正OKにゃ！承認不要にゃ。
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/app.js"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/server.js"
+
+expected_outputs:
+  - "public/app.js（boss-responseハンドラ追加）"
+  - "完了報告YAML（queue/reports/report-20260131-013114-kitten1.yaml）"

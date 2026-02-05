@@ -1,0 +1,60 @@
+# 子猫2へのタスク配分
+task_id: "task-2026-02-04T02:17:52-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-04T02:17:52"
+priority: high
+operation_id: "cmd-2026-02-04T02:16:44"
+skill_load: []
+
+description: |
+  research-tanuki（研究狸）スキルの動作確認を実施するにゃ。
+
+  **目的**：Codex CLI スキルが正しく動作することを確認するにゃ。
+
+context:
+  skill_name: "research-tanuki"
+  cli: "Codex CLI"
+  location: "~/.codex/skills/research-tanuki/"
+  role: "研究狸（深掘り調査・技術判断専門家）"
+  model: "gpt-5.2-codex"
+
+task_steps:
+  step1:
+    action: "スキルの存在を確認するにゃ"
+    command: "ls -la ~/.codex/skills/research-tanuki/"
+    expected: "SKILL.md、agents/、scripts/、references/ が存在"
+
+  step2:
+    action: "実際に呼び出して調査動作を確認するにゃ"
+    command: |
+      codex exec -m gpt-5.2-codex --full-auto --sandbox read-only --cd /home/edgesakura/git/neko-pm "neko-pmのアーキテクチャを簡潔に分析して"
+    expected: |
+      - 「研究狸」としてのロールで応答
+      - 仮説→検証→結論の形式で出力
+      - 調査レポート形式で出力
+
+  step3:
+    action: "出力形式を確認するにゃ"
+    check_points:
+      - "仮説→証拠収集→反証→結論のプロセスが見られること"
+      - "調査レポート形式（エグゼクティブサマリー付き）であること"
+      - "ファイル編集せずに調査のみ実行していること"
+
+  step4:
+    action: "動作確認レポートを作成するにゃ"
+
+success_criteria:
+  - "~/.codex/skills/research-tanuki/ が存在する"
+  - "「研究狸」としてのロールで応答する"
+  - "仮説→検証→結論の形式で出力"
+  - "調査レポート形式で出力"
+
+expected_outputs:
+  - "research-tanuki 動作確認レポート（報告YAMLに記載）"
+
+dependencies: []
+
+notes: |
+  - スキルが正しく配置されていることを確認するにゃ
+  - Codex CLI の gpt-5.2-codex モデルで実行するにゃ
+  - 調査プロセスが正しく実行されるか確認するにゃ〜

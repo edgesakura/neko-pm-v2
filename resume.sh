@@ -59,6 +59,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -w|--workers)
+            # 引数の存在チェック
+            if [ -z "$2" ]; then
+                echo -e "${RED}Error: -w/--workers requires a value${NC}" >&2
+                show_help
+                exit 1
+            fi
             WORKERS="$2"
             shift 2
             ;;
@@ -73,6 +79,18 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# WORKERS変数の検証
+if ! [[ "$WORKERS" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Error: WORKERS must be a positive integer (got: $WORKERS)${NC}" >&2
+    exit 1
+fi
+
+# 範囲チェック（1〜10）
+if [ "$WORKERS" -lt 1 ] || [ "$WORKERS" -gt 10 ]; then
+    echo -e "${RED}Error: WORKERS must be between 1 and 10 (got: $WORKERS)${NC}" >&2
+    exit 1
+fi
 
 # historyディレクトリの確認
 if [ ! -d "$HISTORY_DIR" ]; then

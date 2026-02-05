@@ -1,0 +1,77 @@
+task_id: "task-20260131-011411-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T01:14:11"
+priority: high
+load_skills: []
+description: |
+  【chat-app UIリニューアル作戦 〜かっこいいスマホ開発体験〜】
+
+  ## 目標
+  スマホから開発できる、モダンでかっこいいWebチャットアプリに進化させる
+
+  ## 実装内容
+
+  ### 1. UI/UX大幅改善（最優先）
+  - モダンでかっこいいデザインに刷新
+  - グラデーション背景（#1a1a2e → #16213e）
+  - ガラスモーフィズム効果（backdrop-filter: blur）
+  - スムーズなアニメーション、トランジション
+  - ダークモードをさらに洗練（ネオン風アクセント：シアン/パープル）
+  - スマホでの操作性向上（大きめのタップ領域）
+  - フォント・カラースキームの見直し
+  - ボトムナビゲーションバー追加
+
+  ### 2. 画面切り替え機能（タブ/スワイプ）
+  - チャット画面 ↔ nawabari画面 の切り替え
+  - 下部タブバーで切り替え（アイコン付き）
+  - スワイプジェスチャー対応（オプション）
+  - nawabariはリアルタイム更新を維持
+  - 各画面のヘッダーを適切に調整
+
+  ### 3. チャット履歴保存
+  - LocalStorageに履歴保存（最大100件）
+  - アプリ再起動時に履歴復元
+  - 履歴クリア機能（設定から）
+  - 履歴の日付区切り表示
+
+  ## デザイン方針
+  - カラースキーム: ダーク基調 + シアン/パープルのアクセント
+  - 背景: グラデーション（#1a1a2e → #16213e）
+  - カード: 半透明ガラス効果（backdrop-filter: blur）
+  - ボタン: グラデーション + ホバーエフェクト
+  - アイコン: SVGアイコン（軽量）
+
+  ## 技術的ガイドライン
+  - 既存のserver.js, lib/は基本維持（変更しない）
+  - public/配下のフロントエンド改修がメイン
+  - CSSはモダンな手法（CSS変数、Grid、Flexbox）
+  - JavaScriptはVanillaで維持（軽量さ重視）
+  - marked.jsはCDNから継続利用
+
+  ## 実装手順
+  1. 既存ファイルの確認（public/index.html, styles.css, app.js）
+  2. HTML構造の改修（タブUI、ボトムナビ追加）
+  3. CSSの全面刷新（グラデーション、ガラスモーフィズム、アニメーション）
+  4. JavaScript機能実装（画面切り替え、履歴保存）
+  5. 動作確認（ブラウザで確認）
+  6. 完了報告（queue/reports/ に報告YAML作成）
+
+  ## 注意事項
+  - 既存のチャット機能、nawabari更新機能を壊さない
+  - スマホでの表示・操作性を重視
+  - ブラウザ互換性を確認（モダンCSS対応）
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/index.html"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/styles.css"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/app.js"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/server.js"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/lib/nawabari.js"
+
+expected_outputs:
+  - "public/index.html（タブ切り替えUI、ボトムナビ追加）"
+  - "public/styles.css（モダンUI、グラデーション、アニメーション）"
+  - "public/app.js（履歴保存、画面切り替えロジック）"
+  - "動作確認済みのかっこいいスマホUI"
+  - "完了報告YAML（queue/reports/report-20260131-011411-kitten1.yaml）"

@@ -1,0 +1,185 @@
+task_id: "task-20260130195646-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-30T19:56:46"
+priority: high
+load_skills:
+  - "tdd-workflow"
+  - "security-review"
+description: |
+  【chat-app 認証機能追加】セキュリティ強化作戦
+
+  スマホからの誤操作を防止するため、パスワード認証機能を追加するにゃ。
+  セキュリティ最優先で実装するにゃ〜。
+
+  ## Phase 1: サーバー側認証機能
+
+  ### 1.1 パスワード検証エンドポイント
+  - POST /api/auth でパスワード検証
+  - リクエストボディ: `{ "password": "xxxxx" }`
+  - レスポンス: `{ "success": true, "token": "xxxxx" }` または `{ "success": false }`
+  - パスワードは環境変数 CHAT_PASSWORD から取得
+  - パスワードハッシュ化（bcrypt or crypto.createHash('sha256')）
+  - セッショントークンはランダム生成（crypto.randomBytes(32).toString('hex')）
+
+  ### 1.2 WebSocket接続時の認証チェック
+  - WebSocket接続時にクエリパラメータ `?token=xxxxx` でトークン受信
+  - トークンが有効でない場合は接続拒否
+  - トークンの有効期限は24時間（Map に保存、定期クリーンアップ）
+
+  ### 1.3 環境変数設定
+  - `.env` ファイル作成
+  - `CHAT_PASSWORD=your_secure_password_here` を設定
+  - dotenv パッケージでロード
+  - `.gitignore` に `.env` を追加（重要！）
+
+  ## Phase 2: フロントエンド側認証UI
+
+  ### 2.1 認証画面HTML追加
+  - `public/index.html` に認証フォーム追加
+  - パスワード入力欄（type="password"）
+  - ログインボタン
+  - エラーメッセージ表示領域
+  - 認証成功後にメインUIを表示
+
+  ### 2.2 認証ロジック（public/app.js）
+  - 起動時に localStorage からトークン取得
+  - トークンがあれば検証（WebSocket接続時にトークン送信）
+  - トークンがなければ認証画面表示
+  - ログインボタンクリック時:
+    1. POST /api/auth でパスワード送信
+    2. 成功したらトークンを localStorage に保存
+    3. メインUI表示、WebSocket接続
+  - ログアウトボタン追加（localStorage.clear()）
+
+  ### 2.3 WebSocket接続修正
+  - WebSocket接続URLにトークンを追加
+  - `ws://localhost:3000?token=xxxxx`
+  - 認証エラー時は認証画面に戻る
+
+  ## Phase 3: テスト追加
+
+  ### 3.1 認証エンドポイントのテスト
+  - `test/auth.test.js` 作成
+  - 正しいパスワードで認証成功
+  - 間違ったパスワードで認証失敗
+  - トークン生成確認
+  - パスワード未指定でエラー
+
+  ### 3.2 WebSocket認証のテスト
+  - 有効なトークンで接続成功
+  - 無効なトークンで接続拒否
+  - トークンなしで接続拒否
+
+  ### 3.3 統合テスト更新
+  - `integration-test.js` に認証フローのテスト追加
+
+  ## セキュリティチェックリスト
+
+  - [ ] パスワードはハッシュ化して比較（平文比較禁止）
+  - [ ] トークンはランダム生成（crypto.randomBytes使用）
+  - [ ] .env ファイルは .gitignore に追加
+  - [ ] パスワードをログに出力しない
+  - [ ] トークンをURLパラメータではなくクエリ文字列で送信
+  - [ ] レート制限（認証エンドポイントに適用）
+  - [ ] エラーメッセージで情報漏洩しない（「パスワードが違います」ではなく「認証に失敗しました」）
+
+  ## 実装ガイドライン
+
+  ### 必須パッケージ
+  - `dotenv` - 環境変数ロード
+  - `bcrypt` or `crypto`（Node.js組み込み） - パスワードハッシュ化
+
+  ### ディレクトリ構成
+  ```
+  output/chat-app/
+  ├── .env（新規作成、.gitignore必須）
+  ├── .gitignore（更新）
+  ├── server.js（認証エンドポイント追加）
+  ├── lib/
+  │   └── auth.js（新規作成）
+  ├── test/
+  │   └── auth.test.js（新規作成）
+  ├── public/
+  │   ├── index.html（認証画面追加）
+  │   ├── app.js（認証ロジック追加）
+  │   └── styles.css（認証画面スタイル追加）
+  └── integration-test.js（更新）
+  ```
+
+  ## 重要な指示
+
+  1. **TDD原則**: テストファーストで実装（test/auth.test.js を先に書く）
+  2. **セキュリティ最優先**: パスワードハッシュ化、トークン管理を厳格に
+  3. **承認プロンプト**: 選択肢2（Yes, and don't ask again...）を選ぶにゃ
+  4. **完了したら send-keys で番猫（neko:workers.0）に通知するにゃ**
+
+  ## 参考実装例
+
+  ### lib/auth.js（サンプル構造）
+  ```javascript
+  const crypto = require('crypto');
+
+  // パスワードハッシュ化
+  function hashPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('hex');
+  }
+
+  // トークン生成
+  function generateToken() {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  // トークンストレージ（Map）
+  const tokens = new Map();
+
+  // トークン検証
+  function validateToken(token) {
+    const tokenData = tokens.get(token);
+    if (!tokenData) return false;
+
+    // 有効期限チェック（24時間）
+    const now = Date.now();
+    if (now - tokenData.createdAt > 24 * 60 * 60 * 1000) {
+      tokens.delete(token);
+      return false;
+    }
+
+    return true;
+  }
+
+  module.exports = {
+    hashPassword,
+    generateToken,
+    validateToken,
+    tokens
+  };
+  ```
+
+context:
+  command_id: "cmd-20260130-195535"
+  service_name: "chat-app"
+  project_root: "/home/edgesakura/git/neko-pm/output/chat-app"
+  files_to_create:
+    - "lib/auth.js"
+    - "test/auth.test.js"
+    - ".env"
+  files_to_modify:
+    - "server.js"
+    - "public/index.html"
+    - "public/app.js"
+    - "public/styles.css"
+    - ".gitignore"
+    - "integration-test.js"
+
+expected_outputs:
+  - "lib/auth.js（認証ロジック）"
+  - "test/auth.test.js（認証テスト）"
+  - ".env ファイル（サンプル）"
+  - "server.js 更新版（POST /api/auth、WebSocket認証）"
+  - "public/index.html 更新版（認証画面）"
+  - "public/app.js 更新版（認証ロジック）"
+  - "public/styles.css 更新版（認証画面スタイル）"
+  - ".gitignore 更新版（.env追加）"
+  - "integration-test.js 更新版（認証テスト）"
+  - "全テストパス（既存47件 + 新規テスト）"
+  - "レポートファイル: queue/reports/task-20260130195646-kitten1.yaml"

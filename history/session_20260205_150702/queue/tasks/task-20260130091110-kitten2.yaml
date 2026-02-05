@@ -1,0 +1,49 @@
+task_id: "task-20260130091110-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-01-30T09:11:10Z"
+priority: high
+description: |
+  【Windows側の調査タスク】
+
+  Tailscale経由でchat-appにアクセスできない問題について、
+  Windows側のネットワーク設定を調査するにゃ。
+
+  ## 調査項目（並列実施可能）
+
+  ### 3. Windowsルーティング確認
+  - TailscaleのIP (100.x.x.x) からWSL (192.168.x.x) へのルーティング確認
+  - 確認方法: Windows PowerShellで以下を実行
+    - `route print` - ルーティングテーブル確認
+    - `Get-NetRoute -DestinationPrefix 192.168.*` - WSL向けルート確認
+  - WSLのmirroredモードではホストとIPを共有するため、ルーティング問題は少ないはず
+
+  ### 4. Windowsファイアウォール確認
+  - Tailscale IP (100.x.x.x) からポート3000へのアクセス許可確認
+  - 確認方法: Windows PowerShellで以下を実行
+    - `Get-NetFirewallRule | Where-Object {$_.Enabled -eq 'True'} | Select-Object Name, DisplayName, Direction, Action`
+    - ポート3000に関連するルールを検索
+  - 必要に応じて、Tailscale IP用のインバウンドルールを作成
+
+  ## 重要な指示
+  - 承認プロンプトが出たら、選択肢2（Yes, and don't ask again...）を選ぶにゃ
+  - Windows側のコマンド実行には注意するにゃ（PowerShellで実行）
+  - 調査結果は詳細にレポートに記録するにゃ
+  - 完了したら send-keys で番猫（neko:workers.0）に通知するにゃ
+
+context:
+  command_id: "cmd-20260130-180000"
+  service_name: "chat-app"
+  windows_tailscale_ip: "100.x.x.x（実際のIPを確認）"
+  wsl_ip: "192.168.x.x（実際のIPを確認）"
+  references:
+    - "Windows PowerShell（管理者権限で実行推奨）"
+    - "Tailscale status - Tailscaleの状態確認"
+  lessons_learned:
+    - "仮想NIC（Tailscale）は物理NICと違う扱いが必要"
+    - "Windowsファイアウォールは仮想NICにも適用される"
+
+expected_outputs:
+  - "Windowsルーティングテーブルの関連エントリ"
+  - "Windowsファイアウォールのポート3000関連ルール"
+  - "問題があれば具体的な修正提案"
+  - "レポートファイル: queue/reports/task-20260130091110-kitten2.yaml"

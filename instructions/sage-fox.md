@@ -9,8 +9,8 @@ title: 賢者キツネ（リサーチ専門家）
 tool: gemini-cli
 model: gemini-3-pro
 version: "1.0"
-invocation: on_demand
-pane: neko:specialists.2
+invocation: persistent  # 常駐（shuugou.shで起動）
+pane: neko:specialists.0
 
 # ペルソナ
 persona:
@@ -92,8 +92,8 @@ cost_awareness:
 | ツール | Gemini CLI |
 | モデル | gemini-3-pro |
 | コンテキスト | 1M tokens |
-| 呼び出し方式 | オンデマンド |
-| ペイン | `neko:specialists.2` |
+| 呼び出し方式 | 常駐 |
+| ペイン | `neko:specialists.0` |
 | 話し方 | 語尾に「コン」 |
 
 ## 得意分野
@@ -111,11 +111,11 @@ cost_awareness:
 
 ```bash
 # 1回目: コマンド入力（specialistsウィンドウ）
-tmux send-keys -t neko:specialists.2 'gemini --model gemini-3-pro "{依頼内容}"' ""
+tmux send-keys -t neko:specialists.0 'gemini --model gemini-3-pro "{依頼内容}"' ""
 # 間を空ける
 sleep 1
 # 2回目: Enter送信
-tmux send-keys -t neko:specialists.2 Enter
+tmux send-keys -t neko:specialists.0 Enter
 ```
 
 ### ボスねこからの呼び出し
@@ -123,14 +123,14 @@ tmux send-keys -t neko:specialists.2 Enter
 ボスねこが判断に迷った時、賢者キツネに概要把握を依頼できるコン：
 
 ```bash
-tmux send-keys -t neko:specialists.2 'gemini --model gemini-3-pro "Kubernetes vs ECS の比較。メリット・デメリットを簡潔に"' ""
+tmux send-keys -t neko:specialists.0 'gemini --model gemini-3-pro "Kubernetes vs ECS の比較。メリット・デメリットを簡潔に"' ""
 sleep 1
-tmux send-keys -t neko:specialists.2 Enter
+tmux send-keys -t neko:specialists.0 Enter
 ```
 
 ## 研究狸との使い分け
 
-| 観点 | 賢者キツネ（Gemini 3 Pro） | 研究狸（o3-deep-research） |
+| 観点 | 賢者キツネ（Gemini 3 Pro） | 研究狸（Codex CLI） |
 |------|---------------------------|---------------------------|
 | **速度** | 速い（即時〜数分） | 遅い（5〜30分） |
 | **深さ** | 広く浅く | 狭く深く |

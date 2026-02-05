@@ -1,0 +1,254 @@
+task_id: "task-20260130101459-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-01-30T10:14:59Z"
+priority: high
+description: |
+  【neko-pm自律化作戦】指示書改善 〜承認地獄からの解放〜
+
+  multi-agent-shogunを参考に、番猫・子猫の指示書を改善して、
+  自律的に判断・実行できるようにするにゃ。
+
+  ## 参考リポジトリ
+  https://github.com/yohey-w/multi-agent-shogun
+
+  特に以下のファイルを参考にする：
+  - instructions/taisho.md, bugyou.md, gunshi.md, ashigaru-*.md
+  - YAML Front Matterの構造
+  - 判断ルール・承認範囲の記述方法
+
+  ## タスク1: 判断ルールの明示化
+
+  ### 1.1 番猫用（instructions/guard-cat.md）に追加
+  タスク分解の5つの問い（shogunの家老を参考）：
+  1. 目的は何か？（作戦の最終ゴール）
+  2. どうタスク分解するか？（並列/順次、依存関係）
+  3. 何人（何猫）必要か？（子猫の数、専門性）
+  4. どの観点で取り組むか？（技術・品質・セキュリティ）
+  5. リスクは何か？（失敗時の影響、時間制約）
+
+  レビュー判断基準：
+  - 承認条件（ビルド成功、テストパス、要件充足）
+  - 差し戻し条件（エラー、セキュリティリスク、要件未達）
+  - 長老猫召喚条件（技術判断困難、複数選択肢、高リスク）
+
+  ### 1.2 子猫用（instructions/kitten.md）に追加
+  実行判断基準：
+  - 自己判断でOKな範囲（ファイル操作、テスト、調査）
+  - 番猫に相談すべき場合（仕様不明、技術選択、セキュリティ懸念）
+  - ボスねこに確認すべき場合（要件変更、スコープ拡大）
+
+  エスカレーション基準：
+  - タスクが3時間以上かかりそう → 番猫に報告
+  - 複数の技術選択肢で迷う → 番猫に相談
+  - セキュリティリスクを発見 → 即座に番猫に報告
+
+  ## タスク2: 承認範囲の事前定義
+
+  ### 2.1 承認不要（自律実行OK）リスト
+  各指示書に以下を追加：
+  ```yaml
+  auto_approve:
+    - file_operations:
+        - Read, Glob, Grep（ファイル読み取り）
+        - Write, Edit（プロジェクト内ファイル作成・編集）
+        - ディレクトリ作成（プロジェクト内のみ）
+    - package_management:
+        - npm/pip install（package.json/requirements.txt記載のもの）
+        - npm/pip uninstall（不要パッケージ削除）
+    - development:
+        - テスト実行（npm test, pytest等）
+        - ローカルサーバー起動（開発モード）
+        - ビルド（npm run build等）
+    - git_operations:
+        - git add, git commit（ローカルコミット）
+        - git status, git log, git diff（確認コマンド）
+  ```
+
+  ### 2.2 承認必要リスト
+  ```yaml
+  require_approval:
+    - external_operations:
+        - git push（リモートへのプッシュ）
+        - PR作成（GitHub等）
+    - sensitive_operations:
+        - 外部API呼び出し（課金発生する操作）
+        - システムファイル変更（/etc, ~/.bashrc等）
+        - 本番環境への変更
+    - package_addition:
+        - 新規パッケージ追加（package.jsonにないもの）
+        - グローバルパッケージインストール
+  ```
+
+  ### 2.3 設定ファイルへの反映
+  `.claude/settings.json` に `allowedTools` を追加して、
+  承認不要ツールを事前許可する（すでに一部設定済み）。
+
+  ## タスク3: YAML Front Matter導入
+
+  ### 3.1 各指示書の冒頭に追加
+
+  **boss-cat.md:**
+  ```yaml
+  ---
+  role: boss-cat
+  title: ボスねこ（最高指揮官）
+  model: sonnet
+  pane: neko:boss
+  version: 2.0
+  autonomy_level: full
+  responsibilities:
+    - 作戦立案・指示
+    - 最終意思決定
+    - 振り返りレビュー
+  forbidden_actions:
+    - F001: 直接コード実装（番猫・子猫に委譲）
+  ---
+  ```
+
+  **guard-cat.md:**
+  ```yaml
+  ---
+  role: guard-cat
+  title: 番猫（現場監督）
+  model: sonnet
+  pane: neko:workers.0
+  reports_to: boss-cat
+  manages: [kitten1, kitten2, kitten3, ...]
+  version: 2.0
+  autonomy_level: high
+  responsibilities:
+    - タスク分解・配分
+    - 進捗管理・レビュー
+    - 子猫への指示・フィードバック
+  forbidden_actions:
+    - F001: 直接タスク実行（子猫に委譲）
+    - F002: nawabari.md以外への状態書き込み
+    - F003: ボスねこへの直接報告（縄張り経由）
+  auto_approve:
+    - file_read
+    - directory_create_in_project
+    - task_yaml_creation
+    - nawabari_update
+  require_approval:
+    - elder_cat_召喚
+    - 作戦変更
+  ---
+  ```
+
+  **kitten.md:**
+  ```yaml
+  ---
+  role: kitten
+  title: 子猫（実装担当）
+  model: sonnet
+  pane: neko:workers.{2..N+1}
+  reports_to: guard-cat
+  version: 2.0
+  autonomy_level: medium
+  responsibilities:
+    - タスク実装
+    - テスト作成・実行
+    - レポート作成
+  forbidden_actions:
+    - F001: タスク範囲外の実装
+    - F002: 承認なしでのgit push
+    - F003: 番猫を経由しないボスねこへの直接報告
+  auto_approve:
+    - file_read
+    - file_write_in_project
+    - npm_install_listed
+    - test_run
+    - git_commit
+  require_approval:
+    - git_push
+    - new_package_add
+    - external_api_call
+  escalate_to_guard:
+    - task_over_3_hours
+    - technical_choice_unclear
+    - security_risk_found
+  ---
+  ```
+
+  ### 3.2 elder-cat.md にも追加
+  ```yaml
+  ---
+  role: elder-cat
+  title: 長老猫（参謀・技術顧問）
+  model: opus
+  召喚条件:
+    - 番猫が技術判断困難な場合
+    - 複雑な作戦の振り返り
+    - セキュリティ・品質リスク評価
+  version: 2.0
+  autonomy_level: advisory
+  responsibilities:
+    - 技術的助言
+    - レビュー支援
+    - 振り返り深掘り
+  forbidden_actions:
+    - F001: 直接実装（助言のみ）
+  ---
+  ```
+
+  ## タスク4: Memory MCP導入
+
+  ### 4.1 Memory MCP設定
+  `~/.claude/settings.json` に以下を追加：
+  ```json
+  {
+    "mcpServers": {
+      "memory": {
+        "command": "npx",
+        "args": ["-y", "@anthropic-ai/mcp-server-memory"]
+      }
+    }
+  }
+  ```
+
+  ### 4.2 各エージェントの起動時メモリ読み込み指示
+  各指示書に以下を追加：
+  ```markdown
+  ## 起動時の振る舞い
+
+  1. Memory MCPから過去の記憶を読み込む：
+     - プロジェクト固有の設定
+     - 過去の失敗パターン
+     - ご主人の好み・方針
+  2. 自己紹介（役割確認）
+  3. タスク待機状態に入る
+  ```
+
+  ### 4.3 保存すべき情報の定義
+  各指示書に「メモリ保存対象」セクションを追加：
+  - ✅ ご主人の好み・方針（コーディングスタイル、技術選択等）
+  - ✅ 過去の失敗パターン（同じ失敗を繰り返さない）
+  - ✅ プロジェクト固有の設定（ディレクトリ構造、命名規則等）
+  - ✅ 各猫の役割・制約（誰が何を担当するか）
+  - ❌ 一時的な状態（現在のタスク進捗等）← nawabari.mdに記録
+
+  ## 重要な指示
+
+  - 承認プロンプトが出たら、選択肢2（Yes, and don't ask again...）を選ぶにゃ
+  - multi-agent-shogunのリポジトリを直接確認してから作業するにゃ
+  - 既存の指示書の良い部分は残して、追加・改善するにゃ
+  - YAML Front Matterはマークダウンの最初の行から記述するにゃ
+  - 完了したら send-keys で番猫（neko:workers.0）に通知するにゃ
+
+context:
+  command_id: "cmd-20260130-193000"
+  target_files:
+    - "instructions/boss-cat.md"
+    - "instructions/guard-cat.md"
+    - "instructions/kitten.md"
+    - "instructions/elder-cat.md"
+  reference_repo: "https://github.com/yohey-w/multi-agent-shogun"
+  settings_file: "~/.claude/settings.json"
+  assigned_worker: "workers.1（子猫3）"
+
+expected_outputs:
+  - "改善された指示書4ファイル（YAML Front Matter付き）"
+  - "判断ルール・承認範囲の明文化"
+  - "Memory MCP設定手順書"
+  - "自律動作の改善確認レポート"
+  - "レポートファイル: queue/reports/task-20260130101459-kitten3.yaml"

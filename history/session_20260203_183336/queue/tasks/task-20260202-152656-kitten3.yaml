@@ -1,0 +1,841 @@
+task_id: "task-20260202-152656-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T15:26:56"
+priority: urgent
+command_id: "cmd-20260202-152656"
+description: |
+  【🚨緊急バグ修正×4】chat-app 複数バグ修正
+
+  ## 問題1: 画像アップロード機能
+  カメラボタン（📷）を押しても写真添付できないにゃ！
+  画像アップロード機能が動作していないにゃ。
+
+  ## 問題2: iPhone対応
+  iPhoneでタブ切り替えが隠れる問題にゃ！
+  safe-area-inset、viewport単位が未設定にゃ。
+
+  ## 問題3: タブ切り替え動作不良
+  タブボタン押してもページ遷移しないにゃ！
+  JavaScriptイベントハンドラが正しく動いていないにゃ。
+
+  ## 問題4: 画像ペースト機能
+  クリップボードから画像を貼り付け（ペースト）できないにゃ！
+  paste event で clipboardData.items から画像取得する処理が未実装にゃ。
+
+  ## 原因調査
+
+  以下を確認するにゃ：
+  1. index.html の input type=file の実装
+  2. terminal.js の screenshot-btn、screenshot-input のイベントリスナー
+  3. プレビュー表示機能の実装状況
+  4. 送信処理（画像を含めて送信）
+  5. server.js のアップロード処理
+
+  ## 修正内容
+
+  ### フェーズ1: 現状確認
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/index.html
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/server.js
+
+  各ファイルを読み取って、画像アップロード機能の実装状況を確認するにゃ。
+
+  ### フェーズ2: バグ修正（terminal.js）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  #### 2-1. screenshot-btn のイベントリスナー追加
+
+  `initTerminal()` 関数内に、カメラボタンのイベントリスナーを追加：
+
+  ```javascript
+  // カメラボタン（📷）のイベントリスナー
+  const screenshotBtn = document.getElementById('screenshot-btn');
+  const screenshotInput = document.getElementById('screenshot-input');
+
+  if (screenshotBtn && screenshotInput) {
+    screenshotBtn.addEventListener('click', () => {
+      // input type=file をクリックして、ファイル選択ダイアログを開く
+      screenshotInput.click();
+    });
+  }
+  ```
+
+  #### 2-2. screenshot-input のイベントリスナー追加
+
+  ファイルが選択されたら、プレビューを表示して、送信ボタンで送信できるようにする：
+
+  ```javascript
+  // 選択された画像を保持する変数
+  let selectedImage = null;
+
+  if (screenshotInput) {
+    screenshotInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // ファイルタイプを検証（画像のみ許可）
+      if (!file.type.startsWith('image/')) {
+        alert('画像ファイルのみアップロード可能です');
+        return;
+      }
+
+      // ファイルサイズを検証（5MB以下）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('ファイルサイズは5MB以下にしてください');
+        return;
+      }
+
+      // 選択された画像を保持
+      selectedImage = file;
+
+      // プレビュー表示
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        // プレビューコンテナを作成または更新
+        let previewContainer = document.getElementById('image-preview-container');
+        if (!previewContainer) {
+          previewContainer = document.createElement('div');
+          previewContainer.id = 'image-preview-container';
+          previewContainer.style.cssText = `
+            position: relative;
+            margin: 10px;
+            padding: 10px;
+            background: #2c2c2c;
+            border-radius: 8px;
+          `;
+
+          // chat-input-container の前に挿入
+          const chatInputContainer = document.getElementById('chat-input-container');
+          chatInputContainer.parentNode.insertBefore(previewContainer, chatInputContainer);
+        }
+
+        // プレビュー画像とクリアボタンを表示
+        previewContainer.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="${event.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 4px;">
+            <span style="color: #4caf50; font-size: 14px;">📷 ${file.name}</span>
+            <button id="clear-image-btn" style="
+              padding: 5px 10px;
+              background: #f44336;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            ">✕ クリア</button>
+          </div>
+        `;
+
+        // クリアボタンのイベントリスナー
+        document.getElementById('clear-image-btn').addEventListener('click', () => {
+          selectedImage = null;
+          previewContainer.remove();
+          screenshotInput.value = ''; // input をリセット
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  ```
+
+  #### 2-3. 送信ボタンの処理を修正
+
+  既存の send-btn のイベントリスナーを修正して、画像も送信できるようにする：
+
+  ```javascript
+  // 送信ボタンのイベントリスナー（既存を修正）
+  const sendBtn = document.getElementById('send-btn');
+  const chatInput = document.getElementById('chat-input');
+
+  if (sendBtn && chatInput) {
+    sendBtn.addEventListener('click', async () => {
+      const message = chatInput.value.trim();
+
+      // テキストまたは画像が必要
+      if (!message && !selectedImage) {
+        return;
+      }
+
+      // FormData を作成
+      const formData = new FormData();
+      if (message) {
+        formData.append('message', message);
+      }
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
+      try {
+        // サーバーに送信
+        const response = await fetch('/api/boss-chat', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // 送信成功
+          chatInput.value = '';
+          selectedImage = null;
+
+          // プレビューをクリア
+          const previewContainer = document.getElementById('image-preview-container');
+          if (previewContainer) {
+            previewContainer.remove();
+          }
+          screenshotInput.value = '';
+
+          // チャットメッセージに追加（表示）
+          const chatMessages = document.getElementById('chat-messages');
+          if (chatMessages) {
+            const msgDiv = document.createElement('div');
+            msgDiv.style.cssText = 'padding: 10px; margin: 5px; background: #2c2c2c; border-radius: 8px;';
+
+            let content = '';
+            if (message) {
+              content += `<p style="margin: 0; color: #d4d4d4;">${message}</p>`;
+            }
+            if (data.imageUrl) {
+              content += `<img src="${data.imageUrl}" style="max-width: 200px; margin-top: 5px; border-radius: 4px;">`;
+            }
+
+            msgDiv.innerHTML = content;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } else {
+          alert('送信エラー: ' + data.error);
+        }
+      } catch (error) {
+        console.error('送信エラー:', error);
+        alert('送信に失敗しました');
+      }
+    });
+  }
+  ```
+
+  ### フェーズ3: サーバー側の修正（server.js）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/server.js
+
+  #### 3-1. multer のインストール（ファイルアップロード用）
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  npm install multer
+  ```
+
+  #### 3-2. server.js に multer 設定を追加
+
+  ```javascript
+  const multer = require('multer');
+  const path = require('path');
+
+  // 画像アップロード用の設定
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.join(__dirname, 'public', 'uploads');
+      // ディレクトリが存在しない場合は作成
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      // ファイル名: timestamp-originalname
+      const timestamp = Date.now();
+      const ext = path.extname(file.originalname);
+      cb(null, `${timestamp}${ext}`);
+    }
+  });
+
+  // ファイルタイプの検証
+  const fileFilter = (req, file, cb) => {
+    // 画像ファイルのみ許可
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('画像ファイルのみアップロード可能です'), false);
+    }
+  };
+
+  const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB
+    }
+  });
+  ```
+
+  #### 3-3. /api/boss-chat エンドポイントを追加
+
+  ```javascript
+  // boss-chat メッセージ送信API
+  app.post('/api/boss-chat', sessionCheck, upload.single('image'), (req, res) => {
+    try {
+      const { message } = req.body;
+      const imageFile = req.file;
+
+      // テキストまたは画像が必要
+      if (!message && !imageFile) {
+        return res.status(400).json({ success: false, error: 'メッセージまたは画像が必要です' });
+      }
+
+      let imageUrl = null;
+      if (imageFile) {
+        // 画像のURLを生成（/uploads/timestamp.ext）
+        imageUrl = `/uploads/${imageFile.filename}`;
+      }
+
+      // TODO: メッセージを保存する処理（現在は省略）
+      // TODO: boss-cat に通知する処理（現在は省略）
+
+      res.json({
+        success: true,
+        message: message || '',
+        imageUrl: imageUrl
+      });
+    } catch (error) {
+      console.error('Boss chat error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  ```
+
+  ### フェーズ4: スタイル追加（styles.css）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/styles.css
+
+  #### 4-1. chat-messages のスタイル追加
+
+  ```css
+  /* Chat タブのメッセージエリア */
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: #1e1e1e;
+  }
+
+  /* Chat タブの入力エリア */
+  #chat-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: #2c2c2c;
+    border-top: 1px solid #444;
+  }
+
+  #chat-input {
+    flex: 1;
+    padding: 10px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  #screenshot-btn,
+  #send-btn {
+    padding: 10px 15px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  #screenshot-btn {
+    background: #2196f3;
+  }
+
+  #screenshot-btn:hover {
+    background: #1976d2;
+  }
+
+  #send-btn:hover {
+    background: #45a049;
+  }
+  ```
+
+  ### フェーズ5: iPhone対応（safe-area-inset、viewport単位）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/styles.css
+
+  #### 5-1. iPhoneでタブ切り替えが隠れる問題の修正
+
+  **問題**：
+  - ピクセルハードコーディングされたCSSによりiPhoneでタブが隠れる
+  - safe-area-inset（ノッチ対応）が未設定
+  - viewport単位（vh/vw）が未使用
+  - flexboxが適切に使われていない
+
+  #### 5-2. HTML の viewport 設定を確認
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/index.html
+
+  `<head>` タグ内に以下が設定されているか確認：
+
+  ```html
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  ```
+
+  **ポイント**：
+  - `viewport-fit=cover` で safe-area-inset が有効になる
+
+  #### 5-3. CSS で safe-area-inset を使用
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/styles.css
+
+  全体のレイアウトを viewport 単位と flexbox で修正：
+
+  ```css
+  /* ルート要素（html, body）を100vh に */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* メインアプリコンテナ */
+  #mainApp {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* Dynamic Viewport Height（iOS Safari対応） */
+    width: 100vw;
+    overflow: hidden;
+  }
+
+  /* タブナビゲーション（safe-area対応） */
+  #tab-navigation {
+    display: flex;
+    background: #2c2c2c;
+    border-bottom: 2px solid #444;
+    padding: 0;
+    margin: 0;
+    /* iPhoneノッチ対応 */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* タブコンテンツエリア */
+  #tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    /* iPhoneホームバー対応 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .tab-pane.active {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Chat タブ（flexbox で自動調整） */
+  #tab-chat {
+    padding: 0;
+  }
+
+  #boss-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: #1e1e1e;
+  }
+
+  #chat-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: #2c2c2c;
+    border-top: 1px solid #444;
+    /* 固定高さを避けて、flexbox に任せる */
+  }
+
+  /* Terminal タブ（flexbox で自動調整） */
+  #tab-terminal {
+    padding: 0;
+  }
+
+  #terminal-container {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* コマンドボタン（固定位置を削除） */
+  #quick-commands {
+    position: static;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 0;
+    z-index: auto;
+    flex-wrap: wrap;
+  }
+
+  /* モバイル最適化（ピクセルハードコーディングを削除） */
+  @media (max-width: 768px) {
+    .tab-btn {
+      padding: 0.75rem 0.5rem; /* rem 単位に変更 */
+      font-size: 0.75rem;
+    }
+
+    .cmd-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      min-height: 44px; /* タップしやすい最小サイズは維持 */
+    }
+  }
+  ```
+
+  **ポイント**：
+  - `100dvh`（Dynamic Viewport Height）でiOS Safariのアドレスバー対応
+  - `env(safe-area-inset-*)` でノッチ・ホームバー対応
+  - flexbox で自動調整（ピクセルハードコーディング削除）
+  - `rem` 単位でレスポンシブ対応
+
+  ### フェーズ6: タブ切り替え動作修正（JavaScript）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  #### 6-1. タブ切り替えイベントハンドラーの確認
+
+  **問題**：
+  - タブボタン（.tab-btn）を押してもページ遷移しない
+  - addEventListener が正しく動作していない可能性
+  - タブコンテンツ（.tab-pane）の show/hide 処理が動作していない
+
+  #### 6-2. タブ切り替えロジックの修正
+
+  `initTerminal()` 関数内のタブ切り替えロジックを確認・修正：
+
+  ```javascript
+  // タブ切り替え機能（initTerminal関数内）
+  function setupTabSwitching() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    console.log('Tab buttons found:', tabBtns.length);
+    console.log('Tab panes found:', tabPanes.length);
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); // デフォルト動作を防止
+
+        const tabName = btn.getAttribute('data-tab');
+        console.log('Tab clicked:', tabName);
+
+        // 全てのタブボタンとペインから active を削除
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(p => p.classList.remove('active'));
+
+        // クリックされたタブを active に
+        btn.classList.add('active');
+        const targetPane = document.getElementById(`tab-${tabName}`);
+        if (targetPane) {
+          targetPane.classList.add('active');
+          console.log('Tab switched to:', tabName);
+        } else {
+          console.error('Tab pane not found:', `tab-${tabName}`);
+        }
+
+        // Terminal タブが表示された時に xterm.js をリサイズ
+        if (tabName === 'terminal' && term && fitAddon) {
+          setTimeout(() => {
+            fitAddon.fit();
+            console.log('Terminal resized');
+          }, 100);
+        }
+
+        // Status タブが表示された時に nawabari.md を読み込む
+        if (tabName === 'status') {
+          loadNawabariMd();
+        }
+
+        // Alerts タブが表示された時にフクロウ警告を読み込む
+        if (tabName === 'alerts') {
+          loadAlerts();
+        }
+      });
+    });
+  }
+
+  // initTerminal関数の最後で呼び出し
+  setupTabSwitching();
+  ```
+
+  #### 6-3. デバッグログの追加
+
+  タブ切り替えが動作しない場合、以下を確認：
+  - `console.log` で .tab-btn、.tab-pane が正しく取得されているか
+  - `data-tab` 属性が正しく設定されているか
+  - `#tab-${tabName}` の ID が HTML に存在するか
+
+  #### 6-4. 代替実装（onclick属性を使用）
+
+  もし addEventListener が動作しない場合、HTML側に onclick 属性を追加：
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/index.html
+
+  ```html
+  <!-- タブナビゲーション -->
+  <div id="tab-navigation">
+    <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="tab-btn" data-tab="terminal" onclick="switchTab('terminal')">🖥️ Terminal</button>
+    <button class="tab-btn" data-tab="status" onclick="switchTab('status')">📋 Status</button>
+    <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts')">🚨 Alerts</button>
+  </div>
+  ```
+
+  そして、terminal.js にグローバル関数を追加：
+
+  ```javascript
+  // グローバル関数としてタブ切り替えを公開
+  window.switchTab = function(tabName) {
+    console.log('switchTab called:', tabName);
+
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    // 全てのタブボタンとペインから active を削除
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabPanes.forEach(p => p.classList.remove('active'));
+
+    // クリックされたタブを active に
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+    if (targetBtn) {
+      targetBtn.classList.add('active');
+    }
+
+    const targetPane = document.getElementById(`tab-${tabName}`);
+    if (targetPane) {
+      targetPane.classList.add('active');
+    }
+
+    // Terminal タブが表示された時に xterm.js をリサイズ
+    if (tabName === 'terminal' && window.term && window.fitAddon) {
+      setTimeout(() => {
+        window.fitAddon.fit();
+      }, 100);
+    }
+
+    // Status タブが表示された時に nawabari.md を読み込む
+    if (tabName === 'status') {
+      window.loadNawabariMd();
+    }
+
+    // Alerts タブが表示された時にフクロウ警告を読み込む
+    if (tabName === 'alerts') {
+      window.loadAlerts();
+    }
+  };
+  ```
+
+  ### フェーズ7: クリップボード画像ペースト機能（JavaScript）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  #### 7-1. paste イベントリスナーの追加
+
+  `initTerminal()` 関数内に、クリップボードからの画像ペースト機能を追加：
+
+  ```javascript
+  // クリップボード画像ペースト機能
+  document.addEventListener('paste', (e) => {
+    // Chat タブが表示されていない場合は何もしない
+    const chatTab = document.getElementById('tab-chat');
+    if (!chatTab || !chatTab.classList.contains('active')) {
+      return;
+    }
+
+    // クリップボードアイテムを取得
+    const items = e.clipboardData.items;
+    if (!items) return;
+
+    // 画像アイテムを探す
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      // 画像タイプのみ処理
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); // デフォルトのペースト動作を防止
+
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        console.log('Image pasted:', file.name, file.type, file.size);
+
+        // ファイルサイズを検証（5MB以下）
+        if (file.size > 5 * 1024 * 1024) {
+          alert('ファイルサイズは5MB以下にしてください');
+          return;
+        }
+
+        // 選択された画像を保持
+        selectedImage = file;
+
+        // プレビュー表示
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          // プレビューコンテナを作成または更新
+          let previewContainer = document.getElementById('image-preview-container');
+          if (!previewContainer) {
+            previewContainer = document.createElement('div');
+            previewContainer.id = 'image-preview-container';
+            previewContainer.style.cssText = `
+              position: relative;
+              margin: 10px;
+              padding: 10px;
+              background: #2c2c2c;
+              border-radius: 8px;
+            `;
+
+            // chat-input-container の前に挿入
+            const chatInputContainer = document.getElementById('chat-input-container');
+            chatInputContainer.parentNode.insertBefore(previewContainer, chatInputContainer);
+          }
+
+          // プレビュー画像とクリアボタンを表示
+          previewContainer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${event.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 4px;">
+              <span style="color: #4caf50; font-size: 14px;">📋 ペーストした画像</span>
+              <button id="clear-image-btn" style="
+                padding: 5px 10px;
+                background: #f44336;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+              ">✕ クリア</button>
+            </div>
+          `;
+
+          // クリアボタンのイベントリスナー
+          document.getElementById('clear-image-btn').addEventListener('click', () => {
+            selectedImage = null;
+            previewContainer.remove();
+            const screenshotInput = document.getElementById('screenshot-input');
+            if (screenshotInput) {
+              screenshotInput.value = ''; // input をリセット
+            }
+          });
+        };
+        reader.readAsDataURL(file);
+
+        break; // 最初の画像のみ処理
+      }
+    }
+  });
+  ```
+
+  #### 7-2. 動作の仕組み
+
+  1. **paste イベントをリッスン**：
+     - `document.addEventListener('paste', ...)` でページ全体のペーストイベントを監視
+     - Chat タブが表示されている場合のみ処理
+
+  2. **クリップボードから画像を取得**：
+     - `e.clipboardData.items` でクリップボードアイテムを取得
+     - `item.type.startsWith('image/')` で画像タイプを判定
+     - `item.getAsFile()` でファイルオブジェクトを取得
+
+  3. **プレビュー表示**：
+     - `FileReader` で画像をData URLに変換
+     - `#image-preview-container` にプレビューを表示
+     - `selectedImage` 変数に保持（送信時に使用）
+
+  4. **送信処理**：
+     - 既存の送信ロジック（フェーズ2-3）で処理
+     - `selectedImage` に画像があれば、FormData に含めて送信
+
+  #### 7-3. 使い方
+
+  - Chat タブで画像をコピー（Ctrl+C / Cmd+C）
+  - Chat タブ内でペースト（Ctrl+V / Cmd+V）
+  - プレビューが表示される
+  - Send ボタンで送信
+
+  ## 動作確認
+
+  実装後、以下を確認するにゃ：
+  1. ブラウザで http://localhost:3000 にアクセス
+  2. パスワード認証 → ログイン成功
+  3. 💬 Chat タブに移動
+  4. **【カメラボタン】** 📷 ボタンをクリック → ファイル選択ダイアログが開くこと
+  5. 画像を選択 → プレビューが表示されること
+  6. Send ボタンをクリック → 画像が送信されること
+  7. 送信後、チャットメッセージに画像が表示されること
+  8. **【画像ペースト】** 画像をコピー → Chat タブで Ctrl+V（Cmd+V）
+  9. ペーストした画像のプレビューが表示されること
+  10. Send ボタンで画像が送信されること
+  11. **【タブ切り替え】** 各タブボタンをクリック → 正しく遷移すること
+  12. Terminal タブで xterm.js が正しくリサイズされること
+  13. **【iPhone実機】** iPhone実機でアクセス → タブが隠れないこと
+  14. **【iPhone実機】** ノッチ・ホームバーと干渉しないこと
+  15. モバイル表示（Chrome DevTools）でカメラ起動すること
+
+  ## 注意事項
+  - ファイルサイズは5MB以下に制限
+  - 画像ファイルのみ許可（image/*）
+  - アップロードされた画像は public/uploads/ に保存
+  - セキュリティ：ファイルタイプの検証を必ず実施
+  - エラーハンドリングを適切に実装
+  - **iPhone実機でのテストを推奨**
+  - **ピクセルハードコーディングを避け、rem/vh/vw/flexboxを使用**
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "public/index.html"
+    - "public/terminal.js"
+    - "public/styles.css"
+    - "server.js"
+  references:
+    - "カメラボタン（📷）"
+    - "input type=file"
+    - "プレビュー表示"
+    - "送信処理"
+    - "multer（ファイルアップロード）"
+
+expected_outputs:
+  - "public/terminal.js（イベントリスナー追加、プレビュー実装）"
+  - "server.js（multer設定、/api/boss-chat エンドポイント）"
+  - "public/styles.css（チャットスタイル追加）"
+  - "npm install multer 実行"
+  - "public/uploads/ ディレクトリ作成"
+  - "動作確認完了報告"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - モバイルからの画像アップロードを確実に動作させるにゃ
+  - ファイルサイズとタイプの検証を忘れずににゃ
+  - エラーメッセージをユーザーフレンドリーにするにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

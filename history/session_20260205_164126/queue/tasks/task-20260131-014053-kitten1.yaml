@@ -1,0 +1,79 @@
+task_id: "task-20260131-014053-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T01:40:53"
+priority: medium
+load_skills: []
+description: |
+  【modern-web-ui スキル化作戦】
+
+  ## 概要
+  chat-app UIリニューアルで使用したモダンUI実装パターンをスキル化する
+
+  ## スキル情報
+  - **スキル名**: modern-web-ui
+  - **スコア**: 17/20（自動承認ライン超え）
+  - **承認**: ボスねこ承認済み（スキル化判断権限委任済み）
+
+  ## スキル内容
+  1. **CSS変数によるデザイントークン**: 色、影、トランジションを一元管理
+  2. **ガラスモーフィズム**: backdrop-filter活用パターン
+  3. **ネオンアクセント**: グラデーション + box-shadow でサイバーパンク風
+  4. **アニメーション**: cubic-bezier でスムーズな動き
+  5. **LocalStorage活用**: 履歴保存パターン（最大件数制限付き）
+
+  ## 作成するファイル構造
+  ```
+  /home/edgesakura/git/.claude/skills/modern-web-ui/
+  ├── SKILL.md（実装ガイド、デザイントークン、サンプルコード）
+  ├── templates/
+  │   ├── modern-ui.css（CSS変数、ガラスモーフィズム、アニメーション）
+  │   └── modern-ui.html（ボトムナビ、タブ構造のテンプレート）
+  └── examples/
+      └── README.md（chat-appへの参照リンク）
+  ```
+
+  ## 実装手順
+  1. ディレクトリ作成（.claude/skills/modern-web-ui/, templates/, examples/）
+  2. 参照元ファイル読み取り（chat-app/public/styles.css, index.html, app.js）
+  3. SKILL.md 作成
+     - スキル概要
+     - デザイントークン（CSS変数一覧）
+     - 実装パターン（ガラスモーフィズム、ネオンアクセント、アニメーション）
+     - 使い方（導入手順、サンプルコード）
+     - LocalStorage活用パターン
+  4. templates/modern-ui.css 作成
+     - CSS変数定義（:root）
+     - ガラスモーフィズムクラス（.glass）
+     - ネオングローエフェクト（.glow-cyan, .glow-purple）
+     - アニメーション定義（@keyframes fadeIn, slideIn等）
+     - ボトムナビ実装（.bottom-nav, .nav-item）
+  5. templates/modern-ui.html 作成
+     - ボトムナビゲーション構造
+     - タブ切り替え構造
+     - ガラスモーフィズムカード
+  6. examples/README.md 作成
+     - chat-appへの参照リンク
+     - 実装例の説明
+  7. 完了報告YAML作成
+
+  ## 注意事項
+  - SKILL.mdは分かりやすく、具体的に書くこと
+  - テンプレートは汎用的で再利用しやすいものにすること
+  - chat-appのコードから抽出する際、chat-app固有の部分は除外すること
+  - CSS変数名は分かりやすく命名すること
+
+  ## 自律実行範囲
+  ファイル作成・書き込みOKにゃ！承認不要にゃ。
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/styles.css"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/index.html"
+    - "/home/edgesakura/git/neko-pm/output/chat-app/public/app.js"
+
+expected_outputs:
+  - "/home/edgesakura/git/.claude/skills/modern-web-ui/SKILL.md"
+  - "/home/edgesakura/git/.claude/skills/modern-web-ui/templates/modern-ui.css"
+  - "/home/edgesakura/git/.claude/skills/modern-web-ui/templates/modern-ui.html"
+  - "/home/edgesakura/git/.claude/skills/modern-web-ui/examples/README.md"
+  - "完了報告YAML（queue/reports/report-20260131-014053-kitten1.yaml）"

@@ -1,0 +1,286 @@
+task_id: "task-20260202-180512-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T18:05:12"
+priority: high
+command_id: "cmd-20260202-180417"
+description: |
+  【計画的リファクタリング】app.jsを認証のみに最小化
+
+  ## 背景
+  - app.jsは古いチャットUI（バブル表示）用に設計
+  - タブUI化後、大部分が不要になった
+  - terminal.jsがxterm.js、タブ、写真送信を担当
+
+  ## 実行手順
+
+  ### 🔧 ステップ1: バックアップ作成
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  cp public/app.js public/app.js.backup
+  ls -lh public/app.js*
+  ```
+
+  ### 📝 ステップ2: 現在のapp.jsを確認
+
+  まず、現在のapp.jsを読み取って、残すべきコードを確認するにゃ。
+
+  ```bash
+  wc -l public/app.js
+  ```
+
+  ### ✏️ ステップ3: 新しいapp.jsを作成
+
+  **残すもの（認証機能のみ）**:
+
+  #### 1. 変数定義（認証関連のみ）
+  - authScreen, mainApp
+  - passwordInput, loginButton, authError
+  - logoutButton（もしあれば）
+  - AUTH_TOKEN_KEY, CHAT_HISTORY_KEY
+
+  #### 2. 関数
+  - login(password) - 認証処理
+  - logout() - ログアウト処理
+  - checkAuthentication() - 認証チェック
+
+  #### 3. イベントリスナー
+  - loginButton.addEventListener
+  - passwordInput のEnterキー検出
+  - logoutButton.addEventListener（もしあれば）
+
+  #### 4. 初期化
+  - DOMContentLoaded でcheckAuthentication()呼び出し
+  - 認証成功時にinitTerminal()呼び出し
+
+  **削除するもの**:
+  - WebSocket関連（connect, handleIncomingMessage等）→ terminal.jsが担当
+  - メッセージ関連（sendMessage, addUserMessage等）→ 不要
+  - タブ関連（switchTab）→ terminal.jsが担当
+  - アラート関連（handleApprovalAlert等）→ terminal.jsが担当
+  - 写真関連（openPhotoSelector等）→ terminal.jsが担当
+  - 履歴関連（saveChatHistory等）→ 不要
+  - 古い変数定義（messagesContainer, messageInput等）
+  - コメントアウトされた関数（全て削除）
+
+  **新しいapp.jsの構成**:
+  ```javascript
+  // ========================================
+  // Authentication Module (Minimal)
+  // ========================================
+  // このファイルは認証機能のみを提供します
+  // UIロジックは terminal.js が担当します
+
+  // Global constants
+  const AUTH_TOKEN_KEY = 'auth_token';
+  const CHAT_HISTORY_KEY = 'chat_history';
+
+  // DOM elements (authentication only)
+  let authScreen, mainApp, passwordInput, loginButton, authError, logoutButton;
+
+  // Initialize after DOM loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get DOM elements
+    authScreen = document.getElementById('authScreen');
+    mainApp = document.getElementById('mainApp');
+    passwordInput = document.getElementById('passwordInput');
+    loginButton = document.getElementById('loginButton');
+    authError = document.getElementById('authError');
+    logoutButton = document.getElementById('logoutButton');
+
+    // Setup event listeners
+    if (loginButton) {
+      loginButton.addEventListener('click', () => {
+        const password = passwordInput.value;
+        login(password);
+      });
+    }
+
+    if (passwordInput) {
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const password = passwordInput.value;
+          login(password);
+        }
+      });
+    }
+
+    if (logoutButton) {
+      logoutButton.addEventListener('click', logout);
+    }
+
+    // Check authentication on load
+    checkAuthentication();
+  });
+
+  // ========================================
+  // Authentication Functions
+  // ========================================
+
+  async function login(password) {
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+
+        // Hide auth screen, show main app
+        if (authScreen) authScreen.classList.add('hidden');
+        if (mainApp) mainApp.classList.remove('hidden');
+
+        // Initialize terminal UI
+        if (typeof initTerminal === 'function') {
+          initTerminal();
+        }
+      } else {
+        if (authError) {
+          authError.textContent = data.message || '認証に失敗しました';
+          authError.style.display = 'block';
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      if (authError) {
+        authError.textContent = 'ネットワークエラーが発生しました';
+        authError.style.display = 'block';
+      }
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+
+    // Reload page to reset state
+    window.location.reload();
+  }
+
+  async function checkAuthentication() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (!token) {
+      // No token, show auth screen
+      if (authScreen) authScreen.classList.remove('hidden');
+      if (mainApp) mainApp.classList.add('hidden');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        // Token is valid, show main app
+        if (authScreen) authScreen.classList.add('hidden');
+        if (mainApp) mainApp.classList.remove('hidden');
+
+        // Initialize terminal UI
+        if (typeof initTerminal === 'function') {
+          initTerminal();
+        }
+      } else {
+        // Token invalid, show auth screen
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        if (authScreen) authScreen.classList.remove('hidden');
+        if (mainApp) mainApp.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      // On error, show auth screen
+      if (authScreen) authScreen.classList.remove('hidden');
+      if (mainApp) mainApp.classList.add('hidden');
+    }
+  }
+  ```
+
+  ### 🔄 ステップ4: サーバー再起動
+
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+
+  # 既存プロセス停止
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process on port 3000"
+
+  # サーバー起動
+  nohup node server.js > server.log 2>&1 &
+
+  # 起動確認（2秒待機）
+  sleep 2
+  tail -10 server.log
+  ```
+
+  ### ✅ ステップ5: 動作確認
+
+  **期待される結果**：
+  - ブラウザのコンソールでエラーが出ない ✅
+  - 認証画面が表示される ✅
+  - ログインが動作する ✅
+  - ログイン後にxterm.jsが表示される ✅
+  - 写真送信が動作する ✅
+  - タブ切り替えが動作する ✅
+
+  ### 📊 ステップ6: ファイルサイズ比較
+
+  ```bash
+  wc -l public/app.js.backup public/app.js
+  du -h public/app.js.backup public/app.js
+  ```
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **バックアップ作成確認**（ファイルサイズ）
+  2. **削除したコード数**（行数比較）
+  3. **新しいapp.jsの行数**（約100-150行になるはず）
+  4. **動作確認結果**（6つの成功基準）
+  5. **サーバー再起動確認**
+
+  ## 成果物
+  - app.js.backup（バックアップ）
+  - app.js（認証機能のみ、約100-150行）
+  - サーバー再起動完了
+  - 動作確認結果
+  - 完了報告YAML（queue/reports/ に作成）
+
+  ## 注意事項
+  - 🎯 ご主人承認済みのリファクタリング
+  - 📝 認証機能を残すこと（削除しない）
+  - ✅ terminal.jsとの連携を維持すること
+  - 🔍 動作確認を必ず行うこと
+  - 🐱 initTerminal() 呼び出しを忘れずに
+  - 完了したら queue/reports/ に報告YAML作成にゃ
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_file: "public/app.js"
+  backup_file: "public/app.js.backup"
+  expected_lines: "100-150行"
+
+expected_outputs:
+  - "app.js.backup（バックアップ）"
+  - "app.js（認証機能のみ、約100-150行）"
+  - "サーバー再起動完了（server.log 最後の10行）"
+  - "ファイルサイズ比較結果"
+  - "動作確認結果（6つの成功基準）"
+  - "完了報告YAML（queue/reports/task-20260202-180512-kitten3.yaml）"
+
+notes: |
+  - 🎯 ご主人承認済みのリファクタリング
+  - ✅ terminal.jsは修正不要（そのまま動作）
+  - 🚨 認証機能を壊さないこと
+  - 📝 約100-150行のシンプルなファイルになるはず
+  - 完了したら必ず番猫に報告するにゃ〜

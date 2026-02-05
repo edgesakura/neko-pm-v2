@@ -1,0 +1,81 @@
+task_id: "task-2026-02-05T16:19:52-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-05T16:19:52"
+priority: high
+command_id: "cmd-20260205T161503"
+phase: "3/4"
+subtask: "3-3"
+
+description: |
+  # タスク3-3: queue/checkpoints ディレクトリ作成
+
+  ## 目的
+  長時間タスクの中間状態を保存するディレクトリを作成し、使い方を説明するにゃ。
+
+  ## 作業内容
+
+  ### 1. ディレクトリ作成
+  ```bash
+  mkdir -p queue/checkpoints
+  ```
+
+  ### 2. README.md 作成
+
+  `queue/checkpoints/README.md` に以下の内容を記載するにゃ：
+
+  ```markdown
+  # Checkpoints Directory
+
+  このディレクトリには、長時間タスクの中間状態を保存するにゃ。
+
+  ## ファイル命名規則
+  - `checkpoint-{task_id}-{timestamp}.yaml`
+  - 例: `checkpoint-task-2026-02-05T16:00:00-kitten1-20260205T163000.yaml`
+
+  ## 保存内容
+  - completed_steps: 完了したステップのリスト
+  - next_action: 次にやるべきこと
+  - context: 関連情報（ファイルパス、変数等）
+  - issues: 未解決の問題点
+
+  ## 運用ルール
+  - タスク完了後は削除してOK
+  - 中断時は必ず保持
+  - 1週間以上経過したファイルは定期的にクリーンアップ
+  ```
+
+  ### 3. .gitkeep 作成
+  ```bash
+  touch queue/checkpoints/.gitkeep
+  ```
+
+  ## 作業手順
+  1. `mkdir -p queue/checkpoints` でディレクトリ作成
+  2. `queue/checkpoints/README.md` を Write ツールで作成
+  3. `touch queue/checkpoints/.gitkeep` で空ディレクトリ保持
+  4. 完了報告YAML作成
+
+  ## 事前検証チェックリスト
+  - [ ] ディレクトリが作成されているか（`ls -la queue/checkpoints`）
+  - [ ] README.md が存在するか
+  - [ ] .gitkeep が存在するか
+  - [ ] README.md の内容が正確か
+
+expected_outputs:
+  - "queue/checkpoints/（ディレクトリ）"
+  - "queue/checkpoints/README.md（使い方説明）"
+  - "queue/checkpoints/.gitkeep（空ディレクトリ保持）"
+
+expected_checks:
+  - "ディレクトリ存在確認（ls -la）"
+  - "README.md 内容確認"
+  - ".gitkeep 存在確認"
+
+acceptance_criteria:
+  - "queue/checkpoints/ が存在する"
+  - "README.md で使い方が説明されている"
+  - ".gitkeep が存在する"
+
+context:
+  parallel_task: "子猫1がタスク3-1を同時実行中"
+  independent: "このタスクは他タスクと独立している"

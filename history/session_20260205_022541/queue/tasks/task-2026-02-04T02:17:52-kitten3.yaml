@@ -1,0 +1,60 @@
+# 子猫3へのタスク配分
+task_id: "task-2026-02-04T02:17:52-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-04T02:17:52"
+priority: high
+operation_id: "cmd-2026-02-04T02:16:44"
+skill_load: []
+
+description: |
+  owl-reviewer（目利きフクロウ）スキルの動作確認を実施するにゃ。
+
+  **目的**：Codex CLI スキルが正しく動作することを確認するにゃ。
+
+context:
+  skill_name: "owl-reviewer"
+  cli: "Codex CLI"
+  location: "~/.codex/skills/owl-reviewer/"
+  role: "目利きフクロウ（コードレビュー・セキュリティ監査専門家）"
+  model: "codex-mini-latest（o4-mini）"
+
+task_steps:
+  step1:
+    action: "スキルの存在を確認するにゃ"
+    command: "ls -la ~/.codex/skills/owl-reviewer/"
+    expected: "SKILL.md、agents/、scripts/、references/ が存在"
+
+  step2:
+    action: "実際に呼び出してレビュー動作を確認するにゃ"
+    command: |
+      codex review --uncommitted
+    expected: |
+      - 「目利きフクロウ」としてのロールで応答
+      - 重要度別（CRITICAL/HIGH/MEDIUM/LOW）形式で出力
+      - セキュリティチェックリストに基づくレビュー
+
+  step3:
+    action: "出力形式を確認するにゃ"
+    check_points:
+      - "重要度別（CRITICAL/HIGH/MEDIUM/LOW）で問題を分類していること"
+      - "セキュリティチェック項目（OWASP Top 10等）に基づいていること"
+      - "修正提案が具体的に記載されていること"
+
+  step4:
+    action: "動作確認レポートを作成するにゃ"
+
+success_criteria:
+  - "~/.codex/skills/owl-reviewer/ が存在する"
+  - "「目利きフクロウ」としてのロールで応答する"
+  - "重要度別（CRITICAL/HIGH/MEDIUM/LOW）形式で出力"
+  - "セキュリティチェックリストに基づくレビュー"
+
+expected_outputs:
+  - "owl-reviewer 動作確認レポート（報告YAMLに記載）"
+
+dependencies: []
+
+notes: |
+  - スキルが正しく配置されていることを確認するにゃ
+  - codex review コマンドでレビュー動作を確認するにゃ
+  - セキュリティチェックが正しく実行されるか確認するにゃ〜

@@ -1,0 +1,79 @@
+task_id: "task-20260131-023946-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-01-31T02:39:46"
+priority: high
+load_skills: []
+description: |
+  【番猫→ボスねこ通知修正作戦】F002の矛盾を解消 〜send-keys通信復旧〜
+
+  ## 問題
+  番猫からボスねこへのsend-keys通知が届いていない
+
+  ## 原因
+  instructions/guard-cat.md の禁止事項F002が矛盾している：
+  - F002（行34-36）: 「ボスねこに直接send-keys禁止」
+  - しかし後半（行596-600）: 「完了通知をsend-keysで送れ」と書いてある
+
+  番猫がF002を厳密に解釈し、全てのsend-keysをやめてしまった
+
+  ## 修正内容
+
+  ### 修正箇所
+  instructions/guard-cat.md の行34-36（F002の定義）
+
+  ### 修正前（行34-36）
+  ```yaml
+  - id: F002
+    action: direct_boss_send_keys
+    description: "ボスねこに直接send-keys"
+    use_instead: nawabari.md更新
+  ```
+
+  ### 修正後
+  ```yaml
+  - id: F002
+    action: detailed_info_via_send_keys
+    description: "詳細情報をsend-keysで送る（長文禁止）"
+    use_instead: nawabari.md更新
+    note: "完了通知・エスカレ通知のsend-keysはOK"
+  ```
+
+  ## 修正理由
+  - F002の本来の意図: 「詳細情報を send-keys で送るな（長文になるので）」
+  - 完了通知・エスカレ通知は短文なので問題なし
+  - `note` フィールドで明確化し、矛盾を解消
+
+  ## 実装手順
+  1. instructions/guard-cat.md を読み取り
+  2. 行34-36を探す（F002の定義）
+  3. 以下のように修正：
+     - `action: direct_boss_send_keys` → `action: detailed_info_via_send_keys`
+     - `description: "ボスねこに直接send-keys"` → `description: "詳細情報をsend-keysで送る（長文禁止）"`
+     - `note: "完了通知・エスカレ通知のsend-keysはOK"` を追加
+  4. ファイル保存
+  5. 完了報告YAML作成
+
+  ## 期待される効果
+  - ✅ F002の矛盾が解消される
+  - ✅ 番猫→ボスねこのsend-keys通知が復旧する
+  - ✅ 完了通知・エスカレ通知が正常に届くようになる
+
+  ## 自律実行範囲
+  - ファイル編集OK（番猫自動承認）
+  - YAML Front Matterの修正なので、承認不要
+
+  ## 注意事項
+  - YAML Front Matterのインデントを正しく保つこと
+  - `note` フィールドの追加位置に注意（`use_instead` の後）
+
+context:
+  target_dir: "/home/edgesakura/git/neko-pm"
+  files_to_modify:
+    - "instructions/guard-cat.md"
+  modification_type: "YAML Front Matter修正"
+  severity: "high"
+
+expected_outputs:
+  - "instructions/guard-cat.md（F002の定義修正）"
+  - "完了報告YAML（queue/reports/report-20260131-023946-kitten1.yaml）"
+  - "動作確認報告"

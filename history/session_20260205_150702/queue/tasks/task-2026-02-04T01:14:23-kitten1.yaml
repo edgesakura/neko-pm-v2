@@ -1,0 +1,134 @@
+# 子猫1へのタスク配分
+task_id: "task-2026-02-04T01:14:23-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-04T01:14:23"
+priority: medium
+operation_id: "cmd-2026-02-04T01:13:28"
+skill_load: []
+
+description: |
+  neko-pm/CLAUDE.md を更新して、新規作成した CLI スキルを記載するにゃ。
+
+  **目的**：他のエージェント（ボスねこ、番猫、子猫）も CLI スキルを利用できるようにするにゃ。
+
+context:
+  target_file: "/home/edgesakura/git/neko-pm/CLAUDE.md"
+  task_type: "documentation"
+
+  new_skills:
+    - name: "sage-fox"
+      cli: "Gemini CLI"
+      location: "~/.gemini/skills/sage-fox/"
+      role: "賢者キツネ（リサーチ・トレンド調査専門家）"
+      usage: "高速リサーチ、情報収集、概要把握"
+      invocation: "gemini --approval-mode plan \"{依頼内容}\""
+      notes: "リサーチ専用モード。ファイル編集しない。"
+
+    - name: "research-tanuki"
+      cli: "Codex CLI"
+      location: "~/.codex/skills/research-tanuki/"
+      role: "研究狸（深掘り調査・技術判断専門家）"
+      usage: "深掘り調査、アーキテクチャ分析、技術判断"
+      invocation: "codex exec --full-auto --sandbox read-only --cd {project_dir} \"{依頼内容}\""
+      notes: "ボスねこの相談相手。仮説→検証→結論プロセス。"
+
+    - name: "owl-reviewer"
+      cli: "Codex CLI"
+      location: "~/.codex/skills/owl-reviewer/"
+      role: "目利きフクロウ（コードレビュー・セキュリティ監査専門家）"
+      usage: "コードレビュー、セキュリティ監査"
+      invocation: "codex exec --full-auto --sandbox read-only --cd {project_dir} \"{依頼内容}\""
+      notes: "OWASP Top 10 チェック、コーディング規約チェック。"
+
+  section_to_add:
+    title: "## neko-pm スペシャリスト（CLI ネイティブスキル）"
+    description: |
+      neko-pm システムで使用する CLI ネイティブスキル。
+      ボスねこが specialists ペインで呼び出す際に使用される。
+
+task_steps:
+  step1:
+    action: "CLAUDE.md を読み取って現在の構成を把握するにゃ"
+    command: "Read tool で /home/edgesakura/git/neko-pm/CLAUDE.md を読む"
+
+  step2:
+    action: "適切な挿入位置を決定するにゃ"
+    details: |
+      - 既存の「利用可能なスキル」セクションの後
+      - 「利用可能なサブエージェント」セクションの前
+      - または、ファイル末尾
+
+  step3:
+    action: "新しいセクションを追加するにゃ"
+    content: |
+      ## neko-pm スペシャリスト（CLI ネイティブスキル）
+
+      ボスねこが `neko:specialists` ペインで呼び出す専門家たち。
+      各 CLI（Gemini/Codex）のネイティブスキルとして実装されている。
+
+      ### 🦊 賢者キツネ（sage-fox）- Gemini CLI
+
+      **配置**: `~/.gemini/skills/sage-fox/`
+      **用途**: 高速リサーチ、トレンド調査、概要把握
+      **呼び出し方**:
+      ```bash
+      gemini --approval-mode plan "最新のReact 19の変更点を調査して"
+      ```
+
+      **特徴**:
+      - リサーチ専用モード（ファイル編集しない）
+      - 高速で情報収集
+      - nawabari.md 互換形式で出力
+
+      ---
+
+      ### 🦝 研究狸（research-tanuki）- Codex CLI
+
+      **配置**: `~/.codex/skills/research-tanuki/`
+      **用途**: 深掘り調査、アーキテクチャ分析、技術判断
+      **呼び出し方**:
+      ```bash
+      codex exec --full-auto --sandbox read-only --cd /path/to/project "このプロジェクトのアーキテクチャを分析して"
+      ```
+
+      **特徴**:
+      - ボスねこの相談相手
+      - 仮説→証拠収集→反証→結論プロセス
+      - 調査レポート形式で出力（エグゼクティブサマリー付き）
+
+      ---
+
+      ### 🦉 目利きフクロウ（owl-reviewer）- Codex CLI
+
+      **配置**: `~/.codex/skills/owl-reviewer/`
+      **用途**: コードレビュー、セキュリティ監査
+      **呼び出し方**:
+      ```bash
+      codex exec --full-auto --sandbox read-only --cd /path/to/project "このコードをレビューして、セキュリティ問題を指摘して"
+      ```
+
+      **特徴**:
+      - OWASP Top 10 セキュリティチェック
+      - neko-pm 固有のコーディング規約チェック
+      - 重要度別レポート（CRITICAL/HIGH/MEDIUM/LOW）
+
+  step4:
+    action: "CLAUDE.md を更新するにゃ"
+    command: "Edit tool で挿入"
+
+  step5:
+    action: "更新結果を確認するにゃ"
+    command: "Read tool で確認"
+
+  step6:
+    action: "報告YAMLを作成するにゃ"
+
+expected_outputs:
+  - "/home/edgesakura/git/neko-pm/CLAUDE.md（更新済み）"
+
+dependencies: []
+
+notes: |
+  - 既存の構成を壊さないように注意するにゃ
+  - 各スキルの情報は正確に記載するにゃ
+  - 他のエージェントが理解しやすい形式で記載するにゃ〜

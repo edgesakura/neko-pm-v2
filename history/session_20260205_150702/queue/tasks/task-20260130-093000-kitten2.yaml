@@ -1,0 +1,49 @@
+task_id: "task-20260130-093000-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-01-30T00:30:00Z"
+priority: high
+parent_command: "cmd-20260129T172438Z"
+phase: "Phase 1: 設計・調査"
+load_skills:
+  - "ppt"
+description: |
+  【タスク】python-pptxでのスライド生成方式設計
+
+  ## 目的
+  python-pptxライブラリを使ったスライド生成方式を設計し、
+  Markdown→PPTX変換の実装方針を決定するにゃ。
+
+  ## 作業内容
+  1. 既存のpptスキル実装を確認：
+     - `/home/edgesakura/git/skills/ppt/` ディレクトリ
+     - TypeScriptでの簡易PPTX生成実装
+  2. python-pptxの調査：
+     - 公式ドキュメント確認（Web検索）
+     - サンプルコード作成・検証
+     - テンプレート機能の調査
+  3. Markdown→PPTX変換方式の設計：
+     - Markdownパース方法（#, ##, ###, リスト、コードブロックなど）
+     - スライドレイアウトのマッピング
+     - 画像・表の埋め込み方法
+     - コードシンタックスハイライト対応
+  4. 設計ドキュメントを作成
+
+context:
+  references:
+    - "/home/edgesakura/git/skills/ppt/"
+    - "/home/edgesakura/git/knowledge/ppt/"
+  related_tasks:
+    - "task-20260130-093000-kitten1"  # marp-agent分析と連携
+  external_resources:
+    - "python-pptx documentation"
+    - "Markdown to PPTX conversion patterns"
+
+expected_outputs:
+  - "neko-pm/output/phase1/pptx-generation-design.md"
+  - "neko-pm/output/phase1/sample-converter.py"（概念実証コード）
+
+completion_criteria:
+  - python-pptxの基本操作が理解できている
+  - Markdown→PPTX変換のロジックが設計されている
+  - サンプルコードで実現可能性が検証されている
+  - スライドレイアウトのマッピング表が作成されている

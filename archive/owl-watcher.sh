@@ -26,12 +26,38 @@ REPORTS_DIR="${SCRIPT_DIR}/queue/reports"
 LOG_FILE="${SCRIPT_DIR}/logs/owl-watcher.log"
 APPROVAL_LOG="${SCRIPT_DIR}/logs/approval.log"
 PID_FILE="${SCRIPT_DIR}/.owl-watcher.pid"
-POLL_INTERVAL=15  # 秒（レポート監視）
-APPROVAL_POLL_INTERVAL=3  # 秒（承認監視）
+
+# 設定値（環境変数からオーバーライド可能）
+POLL_INTERVAL="${OWL_POLL_INTERVAL:-15}"  # 秒（レポート監視）
+APPROVAL_POLL_INTERVAL="${OWL_APPROVAL_POLL_INTERVAL:-5}"  # 秒（承認監視）
+
+# レビュー範囲: 環境変数 OWL_REVIEW_RANGE で指定可能
+# デフォルト: HEAD~1（直近1コミットの変更）
+# 例: OWL_REVIEW_RANGE="main..HEAD" で複数コミットをまとめてレビュー
+REVIEW_RANGE="${OWL_REVIEW_RANGE:-HEAD~1}"
+
+# 入力バリデーション: 整数チェック
+validate_integer() {
+    local var_name="$1"
+    local var_value="$2"
+    if ! [[ "$var_value" =~ ^[0-9]+$ ]]; then
+        echo "Error: ${var_name} must be a positive integer, got: '${var_value}'" >&2
+        exit 1
+    fi
+    if [ "$var_value" -lt 1 ] || [ "$var_value" -gt 3600 ]; then
+        echo "Error: ${var_name} must be between 1 and 3600, got: '${var_value}'" >&2
+        exit 1
+    fi
+}
+
+# 設定値の検証
+validate_integer "POLL_INTERVAL" "$POLL_INTERVAL"
+validate_integer "APPROVAL_POLL_INTERVAL" "$APPROVAL_POLL_INTERVAL"
 
 # 承認監視設定
-PANES_TO_MONITOR=("neko:workers.0" "neko:workers.1" "neko:workers.3" "neko:workers.4")
-SKIP_PANE="neko:workers.2"  # フクロウ自身
+# 全子猫ペインを監視対象に（workers.0=番猫、1-3=子猫）
+PANES_TO_MONITOR=("neko:workers.0" "neko:workers.1" "neko:workers.2" "neko:workers.3")
+SKIP_PANE=""  # スキップなし（全ペイン監視）
 WEBSOCKET_URL="ws://localhost:3000"
 
 # 色定義
@@ -144,11 +170,11 @@ extract_artifact_path() {
     if [ -z "$artifact_path" ]; then
         # タスクIDからプロジェクトを推測
         if grep -q "chat-app" "$report_file" 2>/dev/null; then
-            artifact_path="/home/edgesakura/git/neko-pm/output/chat-app"
+            artifact_path="/home/edgesakura/neko-pm/output/chat-app"
         elif grep -q "marp-agent" "$report_file" 2>/dev/null; then
             artifact_path="/home/edgesakura/git/marp-agent"
         else
-            artifact_path="/home/edgesakura/git/neko-pm"
+            artifact_path="/home/edgesakura/neko-pm"
         fi
     fi
 
@@ -197,7 +223,7 @@ run_codex_review() {
     log_owl "レビュー開始: ${artifact_path}"
 
     # レビュープロンプト
-    local prompt="以下の観点でコードレビューを実施してホー：
+    local prompt="git diff ${REVIEW_RANGE} の変更について、以下の観点でコードレビューを実施してホー：
 1. セキュリティ（入力バリデーション、認証、機密情報）
 2. コード品質（重複、複雑さ、命名）
 3. エラーハンドリング
@@ -300,29 +326,177 @@ check_approval_prompt() {
     fi
 }
 
+# シェルメタ文字を含むかチェック（コマンド注入防止）
+contains_shell_metachar() {
+    local input="$1"
+    # セミコロン、&&、||、バッククォート、$()、パイプ を検出
+    if [[ "$input" =~ [\;\&\|\`] ]] || [[ "$input" =~ \$\( ]]; then
+        return 0  # メタ文字あり
+    fi
+    return 1  # メタ文字なし
+}
+
 # コマンドが自動承認すべきか判断
 should_auto_approve() {
     local capture_output="$1"
 
-    # 削除系コマンドは絶対拒否
-    # 注: -f は誤検出（ls -laf等）を避けるため削除。rm -rf, --force は残す
-    if echo "$capture_output" | grep -qE "(rm -rf|rm -r|rmdir|delete|DELETE|DROP|TRUNCATE|git push|git reset --hard|force|--force|sudo)"; then
+    # ============================================================
+    # STEP 1: シェルメタ文字チェック（コマンド注入防止）
+    # ============================================================
+    # 連結コマンド（; && || ` $()）を含む場合は即拒否
+    if contains_shell_metachar "$capture_output"; then
+        log_warn "シェルメタ文字検出！拒否ホー"
         return 1  # 拒否
     fi
 
-    # 安全なコマンド/ツールは自動承認
+    # ============================================================
+    # STEP 2: 明確な危険パターン拒否
+    # ============================================================
+    # 削除系・破壊的コマンドは絶対拒否
+    if echo "$capture_output" | grep -qE "(rm -rf|rm -r|rmdir|delete|DELETE|DROP|TRUNCATE|git push|git reset --hard|--force|sudo|curl.*\|.*bash|wget.*\|.*sh|eval|exec)"; then
+        return 1  # 拒否
+    fi
+
+    # ============================================================
+    # STEP 3: Claude Code ツール別判定（旧形式: "Allow XXX"）
+    # ============================================================
+    # 安全なツール（Read, Edit, Write, etc）は自動承認
     if echo "$capture_output" | grep -qE "Allow (Read|Edit|Write|Glob|Grep|Task|WebFetch|WebSearch)"; then
         return 0  # 承認
     fi
 
-    # Bash の場合は内容をチェック
-    if echo "$capture_output" | grep -q "Allow Bash"; then
-        # 安全なコマンドリスト
-        if echo "$capture_output" | grep -qE "(npm|node|cat|ls|git add|git commit|git status|git diff|mkdir|touch|echo|cd|pwd|head|tail|grep|find|date|tmux)"; then
+    # ============================================================
+    # STEP 3b: Claude Code ツール別判定（新形式: "Do you want to proceed?"）
+    # ============================================================
+    # 新形式: "XXX file" や "XXX command" でツールを検出
+    if echo "$capture_output" | grep -q "Do you want to proceed?"; then
+        # Read/Edit/Write/Glob/Grep 等の安全なツールは自動承認
+        if echo "$capture_output" | grep -qE "(Read|Edit|Write|Glob|Grep) (file|1 file|[0-9]+ files)"; then
+            log_owl "新形式: 安全なファイル操作を検出 → 承認"
             return 0  # 承認
-        else
-            return 1  # 不明なBashコマンドは拒否
         fi
+        # Reading X files 形式
+        if echo "$capture_output" | grep -qE "Reading [0-9]+ files"; then
+            log_owl "新形式: ファイル読み取りを検出 → 承認"
+            return 0  # 承認
+        fi
+    fi
+
+    # ============================================================
+    # STEP 4: Bash コマンドの厳密な検証（旧形式）
+    # ============================================================
+    if echo "$capture_output" | grep -q "Allow Bash"; then
+        # コマンド部分を抽出（Allow Bash: の後の部分）
+        local cmd=$(echo "$capture_output" | grep -oE "Allow Bash.*" | sed 's/Allow Bash[^:]*: *//' | head -1)
+
+        # 安全なコマンドパターン（正規表現で厳密にマッチ）
+        # npm: install, run, test, build, ci のみ許可
+        if [[ "$cmd" =~ ^npm\ (install|run|test|build|ci|start|audit)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # node: ファイル実行のみ許可
+        if [[ "$cmd" =~ ^node\ [a-zA-Z0-9_./-]+\.m?js($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # git: 安全なサブコマンドのみ許可
+        if [[ "$cmd" =~ ^git\ (status|diff|log|branch|add|commit|fetch|pull|stash|show|ls-files)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # ファイル操作: 読み取り系のみ許可
+        if [[ "$cmd" =~ ^(cat|ls|head|tail|grep|find|pwd|date|wc)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # ディレクトリ作成: mkdir のみ許可
+        if [[ "$cmd" =~ ^mkdir($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # tmux: send-keys, list-panes, capture-pane のみ許可
+        if [[ "$cmd" =~ ^tmux\ (send-keys|list-panes|capture-pane|list-sessions|has-session)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # codex/gemini: CLIツール許可
+        if [[ "$cmd" =~ ^(codex|gemini)\ (exec|review|skills)(\ |$) ]]; then
+            return 0  # 承認
+        fi
+
+        # shellcheck: 静的解析は許可
+        if [[ "$cmd" =~ ^shellcheck($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # 上記に該当しないBashコマンドは拒否
+        log_warn "未許可のBashコマンド: ${cmd}"
+        return 1  # 拒否
+    fi
+
+    # ============================================================
+    # STEP 4b: Bash コマンドの厳密な検証（新形式: "Bash command"）
+    # ============================================================
+    if echo "$capture_output" | grep -q "Bash command"; then
+        # コマンド部分を抽出（Bash command の次の行）
+        local cmd=$(echo "$capture_output" | grep -A1 "Bash command" | tail -1 | sed 's/^[[:space:]]*//')
+        log_owl "新形式Bash検出: ${cmd}"
+
+        # 安全なコマンドパターン（STEP 4と同じロジック）
+        # npm: install, run, test, build, ci のみ許可
+        if [[ "$cmd" =~ ^npm\ (install|run|test|build|ci|start|audit)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # node: ファイル実行のみ許可
+        if [[ "$cmd" =~ ^node\ [a-zA-Z0-9_./-]+\.m?js($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # git: 安全なサブコマンドのみ許可
+        if [[ "$cmd" =~ ^git\ (status|diff|log|branch|add|commit|fetch|pull|stash|show|ls-files)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # ファイル操作: 読み取り系のみ許可
+        if [[ "$cmd" =~ ^(cat|ls|head|tail|grep|find|pwd|date|wc|echo)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # ディレクトリ作成: mkdir のみ許可
+        if [[ "$cmd" =~ ^mkdir($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # pip: install のみ許可
+        if [[ "$cmd" =~ ^pip3?\ install($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # python: スクリプト実行許可
+        if [[ "$cmd" =~ ^python3?\ [a-zA-Z0-9_./-]+\.py($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # tmux: send-keys, list-panes, capture-pane のみ許可
+        if [[ "$cmd" =~ ^tmux\ (send-keys|list-panes|capture-pane|list-sessions|has-session)($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # codex/gemini: CLIツール許可
+        if [[ "$cmd" =~ ^(codex|gemini)\ (exec|review|skills)(\ |$) ]]; then
+            return 0  # 承認
+        fi
+
+        # shellcheck: 静的解析は許可
+        if [[ "$cmd" =~ ^shellcheck($|\ ) ]]; then
+            return 0  # 承認
+        fi
+
+        # 上記に該当しないBashコマンドは拒否
+        log_warn "新形式: 未許可のBashコマンド: ${cmd}"
+        return 1  # 拒否
     fi
 
     return 1  # デフォルトは拒否

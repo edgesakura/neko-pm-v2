@@ -1,0 +1,59 @@
+# 子猫1へのタスク配分
+task_id: "task-2026-02-04T02:17:52-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-04T02:17:52"
+priority: high
+operation_id: "cmd-2026-02-04T02:16:44"
+skill_load: []
+
+description: |
+  sage-fox（賢者キツネ）スキルの動作確認を実施するにゃ。
+
+  **目的**：Gemini CLI スキルが正しく動作することを確認するにゃ。
+
+context:
+  skill_name: "sage-fox"
+  cli: "Gemini CLI"
+  location: "~/.gemini/skills/sage-fox/"
+  role: "賢者キツネ（リサーチ・トレンド調査専門家）"
+
+task_steps:
+  step1:
+    action: "スキル一覧に表示されるか確認するにゃ"
+    command: "gemini skills list"
+    expected: "sage-fox [Enabled] が表示される"
+
+  step2:
+    action: "実際に呼び出してリサーチ動作を確認するにゃ"
+    command: |
+      gemini -p "neko-pmシステムの概要を簡潔に説明して" --approval-mode plan
+    expected: |
+      - 「賢者キツネ」としてのロールで応答
+      - ファイル編集せずにリサーチのみ実行
+      - nawabari.md互換形式で出力
+
+  step3:
+    action: "出力形式を確認するにゃ"
+    check_points:
+      - "ファイル編集操作がないこと"
+      - "リサーチ結果が構造化されていること"
+      - "nawabari.md に追記可能な形式であること"
+
+  step4:
+    action: "動作確認レポートを作成するにゃ"
+
+success_criteria:
+  - "gemini skills list に sage-fox が表示される"
+  - "「賢者キツネ」としてのロールで応答する"
+  - "ファイル編集せずにリサーチのみ実行"
+  - "nawabari.md互換形式で出力"
+
+expected_outputs:
+  - "sage-fox 動作確認レポート（報告YAMLに記載）"
+
+dependencies: []
+
+notes: |
+  - スキルが正しくインストールされていることを確認するにゃ
+  - 実際のコマンド実行で動作を検証するにゃ
+  - 出力形式が期待通りか確認するにゃ〜

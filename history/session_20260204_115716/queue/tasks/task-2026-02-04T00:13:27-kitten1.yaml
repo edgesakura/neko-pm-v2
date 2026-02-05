@@ -1,0 +1,192 @@
+task_id: "task-2026-02-04T00:13:27-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-04T00:13:27"
+priority: high
+command_id: "cmd-2026-02-04T00:01:13"
+description: |
+  【CLI スキル作成】sage-fox（賢者キツネ）- Gemini CLI用
+
+  ## 🎯 目的
+  ボスねこが specialists を呼び出す際、Gemini CLI が sage-fox ロールを
+  正しく認識して動作するようにする。
+
+  ## 🚨 重要事項
+  - **Claude Code のスキル（.claude/skills/）ではない**
+  - **Gemini CLI 自体のスキル機能**を使う
+  - Gemini CLI のスキル作成ガイドを必ず参照せよ
+
+  ---
+
+  ## 📚 参照すべき情報（必読）
+
+  ### 1. Gemini CLI スキル作成ガイド
+  ```bash
+  # スキル作成ガイドの場所
+  /usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/SKILL.md
+  ```
+
+  ### 2. Gemini CLI スキルコマンド
+  ```bash
+  gemini skills --help
+  ```
+
+  ---
+
+  ## 📁 配置先ディレクトリ
+  ```
+  ~/.gemini/skills/sage-fox/
+  ```
+
+  ## 📝 ファイル構成
+
+  ### 必須ファイル
+  1. **SKILL.md**（ロール定義）
+     - name: sage-fox
+     - description: neko-pm の賢者キツネ。リサーチ・トレンド調査・概要把握の専門家。
+     - 役割: 高速リサーチ、情報収集、概要把握
+     - 出力形式: nawabari.md 互換
+     - 禁止事項: Claude Code仕様で動かない、ファイル編集しない
+
+  2. **scripts/format_report.py**（neko-pm形式レポート出力）
+     - 入力: フクロウの調査結果（JSON or Markdown）
+     - 出力: nawabari.md 互換フォーマット
+
+  3. **references/neko-pm-context.md**（システム説明）
+     - neko-pm の構成（ボスねこ、番猫、子猫、スペシャリスト）
+     - 役割分担
+     - 通信方法（YAML、send-keys）
+
+  ---
+
+  ## 🔧 実装手順
+
+  ### ステップ1: スキル作成ガイドを読む（必須）
+  ```bash
+  # スキル作成ガイドを確認
+  cat /usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/SKILL.md
+
+  # gemini skills コマンドのヘルプを確認
+  gemini skills --help
+  ```
+
+  ### ステップ2: スキル初期化スクリプトを探す
+  ```bash
+  # スキル作成ガイドで init_skill.cjs の場所を確認
+  find /usr/lib/node_modules/@google/gemini-cli -name "init_skill.cjs" -o -name "*init*skill*"
+  ```
+
+  ### ステップ3: sage-fox スキルを初期化
+  ```bash
+  # init_skill.cjs を使ってスキル雛形を作成
+  node <init_skill.cjs のパス> sage-fox --path ~/.gemini/skills/
+  ```
+
+  ### ステップ4: SKILL.md を編集
+  ```bash
+  # sage-fox/SKILL.md を編集
+  # 以下の内容を含める:
+  # - name: sage-fox
+  # - description: 賢者キツネの役割説明
+  # - 入力形式: ボスねこからの調査依頼
+  # - 出力形式: nawabari.md 互換
+  # - 禁止事項: Claude Code仕様で動かない
+  ```
+
+  ### ステップ5: 補助スクリプト作成
+  ```bash
+  # scripts/format_report.py を作成
+  mkdir -p ~/.gemini/skills/sage-fox/scripts
+
+  # Python スクリプト作成
+  # - 入力: JSON or Markdown
+  # - 出力: nawabari.md 互換フォーマット
+  ```
+
+  ### ステップ6: references/neko-pm-context.md を作成
+  ```bash
+  mkdir -p ~/.gemini/skills/sage-fox/references
+
+  # neko-pm システムの説明を記述
+  # - ボスねこ、番猫、子猫、スペシャリスト
+  # - 役割分担
+  # - 通信方法
+  ```
+
+  ### ステップ7: スキルをパッケージ化
+  ```bash
+  # package_skill.cjs を使ってパッケージ化
+  node <package_skill.cjs のパス> ~/.gemini/skills/sage-fox
+  ```
+
+  ### ステップ8: スキルをインストール
+  ```bash
+  # ユーザースコープでインストール
+  gemini skills install sage-fox.skill --scope user
+  ```
+
+  ### ステップ9: インストール確認
+  ```bash
+  # インストールされたスキルを確認
+  gemini skills list
+  ```
+
+  ---
+
+  ## ✅ 成果物
+
+  ### 作成するファイル
+  - `~/.gemini/skills/sage-fox/SKILL.md`（ロール定義）
+  - `~/.gemini/skills/sage-fox/scripts/format_report.py`（レポート整形）
+  - `~/.gemini/skills/sage-fox/references/neko-pm-context.md`（システム説明）
+  - `sage-fox.skill`（パッケージファイル）
+
+  ### インストール状態
+  - `gemini skills list` で sage-fox が表示される
+
+  ---
+
+  ## 📝 報告YAMLに記載すべき内容
+
+  以下を必ず報告YAMLに記載せよ：
+
+  1. **スキル作成ガイド確認結果**
+  2. **init_skill.cjs の場所と実行結果**
+  3. **SKILL.md の内容サマリー**
+  4. **補助スクリプト作成結果**
+  5. **パッケージ化結果**
+  6. **インストール確認結果**（gemini skills list の出力）
+  7. **skill_candidate の検討**（必須）
+  8. **improvement_proposals の検討**（必須）
+
+  ---
+
+  ## ⚠️ 注意事項
+
+  - ✅ Gemini CLI のスキル作成ガイドを必ず読むこと
+  - ✅ init_skill.cjs の場所を正確に確認すること
+  - ✅ SKILL.md の内容は neko-pm の役割に合わせること
+  - ✅ インストール後に gemini skills list で確認すること
+  - 🚨 Claude Code のスキル（.claude/skills/）ではない！
+  - 完了したら必ず番猫に報告するにゃ〜
+
+context:
+  gemini_skill_creator: "/usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/"
+  skill_name: "sage-fox"
+  cli_type: "Gemini CLI"
+  role: "賢者キツネ（リサーチ・トレンド調査専門家）"
+
+expected_outputs:
+  - "~/.gemini/skills/sage-fox/SKILL.md"
+  - "~/.gemini/skills/sage-fox/scripts/format_report.py"
+  - "~/.gemini/skills/sage-fox/references/neko-pm-context.md"
+  - "sage-fox.skill（パッケージ）"
+  - "gemini skills list に sage-fox が表示される"
+  - "完了報告YAML（queue/reports/task-2026-02-04T00:13:27-kitten1.yaml）"
+
+notes: |
+  - 🎯 Gemini CLI ネイティブのスキル作成
+  - ✅ スキル作成ガイドを必ず参照
+  - ✅ neko-pm システムの説明を含める
+  - 📝 レポート整形スクリプトを作成
+  - 🚨 Claude Code のスキルではない！
+  - 完了したら必ず番猫に報告するにゃ〜

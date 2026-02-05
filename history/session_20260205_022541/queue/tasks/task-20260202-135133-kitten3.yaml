@@ -1,0 +1,247 @@
+task_id: "task-20260202-135133-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T13:51:33"
+priority: high
+command_id: "cmd-20260202-133649"
+description: |
+  【タスク】chat-app Moshi化 - バックエンド（node-pty/tmux連携 + 再接続）
+
+  ## 目的
+  chat-appをMoshi的なターミナル体験に改修するにゃ（バックエンド担当）。
+  node-pty/tmux連携とWebSocket再接続機能を実装するにゃ。
+
+  ## 実装内容
+
+  ### フェーズ1: package.json に依存関係追加
+
+  #### 1-1. バックエンド依存関係追加
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/package.json
+
+  以下を追加：
+  ```json
+  "dependencies": {
+    ...existing,
+    "node-pty": "^1.0.0"
+  }
+  ```
+
+  ### フェーズ2: バックエンド連携（node-pty/tmux）
+
+  #### 2-1. server.js にPTY連携追加
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/server.js
+
+  **選択肢A: node-ptyを使う場合**
+  ```javascript
+  const pty = require('node-pty');
+
+  // tmuxアタッチ
+  const ptyProcess = pty.spawn('tmux', ['attach', '-t', 'neko:boss'], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 24,
+    cwd: process.env.HOME,
+    env: process.env
+  });
+
+  // WebSocket接続時にPTYと接続
+  io.on('connection', (socket) => {
+    console.log('Terminal connected');
+
+    // PTYの出力をWebSocketに流す
+    ptyProcess.onData((data) => {
+      socket.emit('terminal-output', data);
+    });
+
+    // WebSocketの入力をPTYに流す
+    socket.on('terminal-input', (data) => {
+      ptyProcess.write(data);
+    });
+
+    // リサイズ対応
+    socket.on('terminal-resize', ({ cols, rows }) => {
+      ptyProcess.resize(cols, rows);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Terminal disconnected');
+    });
+  });
+  ```
+
+  **選択肢B: tmux capture-paneを使う場合（軽量）**
+  ```javascript
+  const { exec } = require('child_process');
+
+  io.on('connection', (socket) => {
+    console.log('Terminal connected');
+
+    // 定期的にtmux capture-paneで取得
+    const interval = setInterval(() => {
+      exec('tmux capture-pane -t neko:boss -p', (error, stdout) => {
+        if (!error) {
+          socket.emit('terminal-output', stdout);
+        }
+      });
+    }, 1000);
+
+    // WebSocketの入力をtmux send-keysで送信
+    socket.on('terminal-input', (data) => {
+      exec(`tmux send-keys -t neko:boss "${data.replace(/"/g, '\\"')}"`);
+    });
+
+    socket.on('disconnect', () => {
+      clearInterval(interval);
+      console.log('Terminal disconnected');
+    });
+  });
+  ```
+
+  **推奨**: まずは選択肢Aのnode-ptyで実装。動作しない場合は選択肢Bにフォールバック。
+
+  ### フェーズ3: 再接続機能
+
+  #### 3-1. server.js に再接続ロジック追加
+  既存のWebSocket接続にセッション管理を追加：
+  ```javascript
+  const sessions = new Map(); // セッション管理
+
+  io.on('connection', (socket) => {
+    const sessionId = socket.handshake.query.sessionId || generateSessionId();
+
+    // セッション復元
+    if (sessions.has(sessionId)) {
+      const session = sessions.get(sessionId);
+      socket.emit('session-restored', session);
+    } else {
+      sessions.set(sessionId, { history: [] });
+    }
+
+    // 履歴保存
+    ptyProcess.onData((data) => {
+      const session = sessions.get(sessionId);
+      session.history.push(data);
+      if (session.history.length > 1000) {
+        session.history.shift(); // 古い履歴を削除
+      }
+      socket.emit('terminal-output', data);
+    });
+  });
+
+  function generateSessionId() {
+    return Math.random().toString(36).substring(7);
+  }
+  ```
+
+  #### 3-2. クライアント側再接続（terminal.js）
+  子猫2が作成したterminal.jsに以下を追加：
+  ```javascript
+  let ws;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 10;
+
+  function connect() {
+    ws = new WebSocket('ws://localhost:3000');
+
+    ws.onopen = () => {
+      reconnectAttempts = 0;
+      updateStatus('connected');
+      term.writeln('\r\nConnected to neko:boss terminal');
+    };
+
+    ws.onmessage = (event) => {
+      term.write(event.data);
+    };
+
+    ws.onclose = () => {
+      updateStatus('disconnected');
+      term.writeln('\r\nConnection closed. Reconnecting...');
+
+      // Exponential backoff
+      if (reconnectAttempts < maxReconnectAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        setTimeout(connect, delay);
+        reconnectAttempts++;
+      }
+    };
+
+    ws.onerror = () => {
+      updateStatus('disconnected');
+    };
+  }
+
+  function updateStatus(status) {
+    const indicator = document.getElementById('status-indicator');
+    const text = document.getElementById('status-text');
+    indicator.className = `status-dot ${status}`;
+    text.textContent = status === 'connected' ? 'Connected' :
+                       status === 'connecting' ? 'Connecting...' : 'Disconnected';
+  }
+
+  // 初回接続
+  connect();
+  ```
+
+  ### フェーズ4: npm install 実行
+
+  #### 4-1. 依存関係インストール
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  npm install
+  ```
+
+  **注意**: npm installは承認が必要にゃ。ボスねこにエスカレするか、実行前に確認するにゃ。
+
+  #### 4-2. サーバー再起動
+  ```bash
+  # 既存のサーバーを停止
+  pkill -f "node.*server.js"
+
+  # 新しいサーバーを起動
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  node server.js &
+  ```
+
+  ## 動作確認
+
+  実装後、以下を確認：
+  1. node-ptyがインストールされること
+  2. WebSocket接続が正常に確立されること
+  3. tmux（neko:boss）の出力がターミナルに表示されること
+  4. キー入力がtmuxに送信されること
+  5. 再接続機能が動作すること（WebSocketを切断→自動再接続）
+
+  ## トラブルシューティング
+
+  ### node-ptyのビルドエラーが出た場合
+  ```bash
+  # ビルドツールをインストール
+  sudo apt-get install python3 make g++
+  npm install node-pty --build-from-source
+  ```
+
+  ### node-ptyが動作しない場合
+  選択肢Bの tmux capture-pane 方式にフォールバック。
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "server.js"
+    - "package.json"
+  target_pane: "neko:boss"
+  references:
+    - "https://github.com/microsoft/node-pty"
+
+expected_outputs:
+  - "server.js（PTY/tmux連携追加）"
+  - "server.js（再接続ロジック追加）"
+  - "package.json（依存関係追加）"
+  - "npm install実行（承認必要）"
+  - "サーバー再起動"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - node-ptyを優先、動作しない場合はtmux capture-paneにフォールバックにゃ
+  - npm installは承認が必要にゃ（ボスねこエスカレ）
+  - 子猫2のフロントエンド実装と並行して進められるにゃ
+  - 最後に統合テストを実施するにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

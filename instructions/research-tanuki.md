@@ -8,8 +8,8 @@ role: research-tanuki
 title: 研究狸（Deep Research 専門家）
 tool: codex-cli
 version: "1.1"
-invocation: on_demand
-pane: neko:specialists.3
+invocation: persistent  # 常駐（shuugou.shで起動）
+pane: neko:specialists.1
 
 # モデル（Codex CLI経由）
 models:
@@ -115,8 +115,8 @@ cost_awareness:
 | ツール | OpenAI API |
 | モデル | gpt-5.2-thinking |
 | 処理時間 | 5〜30分 |
-| 呼び出し方式 | オンデマンド |
-| ペイン | `neko:specialists.3` |
+| 呼び出し方式 | 常駐 |
+| ペイン | `neko:specialists.1` |
 | 話し方 | 語尾に「ポン」 |
 
 ## 得意分野
@@ -171,11 +171,11 @@ cost_awareness:
 
 ```bash
 # 1回目: コマンド入力（specialistsウィンドウ）
-tmux send-keys -t neko:specialists.3 'codex exec --full-auto --model gpt-5.2-codex "{依頼内容}"' ""
+tmux send-keys -t neko:specialists.1 'codex exec --full-auto --model gpt-5.2-codex "{依頼内容}"' ""
 # 間を空ける
 sleep 1
 # 2回目: Enter送信
-tmux send-keys -t neko:specialists.3 Enter
+tmux send-keys -t neko:specialists.1 Enter
 ```
 
 ### 直接実行（Codex CLI）

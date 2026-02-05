@@ -1,0 +1,385 @@
+commands:
+  - command_id: "cmd-2026-02-03T16:15:15"
+    status: done
+
+  - command_id: "cmd-2026-02-03T18:48:24"
+    status: superseded
+
+  - command_id: "cmd-2026-02-03T18:56:40"
+    status: done
+    completed_at: "2026-02-04T00:06:28"
+
+  - command_id: "cmd-2026-02-04T00:01:13"
+    timestamp: "2026-02-04T00:01:13"
+    started_at: "2026-02-04T00:15:40"
+    completed_at: "2026-02-04T00:56:23"
+    type: cli-skill-creation
+    priority: high
+    status: done
+    verified_deliverables:
+      - "~/.gemini/skills/sage-fox/ (installed)"
+      - "~/.codex/skills/research-tanuki/ (validated)"
+      - "~/.codex/skills/owl-reviewer/ (validated)"
+    description: |
+      CLI スキル整備作戦（ロール定義）
+    context:
+      gemini_skill_creator: "/usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/"
+      codex_skill_creator: "/home/edgesakura/.codex/skills/.system/skill-creator/"
+      plan_file: "/home/edgesakura/.claude/plans/lively-seeking-starlight.md"
+    expected_outputs:
+      - "~/.gemini/skills/sage-fox/（インストール済み）"
+      - "~/.codex/skills/research-tanuki/（配置済み）"
+      - "~/.codex/skills/owl-reviewer/（配置済み）"
+    parallel_execution: true
+
+  - command_id: "cmd-2026-02-04T00:56:23"
+    timestamp: "2026-02-04T00:56:23"
+    started_at: "2026-02-04T00:59:41"
+    completed_at: "2026-02-04T01:10:30"
+    type: security-fix
+    priority: high
+    status: done
+    description: |
+      セキュリティ修正作戦：運用スクリプトのコマンド注入脆弱性を修正
+    context:
+      owl_detection: "2026-02-04T00:08:36"
+      related_operation: "cmd-2026-02-03T18:56:40"
+    expected_outputs:
+      - "owl-watcher.sh（修正済み）"
+      - "shuugou.sh（修正済み）"
+      - "resume.sh（修正済み）"
+    parallel_execution: false
+
+  - command_id: "cmd-2026-02-04T01:13:28"
+    timestamp: "2026-02-04T01:13:28"
+    started_at: "2026-02-04T01:14:23"
+    completed_at: "2026-02-04T01:16:30"
+    type: documentation
+    priority: medium
+    status: done
+    description: |
+      CLAUDE.md 更新作戦：新規スキルをドキュメントに追加
+    context:
+      skill_locations:
+        - "~/.gemini/skills/sage-fox/"
+        - "~/.codex/skills/research-tanuki/"
+        - "~/.codex/skills/owl-reviewer/"
+    expected_outputs:
+      - "neko-pm/CLAUDE.md（更新済み）"
+    parallel_execution: false
+
+  - command_id: "cmd-2026-02-04T02:16:44"
+    timestamp: "2026-02-04T02:16:44"
+    started_at: "2026-02-04T02:17:52"
+    completed_at: "2026-02-04T11:50:04"
+    type: skill-verification
+    priority: high
+    status: done
+    description: |
+      スキル動作確認作戦：CLI ネイティブスキルの実動作テスト
+    context:
+      owl_watcher_pid: 4051946
+      test_project: "/home/edgesakura/git/neko-pm"
+    expected_outputs:
+      - "sage-fox 動作確認レポート"
+      - "research-tanuki 動作確認レポート"
+      - "owl-reviewer 動作確認レポート"
+    parallel_execution: true
+    verified_deliverables:
+      - "queue/reports/task-2026-02-04T02:17:52-kitten1.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten2.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten3.yaml (✅ 承認)"
+    verification_summary: |
+      全3スキルの動作確認を完了したにゃ
+
+  - command_id: "cmd-20260205T150959"
+    timestamp: "2026-02-05T15:09:59"
+    type: config-fix
+    priority: high
+    status: done
+    started_at: "2026-02-05T15:11:32"
+    completed_at: "2026-02-05T15:15:33"
+    description: |
+      賢者キツネ（Gemini CLI）の approval-mode 設定を修正するにゃ。
+
+      ## 問題
+      `--approval-mode plan` が experimental.plan 無効のためエラー
+
+      ## 修正方針（ご主人承認済み）
+      `--approval-mode plan` を `--approval-mode full` に変更
+
+      ## 対象ファイル（調査して特定せよ）
+      - instructions/sage-fox.md
+      - sage-fox.skill
+      - neko-pm/CLAUDE.md
+      - その他 gemini 関連の設定ファイル
+
+      ## 作業内容
+      1. 賢者キツネの呼び出しコマンドが記載されているファイルを特定
+      2. `--approval-mode plan` を `--approval-mode full` に変更
+      3. 変更後、nawabari.md を更新して報告
+    context:
+      error_message: "Approval mode 'plan' is only available when experimental.plan is enabled"
+      decision_by: "ご主人"
+    expected_outputs:
+      - "設定ファイルの修正完了"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205T151719"
+    timestamp: "2026-02-05T15:17:19"
+    type: process-improvement
+    priority: medium
+    status: done
+    started_at: "2026-02-05T15:18:20"
+    completed_at: "2026-02-05T15:21:55"
+    description: |
+      フクロウ自動レビュー改善作戦にゃ。
+    context:
+      target_file: "owl-watcher.sh"
+      related_issue: "nawabari.md の要対応セクション"
+    expected_outputs:
+      - "owl-watcher.sh（レビュー呼び出し改善）"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205T153434"
+    timestamp: "2026-02-05T15:34:34"
+    started_at: "2026-02-05T15:36:14"
+    completed_at: "2026-02-05T15:45:49"
+    type: system-improvement
+    priority: high
+    status: done
+    description: |
+      neko-pm 改善計画 Phase 1: 緊急対応
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "1/4"
+    expected_outputs:
+      - "CLAUDE.md（レート制限ルール追記）"
+      - "instructions/*.md（レート制限ルール追記）"
+      - "owl-watcher.sh（ポーリング改善 + 環境変数化）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
+
+  - command_id: "cmd-20260205T155040"
+    timestamp: "2026-02-05T15:50:40"
+    started_at: "2026-02-05T15:52:21"
+    completed_at: "2026-02-05T15:58:27"
+    type: system-improvement
+    priority: high
+    status: done
+    description: |
+      neko-pm 改善計画 Phase 2: 品質向上
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "2/4"
+      prerequisite: "cmd-20260205T153434 (Phase 1)"
+    expected_outputs:
+      - "instructions/kitten.md（事前検証チェックリスト追加）"
+      - "instructions/guard-cat.md（レビューチェックポイント追加）"
+      - "queue/templates/task-template.yaml（新規作成）"
+      - "instructions/*.md（TaskUpdate追跡ルール追加）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
+
+  - command_id: "cmd-20260205T161503"
+    timestamp: "2026-02-05T16:15:03"
+    started_at: "2026-02-05T16:19:52"
+    completed_at: "2026-02-05T16:39:03"
+    type: system-improvement
+    priority: high
+    status: done
+    description: |
+      neko-pm 改善計画 Phase 3: 継続性向上
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "3/4"
+      prerequisite: "cmd-20260205T155040 (Phase 2)"
+    expected_outputs:
+      - "instructions/*.md（checkpoint運用ルール追加）"
+      - "instructions/guard-cat.md（partial aggregator追加）"
+      - "queue/checkpoints/（ディレクトリ作成）"
+      - "queue/checkpoints/README.md（使い方説明）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
+
+  - command_id: "cmd-20260205-164459"
+    timestamp: "2026-02-05T16:44:59"
+    started_at: "2026-02-05T16:46:00"
+    completed_at: "2026-02-05T16:47:51"
+    type: bugfix
+    priority: high
+    status: done
+    description: |
+      キツネランチャー（fox-launcher.sh）の修正
+
+      ## 問題
+      Gemini CLIの `--approval-mode full` は無効な選択肢。
+      正しい選択肢は: default, auto_edit, yolo, plan
+
+      前回 `plan` → `full` に変更したが、`full` も存在しなかった。
+
+      ## 修正内容
+      `.launchers/fox-launcher.sh` の7行目を修正:
+      - 変更前: `gemini --approval-mode full`
+      - 変更後: `gemini --approval-mode yolo`
+
+      `yolo` = 全ツール自動承認。キツネはリサーチ専用（読み取りのみ）なので安全。
+
+      ## 修正後の確認
+      1. fox-launcher.sh を修正
+      2. specialists.0 ペインでキツネを再起動
+      3. 起動成功を確認してnawabari.mdに報告
+    context:
+      target_file: ".launchers/fox-launcher.sh"
+      line_number: 7
+      error_message: "Invalid values: Argument: approval-mode, Given: 'full', Choices: 'default', 'auto_edit', 'yolo', 'plan'"
+      previous_fix: "cmd-20260205T150959 で plan→full に変更したが失敗"
+    expected_outputs:
+      - "fox-launcher.sh の修正完了"
+      - "キツネ（specialists.0）の起動確認"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205-172005"
+    timestamp: "2026-02-05T17:20:05"
+    started_at: "2026-02-05T17:20:30"
+    completed_at: "2026-02-05T17:21:44"
+    type: setup
+    priority: medium
+    status: done
+    description: |
+      PPT資料作成スキルの依存関係インストール
+
+      ## 作業内容
+
+      ### 1. Node.js依存（簡易版PPT生成）
+      ```bash
+      cd /home/edgesakura/git/skills/ppt && npm install
+      ```
+
+      ### 2. Python依存（ooxml, rearrange等）
+      ```bash
+      pip install defusedxml
+      ```
+
+      ### 3. 動作確認
+      - 簡易版: `node dist/index.js` でヘルプが出るか確認
+      - Python版: `python3 -c "import defusedxml; print('OK')"` で確認
+
+      ## 完了条件
+      - npm install 成功
+      - pip install 成功
+      - 動作確認OK
+      - nawabari.md に報告
+    context:
+      skill_path: "/home/edgesakura/git/skills/ppt"
+      knowledge_path: "/home/edgesakura/git/knowledge/ppt"
+    expected_outputs:
+      - "npm install 完了"
+      - "pip install defusedxml 完了"
+      - "動作確認結果"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205-173741"
+    timestamp: "2026-02-05T17:37:41"
+    started_at: "2026-02-05T17:39:18"
+    type: design
+    priority: medium
+    status: in_progress
+    description: |
+      PPTデザインテンプレート整備作戦
+
+      ## 目的
+      Datadog資料作成向けのPPTテンプレートを整備する
+
+      ## 1. Datadogカラーテーマ作成
+
+      ### ブランドカラー（公式）
+      | 名前 | HEX | RGB | 用途 |
+      |------|-----|-----|------|
+      | Datadog Purple | #632CA6 | 99/44/166 | メインカラー |
+      | Accent Purple | #8000FF | 128/0/255 | アクセント |
+
+      ### 作成するテーマファイル
+      `knowledge/ppt/themes/datadog.css` を作成:
+      ```css
+      :root {
+        /* Datadog Brand Colors */
+        --color-primary: #632CA6;
+        --color-primary-light: #8000FF;
+        --color-primary-dark: #4a1f7d;
+        --color-primary-foreground: #ffffff;
+
+        /* Dark Theme (2026トレンド) */
+        --color-surface: #1a1a2e;
+        --color-surface-foreground: #f0f0f0;
+        --color-secondary: #16213e;
+        --color-secondary-foreground: #e0e0e0;
+
+        /* Accent */
+        --color-accent: #8000FF;
+        --color-success: #00c853;
+        --color-warning: #ffc107;
+        --color-danger: #ff5252;
+
+        /* Typography */
+        --font-family-display: 'Segoe UI', Arial, sans-serif;
+        --font-family-content: 'Segoe UI', Arial, sans-serif;
+      }
+      ```
+
+      ### ライトテーマも作成
+      `knowledge/ppt/themes/datadog-light.css`:
+      - 白背景ベース
+      - 同じDatadogカラーをアクセントに使用
+
+      ## 2. PPTXベーステンプレート作成
+
+      ### 方針
+      html2pptxを使ってサンプルPPTXを生成し、
+      それをベーステンプレートとして保存
+
+      ### 作成するスライド構成
+      1. タイトルスライド（ダークテーマ、紫グラデーション）
+      2. 目次スライド
+      3. セクションヘッダー
+      4. コンテンツ（箇条書き）
+      5. 2カラムレイアウト
+      6. 画像＋テキスト
+      7. グラフ・チャート用
+      8. 終了スライド
+
+      ### 保存先
+      - `knowledge/ppt/templates/datadog-dark.pptx`
+      - `knowledge/ppt/templates/datadog-light.pptx`
+
+      ## 3. テンプレートJSONも更新
+
+      `skills/ppt/templates/` に追加:
+      - `datadog-proposal.json` - 提案書向け
+      - `datadog-report.json` - 報告書向け
+
+      ## 完了条件
+      - [ ] datadog.css（ダークテーマ）作成
+      - [ ] datadog-light.css（ライトテーマ）作成
+      - [ ] サンプルPPTX生成・確認
+      - [ ] テンプレートJSON追加
+      - [ ] nawabari.md に報告
+
+    context:
+      brand_colors:
+        primary: "#632CA6"
+        accent: "#8000FF"
+      references:
+        - "https://www.datadoghq.com/about/resources/"
+        - "https://www.brandcolorcode.com/datadog"
+      trend: "ダークテーマ + モダンアクセント（2026年トレンド）"
+    expected_outputs:
+      - "knowledge/ppt/themes/datadog.css"
+      - "knowledge/ppt/themes/datadog-light.css"
+      - "knowledge/ppt/templates/（PPTXテンプレート）"
+      - "skills/ppt/templates/（JSONテンプレート）"
+      - "nawabari.md への報告"
+    parallel_execution: true

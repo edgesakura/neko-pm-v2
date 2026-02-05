@@ -4,7 +4,7 @@
 
 ## 親プロジェクトの継承
 
-@/home/edgesakura/git/CLAUDE.md
+# 親プロジェクトの内容は .claude/ にマージ済み
 
 ---
 
@@ -12,29 +12,114 @@
 
 | コマンド | 用途 | 定義 |
 |---------|------|------|
-| `/datadog` | Datadog監視設計 | @/home/edgesakura/git/.claude/skills/datadog/SKILL.md |
-| `/ppt` | PowerPoint作成 | @/home/edgesakura/git/.claude/skills/ppt/SKILL.md |
-| `/aws` | AWSインフラ設計 | @/home/edgesakura/git/.claude/skills/aws/SKILL.md |
-| `/codex` | コードレビュー | @/home/edgesakura/git/.claude/skills/codex/SKILL.md |
-| `/tdd` | テスト駆動開発 | @/home/edgesakura/git/.claude/commands/tdd.md |
-| `/plan` | 実装計画作成 | @/home/edgesakura/git/.claude/commands/plan.md |
-| `/code-review` | コードレビュー | @/home/edgesakura/git/.claude/commands/code-review.md |
-| `/verify` | ビルド・テスト検証 | @/home/edgesakura/git/.claude/commands/verify.md |
-| `/e2e` | E2Eテスト | @/home/edgesakura/git/.claude/commands/e2e.md |
+| `/datadog` | Datadog監視設計 | .claude/skills/datadog/SKILL.md |
+| `/ppt` | PowerPoint作成 | .claude/skills/ppt/SKILL.md |
+| `/aws` | AWSインフラ設計 | .claude/skills/aws/SKILL.md |
+| `/codex` | コードレビュー | .claude/skills/codex/SKILL.md |
+| `/tdd` | テスト駆動開発 | .claude/commands/tdd.md |
+| `/plan` | 実装計画作成 | .claude/commands/plan.md |
+| `/code-review` | コードレビュー | .claude/commands/code-review.md |
+| `/verify` | ビルド・テスト検証 | .claude/commands/verify.md |
+| `/e2e` | E2Eテスト | .claude/commands/e2e.md |
 
 ## 利用可能なサブエージェント（親プロジェクトから継承）
 
 | エージェント | 役割 | 定義 |
 |-------------|------|------|
-| planner | 実装計画作成 | @/home/edgesakura/git/.claude/agents/planner.md |
-| architect | アーキテクチャ設計 | @/home/edgesakura/git/.claude/agents/architect.md |
-| tdd-guide | TDDワークフロー支援 | @/home/edgesakura/git/.claude/agents/tdd-guide.md |
-| code-reviewer | コードレビュー | @/home/edgesakura/git/.claude/agents/code-reviewer.md |
-| security-reviewer | セキュリティレビュー | @/home/edgesakura/git/.claude/agents/security-reviewer.md |
-| build-error-resolver | ビルドエラー解決 | @/home/edgesakura/git/.claude/agents/build-error-resolver.md |
-| datadog-agent | 監視設計 | @/home/edgesakura/git/.claude/agents/datadog-agent.md |
-| ppt-agent | プレゼン作成 | @/home/edgesakura/git/.claude/agents/ppt-agent.md |
-| sre-agent | SRE運用設計 | @/home/edgesakura/git/.claude/agents/sre-agent.md |
+| planner | 実装計画作成 | .claude/agents/planner.md |
+| architect | アーキテクチャ設計 | .claude/agents/architect.md |
+| tdd-guide | TDDワークフロー支援 | .claude/agents/tdd-guide.md |
+| code-reviewer | コードレビュー | .claude/agents/code-reviewer.md |
+| security-reviewer | セキュリティレビュー | .claude/agents/security-reviewer.md |
+| build-error-resolver | ビルドエラー解決 | .claude/agents/build-error-resolver.md |
+| datadog-agent | 監視設計 | .claude/agents/datadog-agent.md |
+| ppt-agent | プレゼン作成 | .claude/agents/ppt-agent.md |
+| sre-agent | SRE運用設計 | .claude/agents/sre-agent.md |
+
+---
+
+## neko-pm スペシャリスト（CLI ネイティブスキル）
+
+ボスねこが `neko:specialists` ペインで呼び出す専門家たち。
+各 CLI（Gemini/Codex）のネイティブスキルとして実装されている。
+
+### 🦊 賢者キツネ（sage-fox）- Gemini CLI
+
+**配置**: `~/.gemini/skills/sage-fox/`
+**用途**: 高速リサーチ、トレンド調査、概要把握
+**呼び出し方**:
+```bash
+gemini --approval-mode full "{依頼内容}"
+```
+
+**特徴**:
+- リサーチ専用モード（ファイル編集しない）
+- 高速で情報収集
+- nawabari.md 互換形式で出力
+
+---
+
+### 🦝 研究狸（research-tanuki）- Codex CLI
+
+**配置**: `~/.codex/skills/research-tanuki/`
+**用途**: 深掘り調査、アーキテクチャ分析、技術判断
+**呼び出し方**:
+```bash
+codex exec --full-auto --sandbox read-only --cd /path/to/project "{依頼内容}"
+```
+
+**特徴**:
+- ボスねこの相談相手
+- 仮説→証拠収集→反証→結論プロセス
+- 調査レポート形式で出力（エグゼクティブサマリー付き）
+
+---
+
+### 🦉 目利きフクロウ（owl-reviewer）- Codex CLI
+
+**配置**: `~/.codex/skills/owl-reviewer/`
+**用途**: コードレビュー、セキュリティ監査
+**呼び出し方**:
+```bash
+codex exec --full-auto --sandbox read-only --cd /path/to/project "{依頼内容}"
+```
+
+**特徴**:
+- OWASP Top 10 セキュリティチェック
+- neko-pm 固有のコーディング規約チェック
+- 重要度別レポート（CRITICAL/HIGH/MEDIUM/LOW）
+
+---
+
+## コンテキスト保持の四層モデル
+
+```
+Layer 1: Memory MCP（永続・セッション跨ぎ）
+  └─ ご主人の好み・ルール、プロジェクト横断知見
+  └─ 保存条件: ①gitに書けない/未反映 ②毎回必要 ③非冗長
+
+Layer 2: Project（永続・プロジェクト固有）
+  └─ config/: プロジェクト設定・状態
+  └─ context/: プロジェクト固有の技術知見・注意事項
+
+Layer 3: YAML Queue（永続・ファイルシステム）
+  └─ queue/boss_to_guard.yaml, queue/tasks/, queue/reports/
+  └─ タスクの正データ源
+
+Layer 4: Session（揮発・コンテキスト内）
+  └─ CLAUDE.md（自動読み込み）, instructions/*.md
+  └─ /clearで全消失、コンパクションでsummary化
+```
+
+### 各レイヤーの参照者
+
+| レイヤー | ボスねこ | 番猫 | 子猫 |
+|---------|---------|------|------|
+| Layer 1: Memory MCP | read_graph | read_graph | read_graph（セッション開始時・/clear復帰時） |
+| Layer 2: config/ | プロジェクト設定確認 | タスク割当時に参照 | 参照しない |
+| Layer 2: context/{project}.md | 参照しない | 参照しない | タスクにproject指定時に読む |
+| Layer 3: YAML Queue | boss_to_guard.yaml | 全YAML | 自分のkitten{N}.yaml |
+| Layer 4: Session | instructions/boss-cat.md | instructions/guard-cat.md | instructions/kitten.md |
 
 ---
 
@@ -81,6 +166,56 @@ neko-pm/
 |---------|------|------|
 | `/retrospective` | 振り返り | .claude/skills/retrospective/SKILL.md |
 
+### @agent_id の使い方
+
+shuugou.sh で各ペインに `@agent_id` が設定されているにゃ。
+
+#### 確認方法
+```bash
+# 自分の @agent_id を確認
+tmux show-options -p @agent_id
+
+# 特定のペインの @agent_id を確認
+tmux show-options -p -t neko:workers.0 @agent_id
+```
+
+#### 設定値
+| ペイン | @agent_id | 役割 |
+|--------|-----------|------|
+| neko:boss | boss-cat | ボスねこ（Opus） |
+| neko:workers.0 | guard-cat | 番猫（Sonnet） |
+| neko:workers.1 | kitten1 | 子猫1（Sonnet） |
+| neko:workers.2 | kitten2 | 子猫2（Sonnet） |
+| neko:workers.3 | kitten3 | 子猫3（Sonnet） |
+| neko:workers.{N+1} | owl-reviewer | 目利きフクロウ（Codex） |
+| neko:specialists.0 | sage-fox | 賢者キツネ（Gemini） |
+| neko:specialists.1 | research-tanuki | 研究狸（Codex） |
+
+#### 用途
+1. **自分のロールを確認**
+   - コンパクション復帰時に、自分が誰かを確認
+   - 適切な instructions ファイルを読み込む
+
+2. **コンパクション復帰時のロール特定**
+   ```bash
+   # 自分の @agent_id を確認
+   AGENT_ID=$(tmux show-options -p @agent_id)
+
+   # @agent_id に応じて instructions を読む
+   case $AGENT_ID in
+     "boss-cat") cat instructions/boss-cat.md ;;
+     "guard-cat") cat instructions/guard-cat.md ;;
+     "kitten"*) cat instructions/kitten.md ;;
+   esac
+   ```
+
+3. **ペイン間通信の自動化**
+   - 番猫が子猫の @agent_id を確認して、適切なペインに通知
+   - スクリプトでの自動化に活用
+
+#### 設定箇所
+shuugou.sh の336行目付近で設定されているにゃ〜。
+
 ---
 
 ## 開発時の注意
@@ -88,3 +223,25 @@ neko-pm/
 - 本番環境への変更は必ず確認
 - git pushは承認必要
 - テストは自由に実行OK
+
+## GitHubリポジトリ解析ルール
+
+外部リポジトリを参照する場合:
+1. **WebFetch禁止**: GitHubのURLをfetchしない
+2. **git clone必須**: /tmp/ にcloneしてローカルで解析
+3. **参照履歴保持**: cloneしたリポジトリは残す（過去参照用）
+
+理由:
+- WebFetchはHTMLを取得するため、ソースコードの解析に不向き
+- git cloneでローカルに取得すれば、Glob/Grep/Readツールで効率的に解析可能
+- cloneしたリポジトリは後続タスクでも参照できる
+
+## レート制限対応ルール
+
+レート制限を検知した場合：
+1. retry せず、現在の状態を保存（nawabari.md or checkpoint）
+2. ご主人に報告「レート制限発生、{X}分後に再開予定」
+3. cooldown（5分）後に再開
+4. 連続3回制限された場合は作業中断してご主人に相談
+
+**禁止**: 制限中の retry ループ（API代金の無駄）

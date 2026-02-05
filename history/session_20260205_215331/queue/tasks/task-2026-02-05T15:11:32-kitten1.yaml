@@ -1,0 +1,41 @@
+task_id: "task-2026-02-05T15:11:32-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T15:11:32"
+priority: high
+load_skills: []
+
+description: |
+  賢者キツネ（Gemini CLI）の approval-mode 設定を修正するにゃ。
+
+  ## 作業内容
+  1. 賢者キツネの呼び出しコマンドが記載されているファイルを全て特定
+     - Glob/Grep ツールを使って `--approval-mode plan` を含むファイルを検索
+     - 対象候補：instructions/sage-fox.md, sage-fox.skill, neko-pm/CLAUDE.md など
+
+  2. 特定したファイル全てについて、以下の修正を実施
+     - 変更前：`--approval-mode plan`
+     - 変更後：`--approval-mode full`
+
+  3. 修正完了後、以下を作成
+     - 完了報告YAML（queue/reports/task-2026-02-05T15:11:32-kitten1.yaml）
+     - skill_candidate セクション必須
+     - owl_review は不要（設定ファイル修正のため）
+
+context:
+  related_command: "cmd-20260205T150959"
+  error_message: "Approval mode 'plan' is only available when experimental.plan is enabled"
+  decision_by: "ご主人"
+  references:
+    - "instructions/sage-fox.md"
+    - "sage-fox.skill"
+    - "neko-pm/CLAUDE.md"
+
+expected_outputs:
+  - "修正完了した全ファイルのパス"
+  - "完了報告YAML（queue/reports/task-2026-02-05T15:11:32-kitten1.yaml）"
+
+notes: |
+  - 全ファイルを漏れなく検索すること
+  - EditツールでRead→Edit の順で実施
+  - skill_candidate は必ず記入
+  - owl_review は設定ファイル修正のため不要

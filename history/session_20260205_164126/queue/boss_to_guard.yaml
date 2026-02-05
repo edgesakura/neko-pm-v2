@@ -1,0 +1,524 @@
+commands:
+  - command_id: "cmd-2026-02-03T16:15:15"
+    status: done
+
+  - command_id: "cmd-2026-02-03T18:48:24"
+    status: superseded
+
+  - command_id: "cmd-2026-02-03T18:56:40"
+    status: done
+    completed_at: "2026-02-04T00:06:28"
+
+  - command_id: "cmd-2026-02-04T00:01:13"
+    timestamp: "2026-02-04T00:01:13"
+    started_at: "2026-02-04T00:15:40"
+    completed_at: "2026-02-04T00:56:23"
+    type: cli-skill-creation
+    priority: high
+    status: done
+    verified_deliverables:
+      - "~/.gemini/skills/sage-fox/ (installed)"
+      - "~/.codex/skills/research-tanuki/ (validated)"
+      - "~/.codex/skills/owl-reviewer/ (validated)"
+    description: |
+      CLI スキル整備作戦（ロール定義）
+    context:
+      gemini_skill_creator: "/usr/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/skills/builtin/skill-creator/"
+      codex_skill_creator: "/home/edgesakura/.codex/skills/.system/skill-creator/"
+      plan_file: "/home/edgesakura/.claude/plans/lively-seeking-starlight.md"
+    expected_outputs:
+      - "~/.gemini/skills/sage-fox/（インストール済み）"
+      - "~/.codex/skills/research-tanuki/（配置済み）"
+      - "~/.codex/skills/owl-reviewer/（配置済み）"
+    parallel_execution: true
+
+  - command_id: "cmd-2026-02-04T00:56:23"
+    timestamp: "2026-02-04T00:56:23"
+    started_at: "2026-02-04T00:59:41"
+    completed_at: "2026-02-04T01:10:30"
+    type: security-fix
+    priority: high
+    status: done
+    description: |
+      セキュリティ修正作戦：運用スクリプトのコマンド注入脆弱性を修正
+    context:
+      owl_detection: "2026-02-04T00:08:36"
+      related_operation: "cmd-2026-02-03T18:56:40"
+    expected_outputs:
+      - "owl-watcher.sh（修正済み）"
+      - "shuugou.sh（修正済み）"
+      - "resume.sh（修正済み）"
+    parallel_execution: false
+
+  - command_id: "cmd-2026-02-04T01:13:28"
+    timestamp: "2026-02-04T01:13:28"
+    started_at: "2026-02-04T01:14:23"
+    completed_at: "2026-02-04T01:16:30"
+    type: documentation
+    priority: medium
+    status: done
+    description: |
+      CLAUDE.md 更新作戦：新規スキルをドキュメントに追加
+    context:
+      skill_locations:
+        - "~/.gemini/skills/sage-fox/"
+        - "~/.codex/skills/research-tanuki/"
+        - "~/.codex/skills/owl-reviewer/"
+    expected_outputs:
+      - "neko-pm/CLAUDE.md（更新済み）"
+    parallel_execution: false
+
+  - command_id: "cmd-2026-02-04T02:16:44"
+    timestamp: "2026-02-04T02:16:44"
+    started_at: "2026-02-04T02:17:52"
+    completed_at: "2026-02-04T11:50:04"
+    type: skill-verification
+    priority: high
+    status: done
+    description: |
+      スキル動作確認作戦：CLI ネイティブスキルの実動作テスト
+    context:
+      owl_watcher_pid: 4051946
+      test_project: "/home/edgesakura/git/neko-pm"
+    expected_outputs:
+      - "sage-fox 動作確認レポート"
+      - "research-tanuki 動作確認レポート"
+      - "owl-reviewer 動作確認レポート"
+    parallel_execution: true
+    verified_deliverables:
+      - "queue/reports/task-2026-02-04T02:17:52-kitten1.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten2.yaml (✅ 承認)"
+      - "queue/reports/task-2026-02-04T02:17:52-kitten3.yaml (✅ 承認)"
+    verification_summary: |
+      全3スキルの動作確認を完了したにゃ
+
+  - command_id: "cmd-20260205T150959"
+    timestamp: "2026-02-05T15:09:59"
+    type: config-fix
+    priority: high
+    status: done
+    started_at: "2026-02-05T15:11:32"
+    completed_at: "2026-02-05T15:15:33"
+    description: |
+      賢者キツネ（Gemini CLI）の approval-mode 設定を修正するにゃ。
+
+      ## 問題
+      `--approval-mode plan` が experimental.plan 無効のためエラー
+
+      ## 修正方針（ご主人承認済み）
+      `--approval-mode plan` を `--approval-mode full` に変更
+
+      ## 対象ファイル（調査して特定せよ）
+      - instructions/sage-fox.md
+      - sage-fox.skill
+      - neko-pm/CLAUDE.md
+      - その他 gemini 関連の設定ファイル
+
+      ## 作業内容
+      1. 賢者キツネの呼び出しコマンドが記載されているファイルを特定
+      2. `--approval-mode plan` を `--approval-mode full` に変更
+      3. 変更後、nawabari.md を更新して報告
+    context:
+      error_message: "Approval mode 'plan' is only available when experimental.plan is enabled"
+      decision_by: "ご主人"
+    expected_outputs:
+      - "設定ファイルの修正完了"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205T151719"
+    timestamp: "2026-02-05T15:17:19"
+    type: process-improvement
+    priority: medium
+    status: done
+    started_at: "2026-02-05T15:18:20"
+    completed_at: "2026-02-05T15:21:55"
+    description: |
+      フクロウ自動レビュー改善作戦にゃ。
+
+      ## 問題
+      owl-watcher.sh がレビュー呼び出し時、範囲を指定していないため
+      「レビュー対象の範囲を教えてホー」と質問モードになってしまい、
+      レビューが完了しない。
+
+      ## 改善方針（2案から選択）
+
+      ### 案A: git diff を明示的に指定
+      ```bash
+      codex exec --full-auto --sandbox read-only --cd /path/to/project \
+        "git diff HEAD~1 の変更をレビューして"
+      ```
+
+      ### 案B: report YAML の files_modified を読み取り
+      report YAMLから `files_modified` を抽出し、特定ファイルを指定してレビュー
+
+      ## 推奨
+      案Aの方がシンプルで実装が早いにゃ。
+
+      ## 作業内容
+      1. owl-watcher.sh のレビュー呼び出し部分を特定
+      2. レビュー対象を明示的に指定するよう修正
+      3. 動作確認（レビューが質問モードにならないこと）
+      4. nawabari.md を更新して報告
+    context:
+      target_file: "owl-watcher.sh"
+      related_issue: "nawabari.md の要対応セクション"
+    expected_outputs:
+      - "owl-watcher.sh（レビュー呼び出し改善）"
+      - "nawabari.md への報告"
+
+  - command_id: "cmd-20260205T153434"
+    timestamp: "2026-02-05T15:34:34"
+    type: system-improvement
+    priority: high
+    status: done
+    started_at: "2026-02-05T15:36:14"
+    completed_at: "2026-02-05T15:45:49"
+    description: |
+      # neko-pm 改善計画 Phase 1: 緊急対応
+
+      **背景**: Claude Code インサイト + 研究狸分析により、以下の連鎖を特定：
+      「レート制限→中断→品質低下→doc遅れ」
+
+      Phase 1 は連鎖の根本を断つ緊急対応にゃ。
+
+      ---
+
+      ## タスク1-1: レート制限ルール追加【子猫1担当】
+
+      **対象ファイル**:
+      - neko-pm/CLAUDE.md
+      - instructions/boss-cat.md
+      - instructions/guard-cat.md
+      - instructions/kitten.md
+
+      **追加ルール**:
+      ```markdown
+      ## レート制限対応ルール
+
+      レート制限を検知した場合：
+      1. retry せず、現在の状態を保存（nawabari.md or checkpoint）
+      2. ご主人に報告「レート制限発生、{X}分後に再開予定」
+      3. cooldown（5分）後に再開
+      4. 連続3回制限された場合は作業中断してご主人に相談
+
+      **禁止**: 制限中の retry ループ（API代金の無駄）
+      ```
+
+      ---
+
+      ## タスク1-2: owl-watcher ポーリング改善【子猫2担当】
+
+      **対象ファイル**: owl-watcher.sh
+
+      **修正内容**:
+      1. POLL_INTERVAL を 3秒 → 15秒 に変更（環境変数でオーバーライド可）
+      2. APPROVAL_POLL_INTERVAL も同様に調整
+      3. 可能であれば inotifywait による効率化を検討（オプション）
+
+      **コード例**:
+      ```bash
+      POLL_INTERVAL="${OWL_POLL_INTERVAL:-15}"
+      APPROVAL_POLL_INTERVAL="${OWL_APPROVAL_POLL_INTERVAL:-5}"
+      ```
+
+      ---
+
+      ## タスク1-3: レビュー範囲の環境変数化【子猫3担当】
+
+      **対象ファイル**: owl-watcher.sh
+
+      **修正内容**:
+      1. レビュー範囲を環境変数 `OWL_REVIEW_RANGE` で指定可能に
+      2. デフォルトは `HEAD~1`
+      3. コメントにデフォルト動作を明記
+
+      **コード例**:
+      ```bash
+      REVIEW_RANGE="${OWL_REVIEW_RANGE:-HEAD~1}"
+      local prompt="git diff ${REVIEW_RANGE} の変更について..."
+      ```
+
+      **コメント追加**:
+      ```bash
+      # レビュー範囲: 環境変数 OWL_REVIEW_RANGE で指定可能
+      # デフォルト: HEAD~1（直近1コミットの変更）
+      # 例: OWL_REVIEW_RANGE="main..HEAD" で複数コミットをまとめてレビュー
+      ```
+
+      ---
+
+      ## 完了条件
+
+      - [ ] 全ファイルにレート制限ルールが追記されている
+      - [ ] owl-watcher.sh のポーリング間隔が調整されている
+      - [ ] レビュー範囲が環境変数で設定可能になっている
+      - [ ] コメントが改善されている
+      - [ ] nawabari.md に完了報告
+
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "1/4"
+    expected_outputs:
+      - "CLAUDE.md（レート制限ルール追記）"
+      - "instructions/*.md（レート制限ルール追記）"
+      - "owl-watcher.sh（ポーリング改善 + 環境変数化）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
+
+  - command_id: "cmd-20260205T155040"
+    timestamp: "2026-02-05T15:50:40"
+    type: system-improvement
+    priority: high
+    status: done
+    started_at: "2026-02-05T15:52:21"
+    completed_at: "2026-02-05T15:58:27"
+    description: |
+      # neko-pm 改善計画 Phase 2: 品質向上
+
+      **背景**: Phase 1（レート制限対策）完了。Phase 2 は「事後→事前」の品質ゲートを導入するにゃ。
+
+      ---
+
+      ## タスク2-1: 事前検証ゲート導入【子猫1担当】
+
+      **対象ファイル**:
+      - instructions/kitten.md
+      - instructions/guard-cat.md
+
+      **追加内容（kitten.md）**:
+      ```markdown
+      ## 🔍 事前検証チェックリスト（完了前必須）
+
+      タスク完了を報告する前に、以下を必ず確認するにゃ：
+
+      ### コード変更の場合
+      - [ ] 構文チェック通過（bash -n / tsc --noEmit 等）
+      - [ ] 既存機能を壊していない（関連ファイル確認）
+      - [ ] セキュリティリスクなし（ハードコード秘密、injection等）
+
+      ### ドキュメント変更の場合
+      - [ ] 内容が正確（事実確認済み）
+      - [ ] フォーマット統一（既存スタイルに合致）
+
+      ### 全タスク共通
+      - [ ] タスク目的を達成している
+      - [ ] 副作用がない or 副作用を明記
+
+      **チェック未完了での完了報告は禁止にゃ。**
+      ```
+
+      **追加内容（guard-cat.md）**:
+      ```markdown
+      ## 🔍 レビュー時のチェックポイント
+
+      子猫からの完了報告を受けたら、以下を確認するにゃ：
+
+      1. **事前チェックリスト確認**: 子猫がチェックリストを実施したか
+      2. **タスク目的達成**: expected_outputs と実際の成果物が一致するか
+      3. **副作用確認**: 予期しない変更がないか
+
+      チェックリスト未実施の報告は差し戻すにゃ。
+      ```
+
+      ---
+
+      ## タスク2-2: タスクYAML検証条件テンプレート【子猫2担当】
+
+      **対象**: queue/tasks/ のタスクYAMLフォーマット
+
+      **作業内容**:
+      1. queue/templates/task-template.yaml を作成
+      2. 以下のフィールドを必須化：
+         - `expected_checks`: 検証条件リスト
+         - `acceptance_criteria`: 受け入れ基準
+
+      **テンプレート例**:
+      ```yaml
+      task_id: "task-{timestamp}-{kitten}"
+      priority: high | medium | low
+      description: |
+        タスク内容
+      expected_outputs:
+        - "成果物1"
+        - "成果物2"
+      expected_checks:
+        - "構文チェック通過"
+        - "既存機能への影響なし"
+      acceptance_criteria:
+        - "〇〇が動作すること"
+        - "〇〇が表示されること"
+      ```
+
+      ---
+
+      ## タスク2-3: TaskUpdate 追跡ルール追加【子猫3担当】
+
+      **対象ファイル**:
+      - instructions/boss-cat.md
+      - instructions/guard-cat.md
+
+      **追加内容**:
+      ```markdown
+      ## 📊 タスク追跡ルール（TaskUpdate）
+
+      大きなタスクは TaskCreate/TaskUpdate で進捗を追跡するにゃ：
+
+      1. **タスク開始時**: status を `in_progress` に更新
+      2. **中間報告時**: description に進捗を追記
+      3. **完了時**: status を `completed` に更新
+      4. **中断時**: 現在の状態を description に保存
+
+      これにより、セッション中断後も状態を復元できるにゃ。
+      ```
+
+      ---
+
+      ## 完了条件
+
+      - [ ] kitten.md に事前検証チェックリストが追加されている
+      - [ ] guard-cat.md にレビューチェックポイントが追加されている
+      - [ ] queue/templates/task-template.yaml が作成されている
+      - [ ] TaskUpdate 追跡ルールが追加されている
+      - [ ] nawabari.md に完了報告
+
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "2/4"
+      prerequisite: "cmd-20260205T153434 (Phase 1)"
+    expected_outputs:
+      - "instructions/kitten.md（事前検証チェックリスト追加）"
+      - "instructions/guard-cat.md（レビューチェックポイント追加）"
+      - "queue/templates/task-template.yaml（新規作成）"
+      - "instructions/*.md（TaskUpdate追跡ルール追加）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
+
+  - command_id: "cmd-20260205T161503"
+    timestamp: "2026-02-05T16:15:03"
+    type: system-improvement
+    priority: high
+    status: done
+    started_at: "2026-02-05T16:19:52"
+    completed_at: "2026-02-05T16:39:03"
+    description: |
+      # neko-pm 改善計画 Phase 3: 継続性向上
+
+      **背景**: Phase 1（レート制限対策）+ Phase 2（品質向上）完了。
+      Phase 3 は中断に強いワークフローを構築するにゃ。
+
+      ---
+
+      ## タスク3-1: checkpoint 運用ルール追加【子猫1担当】
+
+      **対象ファイル**:
+      - instructions/boss-cat.md
+      - instructions/guard-cat.md
+      - instructions/kitten.md
+
+      **追加内容**:
+      ```markdown
+      ## 📍 チェックポイント運用ルール
+
+      大きなタスク（推定30分以上）は途中状態を保存するにゃ：
+
+      ### 保存タイミング
+      1. タスク開始時：初期状態を記録
+      2. 主要ステップ完了時：進捗を記録
+      3. 中断発生時：現在状態を即時保存
+
+      ### 保存先
+      - **nawabari.md**: 全体状況（番猫が更新）
+      - **queue/checkpoints/**: 詳細な中間状態（必要に応じて）
+
+      ### 保存内容
+      - 完了したステップ
+      - 次にやるべきこと
+      - 関連ファイルのパス
+      - 未解決の問題点
+
+      **中断時は必ず状態を保存してから終了するにゃ。**
+      ```
+
+      ---
+
+      ## タスク3-2: partial report aggregator 機能追加【子猫2担当】
+
+      **対象ファイル**: instructions/guard-cat.md
+
+      **追加内容**:
+      ```markdown
+      ## 📦 途中報告の集約（Partial Report Aggregator）
+
+      子猫からの途中報告を効率的に集約するにゃ：
+
+      ### 途中報告の受け取り方
+      1. 子猫が `queue/reports/partial-{task_id}.yaml` に途中状態を保存
+      2. 番猫は定期的に partial-* ファイルをスキャン
+      3. 重要な進捗は nawabari.md に反映
+
+      ### 集約ルール
+      - 完了報告が来たら partial ファイルは削除
+      - 中断時は partial ファイルを保持
+      - 再開時は partial ファイルから状態を復元
+
+      ### nawabari.md への反映基準
+      - 50%以上の進捗があった場合
+      - 重要な発見・問題があった場合
+      - ご主人への報告が必要な場合
+      ```
+
+      ---
+
+      ## タスク3-3: queue/checkpoints ディレクトリ作成【子猫3担当】
+
+      **作業内容**:
+      1. `queue/checkpoints/` ディレクトリを作成
+      2. `queue/checkpoints/README.md` を作成（使い方説明）
+      3. `queue/checkpoints/.gitkeep` を作成（空ディレクトリ保持）
+
+      **README.md 内容例**:
+      ```markdown
+      # Checkpoints Directory
+
+      このディレクトリには、長時間タスクの中間状態を保存するにゃ。
+
+      ## ファイル命名規則
+      - `checkpoint-{task_id}-{timestamp}.yaml`
+      - 例: `checkpoint-task-2026-02-05T16:00:00-kitten1-20260205T163000.yaml`
+
+      ## 保存内容
+      - completed_steps: 完了したステップのリスト
+      - next_action: 次にやるべきこと
+      - context: 関連情報（ファイルパス、変数等）
+      - issues: 未解決の問題点
+
+      ## 運用ルール
+      - タスク完了後は削除してOK
+      - 中断時は必ず保持
+      - 1週間以上経過したファイルは定期的にクリーンアップ
+      ```
+
+      ---
+
+      ## 完了条件
+
+      - [ ] 全 instructions に checkpoint 運用ルールが追加されている
+      - [ ] guard-cat.md に partial report aggregator 機能が追加されている
+      - [ ] queue/checkpoints/ ディレクトリが作成されている
+      - [ ] README.md で使い方が説明されている
+      - [ ] nawabari.md に完了報告
+
+    context:
+      source: "Claude Code インサイト + 研究狸分析"
+      plan_version: "v1.0"
+      phase: "3/4"
+      prerequisite: "cmd-20260205T155040 (Phase 2)"
+    expected_outputs:
+      - "instructions/*.md（checkpoint運用ルール追加）"
+      - "instructions/guard-cat.md（partial aggregator追加）"
+      - "queue/checkpoints/（ディレクトリ作成）"
+      - "queue/checkpoints/README.md（使い方説明）"
+      - "nawabari.md への完了報告"
+    parallel_execution: true
