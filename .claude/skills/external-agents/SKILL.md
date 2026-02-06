@@ -29,7 +29,7 @@ gemini --approval-mode full "Next.js 15 の App Router と Pages Router の違�
 ### 🦝 研究狸（research-tanuki）
 
 **ツール**: Codex CLI
-**モデル**: gpt-5.3-codex-high
+**モデル**: gpt-5.3-codex
 **スキル**: `~/.codex/skills/research-tanuki/`
 **用途**: 深掘り調査、アーキテクチャ分析、Lead の相談相手
 **特徴**: コードベース分析に強い、仮説→検証プロセス
@@ -46,7 +46,7 @@ codex exec --full-auto --sandbox read-only --cd /home/edgesakura \
 ### 🦉 目利きフクロウ（owl-reviewer）
 
 **ツール**: Codex CLI
-**モデル**: gpt-5.3-codex-high
+**モデル**: gpt-5.3-codex
 **スキル**: `~/.codex/skills/owl-reviewer/`
 **用途**: コードレビュー、セキュリティ監査
 **特徴**: OWASP Top 10 チェック、重要度別レポート
@@ -106,8 +106,7 @@ Lead が Teammate を spawn
 | エージェント | コスト | 使い分け |
 |-------------|--------|---------|
 | Gemini CLI | 低 | 概要把握、トレンド調査 |
-| Codex CLI (o4-mini) | 低 | コードレビュー |
-| Codex CLI (gpt-5.2-codex) | 中 | 深い調査・分析 |
+| Codex CLI (gpt-5.3-codex) | 中 | 深い調査・分析・コードレビュー |
 | Opus (Task tool) | 高 | 重大な設計判断のみ |
 
 **原則**: 安い方から試す。Gemini → Codex → Opus の順。

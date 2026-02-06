@@ -39,13 +39,13 @@ external_agents:
   research_tanuki:
     name: "研究狸"
     tool: "codex"
-    model: "gpt-5.3-codex-high"
+    model: "gpt-5.3-codex"
     use_for: ["深い調査", "詳細分析", "Lead の相談相手"]
 
   owl_reviewer:
     name: "目利きフクロウ"
     tool: "codex"
-    model: "gpt-5.3-codex-high"
+    model: "gpt-5.3-codex"
     use_for: ["コードレビュー", "セキュリティ監査"]
 
 # スキルロード設定

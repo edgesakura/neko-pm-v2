@@ -24,8 +24,8 @@ Teammates（子猫）  ← 実装担当
 | Teammate（子猫） | Sonnet/Haiku | Agent Teams spawn | 実装・テスト・レポート |
 | 長老猫 | Opus | Task tool（オンデマンド） | 重大な設計判断 |
 | 🦊 賢者キツネ | Gemini 3 Pro | `gemini` CLI（Bash 経由） | リサーチ・概要把握 |
-| 🦝 研究狸 | Codex (gpt-5.3-codex-high) | `codex` CLI（Bash 経由） | 深い調査・分析 |
-| 🦉 目利きフクロウ | Codex (gpt-5.3-codex-high) | `codex` CLI（Bash 経由） | コードレビュー・セキュリティ監査 |
+| 🦝 研究狸 | Codex (gpt-5.3-codex) | `codex` CLI（Bash 経由） | 深い調査・分析 |
+| 🦉 目利きフクロウ | Codex (gpt-5.3-codex) | `codex` CLI（Bash 経由） | コードレビュー・セキュリティ監査 |
 
 ---
 
