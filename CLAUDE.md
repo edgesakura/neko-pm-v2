@@ -1,6 +1,6 @@
 # neko-pm v3 - 猫型マルチエージェントシステム
 
-Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）が delegate mode でタスクを指揮し、Teammates（子猫）が実装を担当するにゃ。
+Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）が delegate mode でタスクを指揮し、Teammates（子猫）が実装を担当するにゃ。Split Panes モードで各子猫を tmux ペインに分離表示できるにゃ。
 
 ---
 
@@ -11,7 +11,7 @@ Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）が 
     ↓ 指令
 Lead（ボスねこ）  ← delegate mode, 実装禁止
     ↓ タスク作成 + spawn
-Teammates（子猫）  ← 実装担当
+Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで動作）
     ↓ Bash 経由
 外部エージェント（Codex CLI / Gemini CLI）
 ```
@@ -26,6 +26,49 @@ Teammates（子猫）  ← 実装担当
 | 🦊 賢者キツネ | Gemini 3 Pro | `gemini` CLI（Bash 経由） | リサーチ・概要把握 |
 | 🦝 研究狸 | Codex (gpt-5.3-codex) | `codex` CLI（Bash 経由） | 深い調査・分析 |
 | 🦉 目利きフクロウ | Codex (gpt-5.3-codex) | `codex` CLI（Bash 経由） | コードレビュー・セキュリティ監査 |
+
+### Teammate Mode（表示モード）
+
+| モード | 動作 | 要件 | 推奨場面 |
+|--------|------|------|----------|
+| **Split Panes**（デフォルト） | tmux 4 Window 構成で起動 | tmux | 通常運用 |
+| **In-Process** | メインセッション内で動作（Shift+Up/Down で切替） | なし | シンプルな環境・リモート作業 |
+
+**tmux 4 Window 構成:**
+
+| Window | 名前 | 内容 |
+|--------|------|------|
+| 0 | `lead` | 🐱 ボスねこ（Claude Code Lead） |
+| 1 | `teammates` | 🐱 子猫たち（Teammate spawn 先・自動ペイン分割） |
+| 2 | `tanuki` | 🦝 研究狸（Codex CLI 専用） |
+| 3 | `scouts` | 🦊 賢者キツネ + 🦉 目利きフクロウ |
+
+**起動方法:**
+
+```bash
+# Split Panes（デフォルト）: tmux 4 Window 構成
+./scripts/start-team.sh
+
+# In-Process: tmux なしで Claude 直接起動
+./scripts/start-team.sh --in-process
+
+# 既存セッションに再接続
+./scripts/start-team.sh --attach
+
+# 停止（tmux セッション終了 + 履歴保存）
+./scripts/stop-team.sh
+```
+
+**tmux 操作:**
+
+| 操作 | キー |
+|------|------|
+| Lead（ボスねこ） | `Ctrl+B` → `0` |
+| Teammates（子猫） | `Ctrl+B` → `1` |
+| 研究狸 | `Ctrl+B` → `2` |
+| 偵察隊（キツネ+フクロウ） | `Ctrl+B` → `3` |
+| ペイン間移動 | `Ctrl+B` → 矢印キー |
+| Window 切替 | `Ctrl+B` → `n` / `p` |
 
 ---
 
@@ -163,10 +206,25 @@ prompt: |
 
 ## 外部エージェント
 
+Split Panes モードでは Window 1 "agents" に専用ペインが用意される。
+Lead は Bash 経由で直接実行するか、`tmux send-keys` でペインに送信できる。
+
+### tmux ペインアドレス
+
+| エージェント | Window | アドレス |
+|-------------|--------|---------|
+| 🦝 研究狸 | 2 tanuki | `neko-pm:tanuki` |
+| 🦊 賢者キツネ | 3 scouts.0（左） | `neko-pm:scouts.0` |
+| 🦉 目利きフクロウ | 3 scouts.1（右） | `neko-pm:scouts.1` |
+
 ### 🦊 賢者キツネ（sage-fox）- Gemini CLI
 
 ```bash
+# 直接実行（Bash 経由）
 gemini --approval-mode full "{依頼内容}"
+
+# tmux ペインに送信
+tmux send-keys -t neko-pm:scouts.0 'gemini --approval-mode full "{依頼内容}"' Enter
 ```
 
 スキル: `~/.gemini/skills/sage-fox/`
@@ -175,7 +233,11 @@ gemini --approval-mode full "{依頼内容}"
 ### 🦝 研究狸（research-tanuki）- Codex CLI
 
 ```bash
+# 直接実行（Bash 経由）
 codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}"
+
+# tmux ペインに送信
+tmux send-keys -t neko-pm:tanuki 'codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}"' Enter
 ```
 
 スキル: `~/.codex/skills/research-tanuki/`
@@ -184,7 +246,11 @@ codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}
 ### 🦉 目利きフクロウ（owl-reviewer）- Codex CLI
 
 ```bash
+# 直接実行（Bash 経由）
 codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{レビュー依頼}"
+
+# tmux ペインに送信
+tmux send-keys -t neko-pm:scouts.1 'codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{レビュー依頼}"' Enter
 ```
 
 スキル: `~/.codex/skills/owl-reviewer/`
@@ -354,3 +420,4 @@ neko-pm/
 | 起動 | shuugou.sh（419 行） | start-team.sh（~30 行） |
 | 指示書 | 3 ファイル ~3,400 行 | CLAUDE.md ~400 行 |
 | 外部エージェント | tmux ペイン常駐 | Bash 経由（オンデマンド） |
+| Teammate 表示 | tmux send-keys（手動） | Split Panes / In-Process（自動） |

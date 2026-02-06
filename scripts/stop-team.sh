@@ -1,8 +1,8 @@
 #!/bin/bash
 # neko-pm v3 - Agent Teams 停止スクリプト
 #
-# v3 では tmux セッション管理が不要。
-# Memory MCP が状態を永続化するため、/exit するだけ。
+# tmux セッション 'neko-pm' を終了し、セッション履歴を保存する。
+# Memory MCP が状態を永続化するため、コンテキストは次回引き継がれる。
 
 set -e
 
@@ -13,7 +13,10 @@ HISTORY_DIR="${PROJECT_DIR}/history"
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
+
+SESSION_NAME="neko-pm"
 
 echo -e "${CYAN}🐱 neko-pm v3 終了処理にゃ〜${NC}"
 
@@ -39,5 +42,15 @@ ln -s "session_${TIMESTAMP}" "${HISTORY_DIR}/latest"
 
 echo -e "${GREEN}✅ セッション履歴を保存したにゃ${NC}"
 echo -e "  保存先: ${CYAN}${SESSION_DIR}${NC}"
+
+# tmux セッション終了
+if command -v tmux &> /dev/null && tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo -e "${YELLOW}🖥️  tmux セッション '${SESSION_NAME}' を終了するにゃ...${NC}"
+    tmux kill-session -t "$SESSION_NAME"
+    echo -e "${GREEN}✅ tmux セッションを終了したにゃ${NC}"
+else
+    echo -e "${YELLOW}ℹ️  tmux セッション '${SESSION_NAME}' は見つからなかったにゃ${NC}"
+fi
+
 echo ""
 echo "おやすみにゃ〜 🐱💤"
