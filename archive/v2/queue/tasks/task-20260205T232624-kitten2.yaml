@@ -1,0 +1,95 @@
+task_id: "task-20260205T232624-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T23:26:24"
+priority: high
+parent_command: "cmd-20260205-232508"
+
+description: |
+  🐱 Phase B: 品質改善作戦 - 子猫2担当にゃ！
+
+  ## タスク3: 作業完了チェックリストの強化
+
+  instructions/kitten.md の「事前検証チェックリスト」を強化するにゃ。
+
+  ### 追加項目
+  既存のチェックリストに以下を追加:
+  - [ ] 他の子猫のファイルを編集していない
+  - [ ] ロック中のファイルに触れていない
+  - [ ] 番猫への完了報告形式が正しい
+
+  ### instructions/kitten.md への追加内容
+  「事前検証チェックリスト」セクションを探して、以下を追加:
+
+  ```markdown
+  ## 📋 事前検証チェックリスト（強化版）
+
+  タスク開始前に以下を確認せよにゃ：
+
+  ### ファイル編集の確認
+  - [ ] タスクYAMLに記載されたファイルのみ編集対象
+  - [ ] 他の子猫のファイルを編集していない
+  - [ ] ロック中のファイルに触れていない
+    - nawabari.md の「🔒 ファイルロック」セクションを確認
+    - ロック中のファイルは編集禁止にゃ
+
+  ### コード品質の確認
+  - [ ] ビルドが通る
+  - [ ] テストがパス
+  - [ ] Lintエラーなし
+  - [ ] console.log 削除済み
+
+  ### 報告形式の確認
+  - [ ] 番猫への完了報告形式が正しい
+    - queue/reports/report-{timestamp}-{worker_id}.yaml
+    - 必須項目: task_id, status, result, skill_candidate, improvement_proposals
+  - [ ] skill_candidate セクションを記入（found: true/false）
+  - [ ] improvement_proposals セクションを記入（found: true/false）
+
+  ### セキュリティの確認
+  - [ ] 秘密情報（APIキー、パスワード）を含まない
+  - [ ] ユーザー入力を適切に検証
+  - [ ] SQL インジェクション対策済み
+
+  ### タスク完了の確認
+  - [ ] expected_outputs の全てを作成
+  - [ ] context.references の全てを参照
+  - [ ] notes の注意事項を全て確認
+  ```
+
+  ### 既存のチェックリストとの統合
+  既存のチェックリストセクションがある場合:
+  - 重複項目は統合
+  - 新規項目を追加
+  - セクション名を「事前検証チェックリスト（強化版）」に変更
+
+  既存のチェックリストがない場合:
+  - 新規セクションとして追加
+  - 適切な場所（タスク実行手順の前）に配置
+
+  ## 完了報告
+  タスク3が完了したら、queue/reports/ に報告YAMLを作成にゃ。
+
+context:
+  references:
+    - "instructions/kitten.md"
+    - "/tmp/multi-agent-shogun/instructions/ashigaru.md"
+  reference_repo: "/tmp/multi-agent-shogun/"
+
+expected_outputs:
+  - "instructions/kitten.md（チェックリスト強化）"
+  - "queue/reports/report-20260205T232624-kitten2.yaml"
+
+pre_task_checklist:
+  - "instructions/kitten.md の現在の構造確認"
+  - "既存のチェックリストセクションを検索"
+  - "適切な挿入位置を特定"
+
+post_task_checklist:
+  - "instructions/kitten.md にチェックリストが強化されているか確認"
+  - "追加項目が全て含まれているか確認"
+  - "完了報告YAMLに skill_candidate と improvement_proposals を記入"
+
+notes: |
+  - 既存のチェックリストと統合して強化するにゃ
+  - 重複項目は統合、新規項目を追加にゃ
+  - ファイルロック機構との連携を考慮にゃ〜

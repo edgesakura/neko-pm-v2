@@ -1,0 +1,124 @@
+task_id: "task-20260206-024244-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-06T02:42:44"
+priority: high
+load_skills: []
+description: |
+  ## 🚀 AgentCore 再デプロイ
+
+  緊急バグ修正（ModuleNotFoundError）後の再デプロイを実行するにゃ。
+
+  ## 背景
+
+  Phase 2, 2.5 で実装した main.py と utils/memory.py のインポートが旧式だったため、
+  緊急バグ修正で新API（MemoryClient）に移行したにゃ。
+  修正後の動作確認のため、AgentCore を再デプロイするにゃ〜。
+
+  ## 作業ディレクトリ
+
+  ```bash
+  cd /home/edgesakura/neko-pm/output/izakaya-agent/agent
+  ```
+
+  ## 作業手順
+
+  ### ステップ1: 環境変数を設定
+
+  ```bash
+  export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+  ```
+
+  **重要**: MEMORY_ID を設定しないと Memory API が動作しないにゃ！
+
+  ### ステップ2: 再デプロイ
+
+  ```bash
+  agentcore launch
+  ```
+
+  **期待結果**:
+  - デプロイ成功メッセージが表示される
+  - Agent ID と Agent Alias ID が表示される
+
+  ### ステップ3: 動作確認テスト
+
+  ```bash
+  agentcore invoke '{"prompt": "こんにちは"}'
+  ```
+
+  **期待結果**:
+  - ModuleNotFoundError が発生しない
+  - エージェントが正常な応答を返す
+
+  ### ステップ4: ステータス確認
+
+  ```bash
+  agentcore status
+  ```
+
+  **期待結果**:
+  - Agent ID: izakaya_agent-9JGtN3Enat
+  - Memory ID: izakaya_agent_mem-ZOMh0R8tfz
+  - Status: ACTIVE
+
+  ## エラーハンドリング
+
+  ### エラー1: MEMORY_ID が設定されていない
+
+  **症状**: Memory API 呼び出しエラー
+
+  **対処法**:
+  ```bash
+  export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+  agentcore launch
+  ```
+
+  ### エラー2: agentcore コマンドが見つからない
+
+  **症状**: `command not found: agentcore`
+
+  **対処法**:
+  ```bash
+  pip install bedrock-agentcore-starter-toolkit
+  ```
+
+  ### エラー3: ModuleNotFoundError が依然として発生
+
+  **症状**: `ModuleNotFoundError: No module named 'bedrock_agentcore.context'`
+
+  **対処法**:
+  - main.py と utils/memory.py の修正が正しく適用されているか確認
+  - 緊急バグ修正レポート（queue/reports/report-task-20260206-022203-kitten1.yaml）を参照
+
+  ### エラー4: CloudWatch Logs でエラー確認
+
+  **対処法**:
+  ```bash
+  aws logs tail /aws/lambda/IzakayaStack-LineWebhookFunction --follow
+  ```
+
+  ## 成功判定基準
+
+  以下を全て満たす場合、タスク完了とするにゃ：
+
+  - [ ] agentcore launch が成功した
+  - [ ] agentcore invoke で正常な応答が返った
+  - [ ] ModuleNotFoundError が発生しなかった
+  - [ ] agentcore status でステータスが ACTIVE
+
+  ## 注意事項
+
+  - 仮想環境（.venv）がある場合は有効化してから実行にゃ
+  - デプロイには数分かかる場合があるにゃ
+  - エラーが出たら CloudWatch Logs を確認するにゃ
+  - ボスねこへの報告は「agentcore invoke テスト成功」を含めるにゃ
+
+context:
+  agent_dir: "/home/edgesakura/neko-pm/output/izakaya-agent/agent"
+  memory_id: "izakaya_agent_mem-ZOMh0R8tfz"
+  agent_id: "izakaya_agent-9JGtN3Enat"
+expected_outputs:
+  - "agentcore launch 成功"
+  - "agentcore invoke テスト成功"
+  - "agentcore status 確認完了"
+  - "queue/reports/report-task-20260206-024244-kitten3.yaml"

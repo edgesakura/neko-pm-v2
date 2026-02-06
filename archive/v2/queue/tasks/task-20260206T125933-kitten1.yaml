@@ -1,0 +1,86 @@
+task_id: "task-20260206T125933-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T12:59:33"
+priority: urgent
+parent_command_id: "cmd-20260206T125730"
+description: |
+  【🚨 緊急】LINE Bot ツール呼び出し修正
+  ツール（ホットペッパー検索/Google Places検索）が動かない問題を即座に修正せよ。
+
+  ## 状況
+  - LINE → Lambda → AgentCore の接続は成功（レスポンスが返る）
+  - しかしツール（ホットペッパー検索/Google Places検索）が動いていない
+  - LLMがツール失敗時に一般知識でハルシネーション回答している
+  - APIキーはSecrets Managerに設定済み:
+    - izakaya-agent/hotpepper-api-key ✅
+    - izakaya-agent/google-places-api-key ✅
+  - **ご主人からopus使用許可あり（難航したら使え）**
+
+  ## 調査チェックリスト（上から順に実施）
+
+  ### Step 1: CloudWatch Logs でツール呼び出しエラーを確認
+  最新のLINEメッセージ処理ログからツール呼び出し部分のエラーを特定
+  ```bash
+  aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 \
+    --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text
+  aws logs filter-log-events --log-group-name /aws/lambda/<関数名> \
+    --start-time $(date -d '30 minutes ago' +%s)000 --region ap-northeast-1 --limit 100
+  ```
+
+  ### Step 2: エージェントのツール定義を確認
+  ツールがAPIキーをどうやって取得しているか精査
+  ```bash
+  # エージェント定義・ツール定義を全部確認
+  find output/izakaya-agent/agent/ -type f -name "*.py" | head -20
+  cat output/izakaya-agent/agent/agent.py
+  cat output/izakaya-agent/agent/tools.py
+  # その他関連ファイル
+  ls -la output/izakaya-agent/agent/
+  ```
+  確認ポイント:
+  - Secrets ManagerからAPIキーを取得するコードがあるか
+  - 取得したAPIキーをツールに渡すロジックが正しいか
+  - IAM権限でSecrets Managerへのアクセスが許可されているか
+
+  ### Step 3: AgentCore Runtime側のツール設定確認
+  AgentCoreに登録されたエージェント定義でツールがどう設定されているか
+  ```bash
+  # AgentCoreエージェント設定ファイル
+  find output/izakaya-agent/ -name "*.yaml" -o -name "*.yml" -o -name "*.json" | grep -i agent
+  ```
+
+  ### Step 4: 修正実施
+  原因に応じて修正:
+  - ツールのAPIキー取得ロジック修正
+  - Lambda環境変数追加（必要なら）
+  - IAM権限追加（Secrets Managerアクセス）
+  - cdk deploy で再デプロイ
+
+  ### Step 5: 動作確認
+  Lambda直接invokeでツール呼び出しが成功するか確認
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  region: "ap-northeast-1"
+  secrets:
+    hotpepper: "izakaya-agent/hotpepper-api-key"
+    google_places: "izakaya-agent/google-places-api-key"
+  references:
+    - "output/izakaya-agent/agent/"
+    - "output/izakaya-agent/lambda/handler.py"
+    - "output/izakaya-agent/cdk/"
+  opus_permission: true  # 難航したらopus使用OK
+
+expected_outputs:
+  - "ツール呼び出し失敗の根本原因レポート（nawabari.md形式）"
+  - "修正実施 + 再デプロイ"
+  - "ツールが正常動作する確認結果"
+  - "skill_candidate の評価（緊急だが必須）"
+
+note: |
+  - 緊急タスク！スピード最優先
+  - Step 1から順に実施せよ
+  - 難航したら長老猫（opus）を召喚せよ
+  - 各Stepの結果を報告に含めること
+  - 修正後は必ず動作確認を実施すること

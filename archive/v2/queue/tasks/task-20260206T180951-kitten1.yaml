@@ -1,0 +1,142 @@
+task_id: "task-20260206T180951-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T18:09:51"
+priority: high
+load_skills: []
+description: |
+  【🚀 Amplify Gen 2 デプロイ - グループA】nomibero-web GitHub push + amplify.yml作成
+
+  ## 目的
+  のみべろWebアプリを GitHub にpushし、Amplify Gen 2 デプロイの準備を完了させる。
+
+  ## タスク手順
+
+  ### Step 1: GitHub プライベートリポジトリ作成（nomibero-web）
+  ```bash
+  gh repo create nomibero-web --private --description "のみべろエージェント - 居酒屋検索Webアプリ"
+  ```
+  - プライベートリポジトリで作成（⚠️ ボスねこ承認済み）
+  - リポジトリURL: https://github.com/edgesakura/nomibero-web.git
+
+  ### Step 2: .gitignore 作成
+  ```bash
+  cd output/nomibero-web
+  cat > .gitignore << 'EOF'
+  # dependencies
+  node_modules/
+  .pnp
+  .pnp.js
+
+  # testing
+  coverage/
+
+  # next.js
+  .next/
+  out/
+  build/
+
+  # misc
+  .DS_Store
+  *.pem
+
+  # debug
+  npm-debug.log*
+  yarn-debug.log*
+  yarn-error.log*
+
+  # local env files
+  .env
+  .env.local
+  .env.development.local
+  .env.test.local
+  .env.production.local
+
+  # amplify
+  .amplify/
+  amplify_outputs.json
+  amplifyconfiguration.json
+
+  # vercel
+  .vercel
+  EOF
+  ```
+
+  ### Step 3: git init + commit + push
+  ```bash
+  cd output/nomibero-web
+  git init
+  git add .
+  git commit -m "$(cat <<'COMMIT_EOF'
+  feat: のみべろWebアプリ Phase 1 - Next.js + Amplify Gen 2 + Cognito認証
+
+  ## 実装内容
+  - Next.js 15 (App Router) + TypeScript
+  - Amplify Gen 2（CDKベース）
+  - Cognito認証（招待制）
+  - チャットUI（レスポンシブ）
+  - API Gateway連携（Cognitoトークン付き）
+
+  ## デプロイ準備
+  - GitHub連携
+  - Amplify Gen 2 デプロイ設定
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  COMMIT_EOF
+  )"
+  git remote add origin https://github.com/edgesakura/nomibero-web.git
+  git branch -M main
+  git push -u origin main
+  ```
+
+  ### Step 4: amplify.yml 作成
+  Amplify Gen 2 用のビルド設定ファイルを作成:
+  ```bash
+  cd output/nomibero-web
+  cat > amplify.yml << 'EOF'
+  version: 1
+  frontend:
+    phases:
+      preBuild:
+        commands:
+          - npm ci
+      build:
+        commands:
+          - npm run build
+    artifacts:
+      baseDirectory: .next
+      files:
+        - '**/*'
+    cache:
+      paths:
+        - node_modules/**/*
+        - .next/cache/**/*
+  EOF
+  git add amplify.yml
+  git commit -m "chore: Add Amplify Gen 2 build configuration
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  "
+  git push
+  ```
+
+  ### Step 5: 動作確認
+  - GitHub リポジトリにコードがpushされていることを確認
+  - amplify.yml が存在することを確認
+
+  ## 重要な注意事項
+  - ⚠️ git push はボスねこ承認済み（プライベートリポジトリ）
+  - .gitignore で機密情報（.env, amplify_outputs.json）を除外すること
+  - commit メッセージは HEREDOC で正しくフォーマットすること
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  github_user: "edgesakura"
+  repo_url: "https://github.com/edgesakura/nomibero-web.git"
+  references:
+    - "output/nomibero-web/"
+expected_outputs:
+  - "GitHub プライベートリポジトリ（nomibero-web）作成"
+  - "コード push 完了"
+  - "amplify.yml 作成 + push"
+  - "次のステップ準備完了（子猫2のAmplify連携待ち）"

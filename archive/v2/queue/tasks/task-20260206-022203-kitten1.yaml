@@ -1,0 +1,261 @@
+task_id: "task-20260206-022203-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T02:22:03"
+priority: urgent
+load_skills: []
+description: |
+  ## 🔥 緊急バグ修正: AgentCore Runtime ModuleNotFoundError
+
+  AgentCoreデプロイは成功したが、invokeテストで以下のエラーが発生したにゃ：
+  ```
+  ModuleNotFoundError: No module named 'bedrock_agentcore.context'
+  ```
+
+  ## 原因
+
+  Phase 2, 2.5 で実装した main.py と utils/memory.py のインポートが
+  公式ドキュメントと異なる旧式のものだったにゃ。
+
+  ## 修正内容
+
+  ### 修正1: main.py のインポート修正
+
+  **ファイル**: output/izakaya-agent/agent/main.py
+
+  **現在（間違い）**:
+  ```python
+  from bedrock_agentcore import BedrockAgentCoreApp
+  from bedrock_agentcore.context import RequestContext  # ← 存在しない
+  ```
+
+  **正解（公式ドキュメント通り）**:
+  ```python
+  from bedrock_agentcore.runtime import BedrockAgentCoreApp
+  # RequestContext は削除（存在しない）
+  ```
+
+  **entrypointシグネチャの修正**:
+  ```python
+  @app.entrypoint
+  def invoke(payload, context):
+      """
+      エージェントのエントリーポイント
+
+      Args:
+          payload: リクエストペイロード（dict）
+          context: AgentCore実行コンテキスト
+      """
+      # session_id の取得方法を修正
+      session_id = getattr(context, 'session_id', None) or payload.get("session_id", "default-session")
+      user_message = payload.get("user_message", "") or payload.get("prompt", "")
+
+      # 以降は既存のロジック
+      # ...
+  ```
+
+  **重要**: 関数名を `main` → `invoke` に変更する必要があるにゃ（公式ドキュメント準拠）。
+
+  ### 修正2: utils/memory.py の新API対応
+
+  **ファイル**: output/izakaya-agent/agent/utils/memory.py
+
+  **現在（旧API）**:
+  ```python
+  from bedrock_agentcore.memory.session import MemorySessionManager
+  from bedrock_agentcore.memory.constants import ConversationalMessage, MessageRole
+  from bedrock_agentcore.memory import MemoryManager
+  ```
+
+  **正解（新API - 公式ドキュメント通り）**:
+  ```python
+  from bedrock_agentcore.memory import MemoryClient
+  import os
+  ```
+
+  **新APIの使い方**:
+
+  ```python
+  import os
+  from bedrock_agentcore.memory import MemoryClient
+  from typing import List, Dict, Any
+
+  # Memory Client 初期化
+  memory_client = MemoryClient(region_name='ap-northeast-1')
+  MEMORY_ID = os.getenv('MEMORY_ID', 'izakaya_agent_mem-ZOMh0R8tfz')
+
+  def get_conversation_history(session_id: str, k: int = 3) -> List[Dict[str, Any]]:
+      """
+      過去k件の会話履歴を取得
+
+      Args:
+          session_id: セッションID（LINE user_id）
+          k: 取得件数
+
+      Returns:
+          会話履歴のリスト
+      """
+      try:
+          turns = memory_client.get_last_k_turns(
+              memory_id=MEMORY_ID,
+              actor_id="user",
+              session_id=session_id,
+              k=k
+          )
+          return turns if turns else []
+      except Exception as e:
+          print(f"Failed to retrieve conversation history: {e}")
+          return []
+
+  def save_conversation(
+      session_id: str,
+      user_message: str,
+      agent_response: str
+  ) -> bool:
+      """
+      会話をMemoryに保存
+
+      Args:
+          session_id: セッションID
+          user_message: ユーザーのメッセージ
+          agent_response: エージェントの応答
+
+      Returns:
+          保存成功 = True
+      """
+      try:
+          # メッセージをタプルのリストとして作成
+          messages = [
+              (user_message, "USER"),
+              (agent_response, "ASSISTANT")
+          ]
+
+          memory_client.create_event(
+              memory_id=MEMORY_ID,
+              actor_id="user",
+              session_id=session_id,
+              messages=messages
+          )
+          return True
+      except Exception as e:
+          print(f"Failed to save conversation: {e}")
+          return False
+
+  def search_semantic_memory(
+      session_id: str,
+      query: str
+  ) -> List[Dict[str, Any]]:
+      """
+      セマンティックメモリを検索（ユーザーの好みなど）
+
+      Args:
+          session_id: セッションID
+          query: 検索クエリ
+
+      Returns:
+          関連するメモリのリスト
+      """
+      try:
+          # 新APIではセマンティック検索は get_last_k_turns で代用
+          # または別のメソッドを使用（公式ドキュメント確認）
+          return []
+      except Exception as e:
+          print(f"Failed to search semantic memory: {e}")
+          return []
+  ```
+
+  **重要な変更点**:
+  - `MemorySessionManager` → `MemoryClient`
+  - `MemoryManager.get_or_create_memory()` → 環境変数 `MEMORY_ID` で指定
+  - `ConversationalMessage` → タプル形式 `(content, role)`
+  - `MessageRole.USER` → `"USER"` (文字列)
+  - `MessageRole.ASSISTANT` → `"ASSISTANT"` (文字列)
+
+  ### 修正3: main.py でのMemory関数呼び出し修正
+
+  **format_conversation_history の修正**:
+  ```python
+  def format_conversation_history(turns: List[Dict]) -> str:
+      """会話履歴をフォーマット"""
+      if not turns:
+          return "（初回の会話です）"
+
+      formatted = []
+      for turn in turns[-5:]:  # 直近5件
+          # 新APIの構造に合わせて修正
+          messages = turn.get('messages', [])
+          for msg in messages:
+              role = msg.get('role', 'unknown')
+              content = msg.get('content', '')
+              if role == 'USER':
+                  formatted.append(f"ユーザー: {content}")
+              elif role == 'ASSISTANT':
+                  formatted.append(f"エージェント: {content}")
+      return "\n".join(formatted)
+  ```
+
+  ### 修正4: 環境変数の設定
+
+  **重要**: MEMORY_ID を環境変数で渡す必要があるにゃ。
+
+  agentcore CLI で設定:
+  ```bash
+  cd /home/edgesakura/neko-pm/output/izakaya-agent/agent
+
+  # Memory ID を確認
+  agentcore status
+  # Output: Memory ID: izakaya_agent_mem-ZOMh0R8tfz
+
+  # 環境変数を設定してデプロイ
+  export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+  agentcore launch
+  ```
+
+  ## 作業手順
+
+  1. **main.py のインポート修正**
+     - `from bedrock_agentcore.runtime import BedrockAgentCoreApp`
+     - `RequestContext` の削除
+     - 関数名を `main` → `invoke` に変更
+     - session_id の取得方法を修正
+
+  2. **utils/memory.py の新API対応**
+     - `MemoryClient` に書き換え
+     - `get_conversation_history()` を新APIで実装
+     - `save_conversation()` を新APIで実装
+     - `search_semantic_memory()` を簡易実装
+
+  3. **main.py の format_conversation_history 修正**
+     - 新APIの構造に合わせてフォーマット修正
+
+  4. **動作確認（ローカル）**
+     - 可能であればローカルでテスト
+
+  5. **再デプロイ**
+     ```bash
+     cd /home/edgesakura/neko-pm/output/izakaya-agent/agent
+     export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+     agentcore launch
+     ```
+
+  6. **動作確認（invoke）**
+     ```bash
+     agentcore invoke '{"prompt": "こんにちは"}'
+     ```
+
+  ## 注意事項
+
+  - 公式ドキュメント通りの正しいAPIに修正するにゃ
+  - Memory ID は環境変数 `MEMORY_ID` で渡すにゃ
+  - 型ヒント（typing）を全関数に付与にゃ
+  - ドキュメント文字列を全関数に記載にゃ
+  - 既存の機能を壊さないように注意にゃ
+
+context:
+  agent_dir: "/home/edgesakura/neko-pm/output/izakaya-agent/agent"
+  memory_id: "izakaya_agent_mem-ZOMh0R8tfz"
+  agent_id: "izakaya_agent-9JGtN3Enat"
+expected_outputs:
+  - "output/izakaya-agent/agent/main.py（インポート修正、invoke関数名変更）"
+  - "output/izakaya-agent/agent/utils/memory.py（新API対応）"
+  - "agentcore invoke テスト成功"
+  - "queue/reports/report-task-20260206-022203-kitten1.yaml"

@@ -1,0 +1,281 @@
+task_id: "task-2026-02-05T17:39:18-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-05T17:39:18"
+priority: medium
+load_skills:
+  - "ppt"
+description: |
+  Datadog用JSONテンプレート作成（提案書＋報告書）
+
+  ## 目的
+  実務で使えるDatadog資料のJSONテンプレートを作成する
+
+  ## 作成するファイル
+
+  ### 1. skills/ppt/templates/datadog-proposal.json（提案書向け）
+  ```json
+  {
+    "title": "Datadog マルチオーガニゼーション導入提案",
+    "author": "SREチーム",
+    "company": "Datadog",
+    "slides": [
+      {
+        "type": "title",
+        "title": "Datadog マルチオーガニゼーション\n導入提案",
+        "subtitle": "効率的な監視運用を実現",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "アジェンダ",
+        "bullets": [
+          "現状の課題",
+          "マルチオーガニゼーション導入のメリット",
+          "導入アーキテクチャ",
+          "移行計画",
+          "コスト試算",
+          "まとめ"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "現状の課題",
+        "background": "#8000FF"
+      },
+      {
+        "type": "content",
+        "title": "現在の監視環境",
+        "bullets": [
+          "5つのDatadogアカウントが独立運用",
+          "ダッシュボード・アラートの重複管理",
+          "統一的な監視ルールの適用困難",
+          "運用コスト増加"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "マルチオーガニゼーションのメリット",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "導入メリット",
+        "bullets": [
+          "統一的な監視設定の配布",
+          "ダッシュボードのテンプレート化",
+          "アラートルールの一元管理",
+          "運用工数の削減（推定30%削減）",
+          "コンプライアンス対応の簡素化"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "導入アーキテクチャ",
+        "background": "#8000FF"
+      },
+      {
+        "type": "content",
+        "title": "親子構造",
+        "bullets": [
+          "親Org: テンプレート・共通設定管理",
+          "子Org（東商用）: NTT東日本本番環境",
+          "子Org（西商用）: NTT西日本本番環境",
+          "子Org（ST）: ステージング環境",
+          "子Org（dev）: 開発環境"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "移行計画",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "フェーズ別移行計画",
+        "bullets": [
+          "Phase 1: 親Org設定（2週間）",
+          "Phase 2: dev環境移行（1週間）",
+          "Phase 3: ST環境移行（1週間）",
+          "Phase 4: 商用環境移行（2週間）",
+          "Phase 5: 運用最適化（継続）"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "content",
+        "title": "コスト試算",
+        "bullets": [
+          "現状運用コスト: 100時間/月",
+          "導入後運用コスト: 70時間/月（推定）",
+          "削減効果: 30時間/月（30%削減）",
+          "初期投資: 設計・移行作業 80時間",
+          "ROI: 3ヶ月で回収見込み"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "content",
+        "title": "まとめ",
+        "bullets": [
+          "統一的な監視設定で品質向上",
+          "運用工数30%削減",
+          "スケーラブルな監視基盤",
+          "3ヶ月でROI達成見込み"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "end",
+        "title": "ご清聴ありがとうございました",
+        "background": "#632CA6"
+      }
+    ]
+  }
+  ```
+
+  ### 2. skills/ppt/templates/datadog-report.json（報告書向け）
+  ```json
+  {
+    "title": "Datadog監視運用 月次レポート",
+    "author": "SREチーム",
+    "company": "Datadog",
+    "slides": [
+      {
+        "type": "title",
+        "title": "Datadog監視運用\n月次レポート",
+        "subtitle": "2026年2月",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "目次",
+        "bullets": [
+          "サマリー",
+          "SLI/SLO達成状況",
+          "インシデント分析",
+          "改善活動",
+          "次月の施策"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "サマリー",
+        "background": "#8000FF"
+      },
+      {
+        "type": "content",
+        "title": "今月のハイライト",
+        "bullets": [
+          "SLO達成率: 99.95%（目標: 99.9%）",
+          "インシデント件数: 2件（前月比 -1件）",
+          "平均復旧時間: 15分（前月比 -5分）",
+          "新規ダッシュボード追加: 3件"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "SLI/SLO達成状況",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "可用性",
+        "bullets": [
+          "目標: 99.9%",
+          "実績: 99.95%",
+          "エラーバジェット残: 80%",
+          "ステータス: ✅ 達成"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "content",
+        "title": "レイテンシ",
+        "bullets": [
+          "目標: P99 < 200ms",
+          "実績: P99 185ms",
+          "ステータス: ✅ 達成"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "インシデント分析",
+        "background": "#8000FF"
+      },
+      {
+        "type": "content",
+        "title": "インシデント #001",
+        "bullets": [
+          "日時: 2026-02-12 14:30",
+          "原因: データベース接続プール枯渇",
+          "影響: API応答遅延（3分間）",
+          "対応: 接続プール設定変更",
+          "再発防止: アラート閾値調整"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "改善活動",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "今月の改善",
+        "bullets": [
+          "ダッシュボード追加（EKSノードメトリクス）",
+          "アラート精度向上（誤検知 -20%）",
+          "ログ分析自動化",
+          "運用ドキュメント更新"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "content",
+        "title": "次月の施策",
+        "bullets": [
+          "マルチオーガニゼーション導入検討",
+          "SLO見直し（レイテンシ目標厳格化）",
+          "Synthetic Monitoring導入",
+          "コスト最適化施策"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "end",
+        "title": "ありがとうございました",
+        "background": "#632CA6"
+      }
+    ]
+  }
+  ```
+
+  ## 完了条件
+  - [ ] skills/ppt/templates/datadog-proposal.json 作成完了
+  - [ ] skills/ppt/templates/datadog-report.json 作成完了
+  - [ ] JSONフォーマット検証（jq等で確認）
+  - [ ] queue/reports/ に報告YAML作成
+
+  ## 検証コマンド
+  ```bash
+  # JSON検証
+  cat skills/ppt/templates/datadog-proposal.json | jq . > /dev/null && echo "OK"
+  cat skills/ppt/templates/datadog-report.json | jq . > /dev/null && echo "OK"
+  ```
+
+context:
+  references:
+    - "skills/ppt/templates/sre-runbook.json（参考）"
+    - "prompts/datadog-multi-org-prompt.md（マルチorg提案）"
+  working_directory: "/home/edgesakura/git/skills/ppt"
+expected_outputs:
+  - "skills/ppt/templates/datadog-proposal.json"
+  - "skills/ppt/templates/datadog-report.json"
+  - "queue/reports/task-2026-02-05T17:39:18-kitten3.yaml"

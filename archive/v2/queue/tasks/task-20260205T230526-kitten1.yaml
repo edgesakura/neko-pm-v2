@@ -1,0 +1,46 @@
+task_id: "task-20260205T230526-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T23:05:26"
+priority: medium
+parent_command: "cmd-20260205-230426"
+
+description: |
+  🧪 並列実行テスト - 子猫1担当にゃ！
+
+  ## タスク
+  `output/test/kitten1-report.md` を作成するにゃ
+
+  ## ファイル内容
+  以下の内容を含めるにゃ：
+  1. 自己紹介（「子猫1にゃ〜」など）
+  2. 現在時刻（ISO 8601形式）
+  3. このタスクの説明
+
+  ## 手順
+  1. output/test/ ディレクトリを作成（存在しない場合）
+  2. kitten1-report.md を作成
+  3. 完了報告YAML作成
+
+context:
+  references:
+    - "instructions/kitten.md"
+  test_type: "parallel_execution_test"
+  sibling_task: "task-20260205T230526-kitten2"
+
+expected_outputs:
+  - "output/test/kitten1-report.md"
+  - "queue/reports/report-20260205T230526-kitten1.yaml"
+
+pre_task_checklist:
+  - "output/test/ ディレクトリの存在確認"
+  - "bypass permissions on 状態であることを確認"
+
+post_task_checklist:
+  - "output/test/kitten1-report.md が作成されているか確認"
+  - "ファイルに自己紹介と現在時刻が含まれているか確認"
+  - "完了報告YAMLを作成したか確認"
+
+notes: |
+  - これは並列実行テストにゃ。承認プロンプトなしで完了すること
+  - 子猫2も同時に別ファイルを作成しているにゃ
+  - ファイル競合はないので、安心して作業するにゃ〜

@@ -1,0 +1,762 @@
+task_id: "task-20260206-024004-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T02:40:04"
+priority: medium
+load_skills: []
+description: |
+  ## 🎯 スキル化作戦: 4件のスキルを作成するにゃ
+
+  AgentCoreプロジェクトで培った知見を再利用可能なスキルとして保存するにゃ。
+
+  ## 作成するスキル
+
+  ### 1. bedrock-agentcore-api-migration-guide（17/20）
+
+  **保存先**: ~/.claude/skills/bedrock-agentcore-api-migration-guide/SKILL.md
+
+  **内容**:
+  AgentCore 旧API→新API移行ガイド
+
+  ```markdown
+  # bedrock-agentcore-api-migration-guide
+
+  AgentCore 旧API→新API移行パターン。緊急バグ修正で得た知見をまとめたスキルにゃ。
+
+  ## 使用タイミング
+  - AgentCore プロジェクトで ModuleNotFoundError が発生した時
+  - 旧APIから新APIへ移行する時
+  - Memory API を使用する時
+
+  ## 主な移行パターン
+
+  ### 1. インポート修正
+
+  **旧API（間違い）**:
+  ```python
+  from bedrock_agentcore import BedrockAgentCoreApp
+  from bedrock_agentcore.context import RequestContext
+  ```
+
+  **新API（正解）**:
+  ```python
+  from bedrock_agentcore.runtime import BedrockAgentCoreApp
+  # RequestContext は存在しない（削除）
+  ```
+
+  ### 2. エントリーポイント関数
+
+  **旧API（間違い）**:
+  ```python
+  @app.entrypoint
+  def main(payload, context: RequestContext):
+      session_id = context.session_id
+  ```
+
+  **新API（正解）**:
+  ```python
+  @app.entrypoint
+  def invoke(payload, context):
+      session_id = getattr(context, 'session_id', None) or payload.get("session_id", "default-session")
+  ```
+
+  **重要**: 関数名を `main` → `invoke` に変更すること！
+
+  ### 3. Memory API 移行
+
+  **旧API（間違い）**:
+  ```python
+  from bedrock_agentcore.memory.session import MemorySessionManager
+  from bedrock_agentcore.memory.constants import ConversationalMessage, MessageRole
+  from bedrock_agentcore.memory import MemoryManager
+
+  # 会話履歴取得
+  session = get_session_manager(session_id)
+  turns = session.get_last_k_turns(k=3)
+
+  # 会話保存
+  messages = [ConversationalMessage(content, MessageRole.USER)]
+  session.add_turns(messages=messages)
+  ```
+
+  **新API（正解）**:
+  ```python
+  from bedrock_agentcore.memory import MemoryClient
+  import os
+
+  memory_client = MemoryClient(region_name='ap-northeast-1')
+  MEMORY_ID = os.getenv('MEMORY_ID')
+
+  # 会話履歴取得
+  turns = memory_client.get_last_k_turns(
+      memory_id=MEMORY_ID,
+      actor_id="user",
+      session_id=session_id,
+      k=3
+  )
+
+  # 会話保存
+  messages = [(user_message, "USER"), (agent_response, "ASSISTANT")]
+  memory_client.create_event(
+      memory_id=MEMORY_ID,
+      actor_id="user",
+      session_id=session_id,
+      messages=messages
+  )
+  ```
+
+  ### 4. メッセージ形式の変更
+
+  | 項目 | 旧API | 新API |
+  |------|-------|-------|
+  | 形式 | ConversationalMessage オブジェクト | タプル (content, role) |
+  | Role | MessageRole.USER / MessageRole.ASSISTANT | "USER" / "ASSISTANT" (文字列) |
+  | メソッド | session.add_turns() | memory_client.create_event() |
+  | 履歴取得 | session.get_last_k_turns() | memory_client.get_last_k_turns() |
+
+  ### 5. 環境変数対応
+
+  **重要**: MEMORY_ID は環境変数で渡す必要がある
+
+  ```bash
+  # デプロイ前に設定
+  export MEMORY_ID="<your_memory_id>"
+  agentcore launch
+  ```
+
+  ## チェックリスト
+
+  移行前に以下を確認せよ：
+
+  - [ ] インポートを `bedrock_agentcore.runtime` に修正
+  - [ ] RequestContext を削除
+  - [ ] 関数名を `main` → `invoke` に変更
+  - [ ] session_id 取得を `getattr()` に変更
+  - [ ] MemoryClient を使用
+  - [ ] メッセージ形式をタプルに変更
+  - [ ] Role を文字列に変更（"USER", "ASSISTANT"）
+  - [ ] MEMORY_ID を環境変数で渡す
+  - [ ] 公式ドキュメントで最新APIを確認
+
+  ## 参考資料
+
+  - Bedrock AgentCore 公式ドキュメント
+  - Memory API リファレンス
+  ```
+
+  ### 2. bedrock-agentcore-deployment-guide（18/20）
+
+  **保存先**: ~/.claude/skills/bedrock-agentcore-deployment-guide/SKILL.md
+
+  **内容**:
+  AgentCore CLI デプロイ手順テンプレート
+
+  ```markdown
+  # bedrock-agentcore-deployment-guide
+
+  Amazon Bedrock AgentCore エージェントのデプロイ手順テンプレート。Phase 4で作成した完全手順をスキル化したにゃ。
+
+  ## 使用タイミング
+  - AgentCore プロジェクトをデプロイする時
+  - Lambda + AgentCore Runtime を統合する時
+  - LINE Bot と AgentCore を連携する時
+
+  ## 前提条件
+
+  - AWS CLI 設定済み
+  - Node.js 18+ インストール済み
+  - Python 3.11+ インストール済み
+  - AWS CDK CLI インストール済み
+
+  ## デプロイ手順（全10ステップ）
+
+  ### ステップ1: Lambda Layer 作成
+
+  ```bash
+  cd output/{project-name}
+  mkdir -p lambda-layer/python
+  pip install -r lambda/requirements.txt -t lambda-layer/python
+  ```
+
+  **重要**: Lambda Layer は手動で作成する必要がある
+
+  ### ステップ2: AgentCore CLI インストール
+
+  ```bash
+  pip install bedrock-agentcore-starter-toolkit
+  ```
+
+  ### ステップ3: Memory リソース作成
+
+  ```bash
+  cd agent
+  agentcore memory create {ProjectName}Memory \
+    --strategies '[{"semanticMemoryStrategy": {"name": "UserPreferences"}}]' \
+    --region ap-northeast-1 \
+    --wait
+  ```
+
+  ### ステップ4: エージェント設定
+
+  ```bash
+  agentcore configure \
+    --entrypoint main.py \
+    --name {project-name} \
+    --runtime PYTHON_3_11 \
+    --region ap-northeast-1 \
+    --non-interactive
+  ```
+
+  ### ステップ5: エージェントデプロイ
+
+  ```bash
+  agentcore launch
+  ```
+
+  ### ステップ6: エージェントID取得
+
+  ```bash
+  agentcore status
+  # AGENT_ID と AGENT_ALIAS_ID をメモ
+  ```
+
+  ### ステップ7: CDKスタックデプロイ
+
+  ```bash
+  cd ../infra
+  export AGENT_ID="<取得したAGENT_ID>"
+  export AGENT_ALIAS_ID="<取得したAGENT_ALIAS_ID>"
+  npm install
+  npx cdk deploy
+  ```
+
+  ### ステップ8: Lambda Function URL 取得
+
+  CDKデプロイ後、Outputs から Function URL をメモ：
+  ```
+  {ProjectName}Stack.LineWebhookFunctionUrl = https://xxxxx.lambda-url.ap-northeast-1.on.aws/
+  ```
+
+  ### ステップ9: LINE Developers で Webhook URL 設定
+
+  1. LINE Developers Console にログイン
+  2. チャネルを選択
+  3. Messaging API 設定 > Webhook URL に Lambda Function URL を設定
+  4. 「Webhookの利用」をONにする
+  5. 「検証」をクリックして疎通確認
+
+  ### ステップ10: 動作テスト
+
+  1. LINE公式アカウントを友だち追加
+  2. メッセージを送信
+  3. CloudWatch Logs で動作確認
+     ```bash
+     aws logs tail /aws/lambda/{ProjectName}Stack-LineWebhookFunction --follow
+     ```
+
+  ## CDKスタック例
+
+  ```typescript
+  import * as lambda from 'aws-cdk-lib/aws-lambda';
+  import * as path from 'path';
+
+  // Lambda Layer for Python dependencies
+  const pythonDepsLayer = new lambda.LayerVersion(this, 'PythonDepsLayer', {
+    code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda-layer')),
+    compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+    description: 'Python dependencies (line-bot-sdk, boto3)',
+  });
+
+  // Lambda Function
+  const webhookFunction = new lambda.Function(this, 'LineWebhookFunction', {
+    runtime: lambda.Runtime.PYTHON_3_11,
+    handler: 'handler.lambda_handler',
+    code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda')),
+    timeout: Duration.seconds(60),
+    role: lambdaRole,
+    layers: [pythonDepsLayer],
+    environment: {
+      AGENT_ID: process.env.AGENT_ID || 'PLACEHOLDER_AGENT_ID',
+      AGENT_ALIAS_ID: process.env.AGENT_ALIAS_ID || 'PLACEHOLDER_AGENT_ALIAS_ID',
+    },
+    description: 'LINE Webhook to Bedrock AgentCore',
+  });
+  ```
+
+  ## トラブルシューティング
+
+  ### Lambda タイムアウト
+  - CloudWatch Logs で実行時間を確認
+  - AgentCore の応答が遅い場合は timeout を延長
+
+  ### LINE署名検証エラー
+  - Secrets Manager に正しいチャネルシークレットが登録されているか確認
+  - `X-Line-Signature` ヘッダーが正しく渡されているか確認
+
+  ### AgentCore Runtime エラー
+  - AGENT_ID, AGENT_ALIAS_ID が正しく設定されているか確認
+  - AgentCore のステータスを確認: `agentcore status`
+  - Memory リソースが作成されているか確認
+
+  ### Memory機能が動作しない
+  - Memory リソースが作成されているか確認
+  - session_id（LINE user_id）が正しく渡されているか確認
+  - CloudWatch Logs でMemory関連エラーを確認
+
+  ## チェックリスト
+
+  - [ ] Lambda Layer 作成完了
+  - [ ] AgentCore CLI インストール完了
+  - [ ] Memory リソース作成完了
+  - [ ] agentcore configure 実行完了
+  - [ ] agentcore launch 実行完了
+  - [ ] AGENT_ID, AGENT_ALIAS_ID 取得完了
+  - [ ] CDKスタックデプロイ完了
+  - [ ] Lambda Function URL 取得完了
+  - [ ] LINE Webhook URL 設定完了
+  - [ ] 動作テスト成功
+  ```
+
+  ### 3. line-bot-bedrock-agentcore-integration（18/20）
+
+  **保存先**: ~/.claude/skills/line-bot-bedrock-agentcore-integration/SKILL.md
+
+  **内容**:
+  LINE Bot と Bedrock AgentCore Runtime の統合パターン
+
+  ```markdown
+  # line-bot-bedrock-agentcore-integration
+
+  LINE Messaging API と Amazon Bedrock AgentCore Runtime を統合するパターン。Phase 3で実装したLambda Webhookをスキル化したにゃ。
+
+  ## 使用タイミング
+  - LINE Bot を AgentCore と連携する時
+  - Webhook 処理を実装する時
+  - セッションID連携でMemory機能を有効化する時
+
+  ## アーキテクチャ
+
+  ```
+  LINE User → LINE Messaging API → Lambda Function URL → Bedrock AgentCore Runtime
+                                    ↓
+                               Secrets Manager
+  ```
+
+  ## 実装パターン
+
+  ### 1. Lambda handler.py の基本構造
+
+  ```python
+  import os
+  import json
+  import boto3
+  from linebot.v3 import WebhookHandler
+  from linebot.v3.exceptions import InvalidSignatureError
+  from linebot.v3.messaging import Configuration, ApiClient, MessagingApi, ReplyMessageRequest, TextMessage
+  from linebot.v3.webhooks import MessageEvent, TextMessageContent
+
+  # Secrets Manager から取得
+  CHANNEL_SECRET = get_secret("LINE_CHANNEL_SECRET")
+  CHANNEL_ACCESS_TOKEN = get_secret("LINE_CHANNEL_ACCESS_TOKEN")
+
+  # 環境変数から取得
+  AGENT_ID = os.environ["AGENT_ID"]
+  AGENT_ALIAS_ID = os.environ["AGENT_ALIAS_ID"]
+
+  bedrock_client = boto3.client("bedrock-agent-runtime", region_name="ap-northeast-1")
+  handler = WebhookHandler(CHANNEL_SECRET)
+
+  def lambda_handler(event, context):
+      # LINE署名検証
+      signature = event["headers"].get("X-Line-Signature", "")
+      body = event["body"]
+
+      try:
+          handler.handle(body, signature)
+          return {"statusCode": 200, "body": "OK"}
+      except InvalidSignatureError:
+          return {"statusCode": 403, "body": "Invalid signature"}
+      except Exception as e:
+          print(f"Error: {e}")
+          return {"statusCode": 500, "body": "Internal server error"}
+
+  @handler.add(MessageEvent, message=TextMessageContent)
+  def handle_message(event: MessageEvent):
+      user_id = event.source.user_id
+      user_message = event.message.text
+      reply_token = event.reply_token
+
+      # AgentCore Runtime 呼び出し（重要: sessionId=user_id）
+      response = invoke_agentcore_runtime(user_id, user_message)
+
+      # LINE返信
+      send_line_reply(reply_token, response)
+  ```
+
+  ### 2. LINE署名検証（セキュリティ必須）
+
+  ```python
+  from linebot.v3 import WebhookHandler
+  from linebot.v3.exceptions import InvalidSignatureError
+
+  handler = WebhookHandler(CHANNEL_SECRET)
+
+  # 署名検証
+  try:
+      handler.handle(body, signature)
+  except InvalidSignatureError:
+      # 署名検証失敗 → 403 Forbidden
+      return {"statusCode": 403, "body": "Invalid signature"}
+  ```
+
+  ### 3. AgentCore Runtime 呼び出し
+
+  ```python
+  def invoke_agentcore_runtime(user_id: str, user_message: str) -> str:
+      """
+      Bedrock AgentCore Runtime を呼び出し
+
+      重要: sessionId=user_id により会話継続が可能
+      """
+      response = bedrock_client.invoke_agent(
+          agentId=AGENT_ID,
+          agentAliasId=AGENT_ALIAS_ID,
+          sessionId=user_id,  # ← LINE user_id を session_id として使用
+          inputText=user_message,
+      )
+
+      # ストリーム形式のレスポンスを処理
+      result = ""
+      for event in response.get("completion", []):
+          if "chunk" in event:
+              chunk = event["chunk"]
+              if "bytes" in chunk:
+                  result += chunk["bytes"].decode("utf-8")
+
+      return result
+  ```
+
+  ### 4. セッションID連携（Memory機能有効化）
+
+  **最重要ポイント**: `sessionId=user_id` により、同一LINEユーザーの会話が同じセッションとして扱われる
+
+  ```python
+  # LINE user_id を session_id として使用
+  user_id = event.source.user_id
+
+  # AgentCore Runtime に渡す
+  response = bedrock_client.invoke_agent(
+      agentId=AGENT_ID,
+      agentAliasId=AGENT_ALIAS_ID,
+      sessionId=user_id,  # ← これが会話継続の鍵
+      inputText=user_message,
+  )
+  ```
+
+  これにより：
+  - 会話履歴の保持
+  - ユーザー好みの記憶
+  - 「さっきの2番目の店」などの指示代名詞を理解
+
+  ### 5. LINE返信
+
+  ```python
+  def send_line_reply(reply_token: str, message: str) -> None:
+      """LINE返信メッセージ送信"""
+      configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
+
+      with ApiClient(configuration) as api_client:
+          line_bot_api = MessagingApi(api_client)
+          line_bot_api.reply_message(
+              ReplyMessageRequest(
+                  reply_token=reply_token,
+                  messages=[TextMessage(text=message)]
+              )
+          )
+  ```
+
+  ### 6. Secrets Manager 連携
+
+  ```python
+  def get_secret(secret_name: str) -> str:
+      """Secrets Manager からシークレット取得"""
+      session = boto3.session.Session()
+      client = session.client(service_name="secretsmanager", region_name="ap-northeast-1")
+
+      response = client.get_secret_value(SecretId=secret_name)
+      return response["SecretString"]
+  ```
+
+  ## requirements.txt
+
+  ```
+  line-bot-sdk>=3.0.0
+  boto3>=1.34.0
+  ```
+
+  ## チェックリスト
+
+  - [ ] LINE署名検証を実装
+  - [ ] sessionId=user_id でAgentCore呼び出し
+  - [ ] ストリーム形式レスポンスを処理
+  - [ ] Secrets Manager からシークレット取得
+  - [ ] エラーハンドリング実装
+  - [ ] CloudWatch Logs 出力実装
+  - [ ] Lambda Function URL 設定
+  - [ ] LINE Webhook URL 設定
+
+  ## 参考資料
+
+  - LINE Bot SDK for Python v3: https://github.com/line/line-bot-sdk-python
+  - Bedrock AgentCore Runtime API: AWS公式ドキュメント
+  ```
+
+  ### 4. bedrock-agentcore-memory-integration（18/20）
+
+  **保存先**: ~/.claude/skills/bedrock-agentcore-memory-integration/SKILL.md
+
+  **内容**:
+  AgentCore Memory 統合パターン
+
+  ```markdown
+  # bedrock-agentcore-memory-integration
+
+  Amazon Bedrock AgentCore Memory 統合パターン。会話継続・文脈維持を実現するスキルにゃ。
+
+  ## 使用タイミング
+  - AgentCore で会話履歴を管理する時
+  - ユーザー好みを記憶する時
+  - セマンティック検索を実装する時
+
+  ## アーキテクチャ
+
+  ```
+  AgentCore Runtime ← Memory Client → Memory Resource
+                                       ├─ 会話履歴（ターン形式）
+                                       └─ セマンティックメモリ（ユーザー好み）
+  ```
+
+  ## 実装パターン
+
+  ### 1. Memory Client 初期化
+
+  ```python
+  import os
+  from bedrock_agentcore.memory import MemoryClient
+  from typing import List, Dict, Any
+
+  # Memory Client 初期化（グローバルスコープ）
+  memory_client = MemoryClient(region_name='ap-northeast-1')
+  MEMORY_ID = os.getenv('MEMORY_ID')  # 環境変数から取得
+
+  if not MEMORY_ID:
+      raise ValueError("MEMORY_ID environment variable is required")
+  ```
+
+  ### 2. 会話履歴取得
+
+  ```python
+  def get_conversation_history(session_id: str, k: int = 3) -> List[Dict[str, Any]]:
+      """
+      過去k件の会話履歴を取得
+
+      Args:
+          session_id: セッションID（LINE user_id など）
+          k: 取得件数
+
+      Returns:
+          会話履歴のリスト
+      """
+      try:
+          turns = memory_client.get_last_k_turns(
+              memory_id=MEMORY_ID,
+              actor_id="user",
+              session_id=session_id,
+              k=k
+          )
+          return turns if turns else []
+      except Exception as e:
+          print(f"Failed to retrieve conversation history: {e}")
+          return []
+  ```
+
+  ### 3. 会話保存
+
+  ```python
+  def save_conversation(
+      session_id: str,
+      user_message: str,
+      agent_response: str
+  ) -> bool:
+      """
+      会話をMemoryに保存
+
+      Args:
+          session_id: セッションID
+          user_message: ユーザーのメッセージ
+          agent_response: エージェントの応答
+
+      Returns:
+          保存成功 = True
+      """
+      try:
+          # メッセージをタプルのリストとして作成
+          messages = [
+              (user_message, "USER"),
+              (agent_response, "ASSISTANT")
+          ]
+
+          memory_client.create_event(
+              memory_id=MEMORY_ID,
+              actor_id="user",
+              session_id=session_id,
+              messages=messages
+          )
+          return True
+      except Exception as e:
+          print(f"Failed to save conversation: {e}")
+          return False
+  ```
+
+  ### 4. セマンティック検索
+
+  ```python
+  def search_semantic_memory(
+      session_id: str,
+      query: str
+  ) -> List[Dict[str, Any]]:
+      """
+      セマンティックメモリを検索（ユーザーの好みなど）
+
+      Args:
+          session_id: セッションID
+          query: 検索クエリ
+
+      Returns:
+          関連するメモリのリスト
+      """
+      try:
+          # 新APIではセマンティック検索は get_last_k_turns で代用
+          # または別のメソッドを使用（公式ドキュメント確認）
+          return []
+      except Exception as e:
+          print(f"Failed to search semantic memory: {e}")
+          return []
+  ```
+
+  ### 5. main.py での Memory 統合
+
+  ```python
+  from bedrock_agentcore.runtime import BedrockAgentCoreApp
+  from utils.memory import get_conversation_history, save_conversation
+
+  app = BedrockAgentCoreApp()
+
+  @app.entrypoint
+  def invoke(payload, context):
+      """
+      エージェントのエントリーポイント
+
+      Args:
+          payload: リクエストペイロード（dict）
+          context: AgentCore実行コンテキスト
+      """
+      # session_id の取得
+      session_id = getattr(context, 'session_id', None) or payload.get("session_id", "default-session")
+      user_message = payload.get("user_message", "") or payload.get("prompt", "")
+
+      # 会話履歴取得
+      history = get_conversation_history(session_id, k=3)
+      history_text = format_conversation_history(history)
+
+      # instructions に会話履歴を含める
+      instructions = f"""
+      あなたは親切なアシスタントです。
+
+      過去の会話:
+      {history_text}
+
+      ユーザーの質問: {user_message}
+      """
+
+      # エージェント処理（省略）
+      agent_response = process_agent(instructions)
+
+      # Memory に保存
+      save_conversation(session_id, user_message, agent_response)
+
+      return agent_response
+
+  def format_conversation_history(turns: List[Dict]) -> str:
+      """会話履歴をフォーマット"""
+      if not turns:
+          return "（初回の会話です）"
+
+      formatted = []
+      for turn in turns[-5:]:  # 直近5件
+          messages = turn.get('messages', [])
+          for msg in messages:
+              role = msg.get('role', 'unknown')
+              content = msg.get('content', '')
+              if role == 'USER':
+                  formatted.append(f"ユーザー: {content}")
+              elif role == 'ASSISTANT':
+                  formatted.append(f"エージェント: {content}")
+      return "\n".join(formatted)
+  ```
+
+  ## Memory Resource 作成
+
+  ```bash
+  agentcore memory create {ProjectName}Memory \
+    --strategies '[{"semanticMemoryStrategy": {"name": "UserPreferences"}}]' \
+    --region ap-northeast-1 \
+    --wait
+  ```
+
+  ## 環境変数設定
+
+  ```bash
+  # デプロイ前に設定
+  export MEMORY_ID="<取得したMEMORY_ID>"
+  agentcore launch
+  ```
+
+  ## チェックリスト
+
+  - [ ] Memory Resource 作成完了
+  - [ ] MEMORY_ID 環境変数設定
+  - [ ] MemoryClient 初期化実装
+  - [ ] get_conversation_history 実装
+  - [ ] save_conversation 実装
+  - [ ] main.py に Memory 統合
+  - [ ] session_id を正しく渡す
+  - [ ] エラーハンドリング実装
+
+  ## 参考資料
+
+  - Bedrock AgentCore Memory API リファレンス
+  - AWS公式ドキュメント
+  ```
+
+  ## 注意事項
+
+  - 全スキルは Claude Code Skills 形式（SKILL.md）で作成にゃ
+  - 保存先は ~/.claude/skills/{skill-name}/SKILL.md にゃ
+  - 型ヒント・ドキュメント文字列を全関数に付与にゃ
+  - コードブロックは ```python または ```typescript で囲むにゃ
+  - 実装例は実際のPhase 2〜4の成果物を参考にするにゃ
+
+context:
+  skill_base_dir: "~/.claude/skills"
+  reference_files:
+    - "output/izakaya-agent/agent/main.py"
+    - "output/izakaya-agent/agent/utils/memory.py"
+    - "output/izakaya-agent/lambda/handler.py"
+    - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+    - "output/izakaya-agent/README.md"
+expected_outputs:
+  - "~/.claude/skills/bedrock-agentcore-api-migration-guide/SKILL.md"
+  - "~/.claude/skills/bedrock-agentcore-deployment-guide/SKILL.md"
+  - "~/.claude/skills/line-bot-bedrock-agentcore-integration/SKILL.md"
+  - "~/.claude/skills/bedrock-agentcore-memory-integration/SKILL.md"
+  - "queue/reports/report-task-20260206-024004-kitten1.yaml"

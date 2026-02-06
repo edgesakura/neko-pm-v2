@@ -1,0 +1,1152 @@
+commands:
+  - command_id: "cmd-20260206-003628"
+    status: done
+    description: 【作戦名】居酒屋検索AIエージェント「イザカヤくん」開発 ✅ 完了
+
+  - command_id: "cmd-20260206-005508"
+    status: done
+    description: 【緊急バグ修正】CDKデプロイエラー ✅ 完了
+
+  - command_id: "cmd-20260206-010937"
+    status: done
+    description: 【Phase 2】エージェント実装 ✅ 完了
+
+  - command_id: "cmd-20260206-013330"
+    status: done
+    description: 【Phase 2.5】Memory機能追加 ✅ 完了
+
+  - command_id: "cmd-20260206-014918"
+    status: done
+    description: 【Phase 3】LINE Bot連携 ✅ 完了
+
+  - command_id: "cmd-20260206-015832"
+    status: done
+    description: 【Phase 4】デプロイ・テスト準備 ✅ 完了
+
+  - command_id: "cmd-20260206-022053"
+    status: done
+    description: 【緊急バグ修正】AgentCore ModuleNotFoundError ✅ 完了
+
+  - command_id: "cmd-20260206-023859"
+    status: done
+    description: 【スキル化7件 + 改善提案high1件】✅ 完了
+
+  - command_id: "cmd-20260206-024113"
+    status: done
+    description: 【デプロイ】失敗（ペイン設定ミス）→ 根本原因修正済み
+
+  - command_id: "cmd-20260206-025835"
+    status: done
+    description: 【🚨 緊急修復】workers.3 ペイン修復 ✅ 完了
+
+  - command_id: "cmd-20260206-030309"
+    status: done
+    description: 【🔧 根本原因修正】ペイン設定の不整合を解消 ✅ 完了
+
+  - command_id: "cmd-20260206-030428"
+    status: done
+    description: 【🔧 agentcore CLI インストール + 再デプロイ】✅ 完了
+
+  - command_id: "cmd-20260206-033948"
+    status: done
+    description: 【🚨 緊急修正】Lambda handler.py を AgentCore Runtime API に書き換え ✅ 完了
+
+  - command_id: "cmd-20260206T112001"
+    timestamp: "2026-02-06T11:20:01"
+    type: investigation
+    priority: high
+    status: done
+    description: 【🔍 LINE Bot エラー継続調査】前セッションで中断 → cmd-20260206T115850 で再開
+
+  - command_id: "cmd-20260206T112903"
+    timestamp: "2026-02-06T11:29:03"
+    type: infra-fix
+    priority: urgent
+    status: done
+    description: 【🚨 緊急】子猫bypass修正 ✅ 完了（shuugou.sh + ランチャー修正済み）
+
+  - command_id: "cmd-20260206T115850"
+    timestamp: "2026-02-06T11:58:50"
+    type: investigation
+    priority: high
+    status: done
+    description: |
+      【🔍 LINE Bot エラー調査 再開】LINE Bot経由でエラーが返る問題の根本原因調査・修正
+
+      ## 背景（前回セッションからの引き継ぎ）
+      - イザカヤくん（LINE Bot + AgentCore Runtime）の開発完了
+      - エンドポイントバグ修正済み（bedrock-agentcore-runtime → bedrock-agentcore）
+      - CDK再デプロイ完了
+      - AgentCore CLIテストは成功（レスポンスが返る）
+      - **LINE Bot経由だとまだエラーが返る** ← これを解決せよ
+
+      ## 調査チェックリスト（上から順に実施）
+
+      ### Step 1: CloudWatch Logs 確認（最優先）
+      Lambda関数名を特定して、最新の実行ログからエラーを確認
+      ```bash
+      aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId"
+      aws logs filter-log-events --log-group-name /aws/lambda/<関数名> --start-time $(date -d '1 hour ago' +%s)000 --region ap-northeast-1
+      ```
+
+      ### Step 2: Lambda 環境変数の確認
+      RUNTIME_ARN, LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN が正しいか
+      期待RUNTIME_ARN: arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat
+      ```bash
+      aws lambda get-function-configuration --function-name <関数名> --region ap-northeast-1 --query "Environment.Variables"
+      ```
+
+      ### Step 3: handler.py のコード確認
+      - AgentCore Runtime API対応版か
+      - SigV4認証が正しいか
+      - エラーハンドリングでログ出力されるか
+      ファイル: output/izakaya-agent/lambda/handler.py
+
+      ### Step 4: Lambda 直接 invoke テスト
+      ```bash
+      aws lambda invoke --function-name <関数名> --payload '{"body": "{\"events\":[{\"type\":\"message\",\"message\":{\"type\":\"text\",\"text\":\"テスト\"},\"source\":{\"userId\":\"test123\"},\"replyToken\":\"test-token\"}]}"}' --region ap-northeast-1 /tmp/lambda-response.json
+      cat /tmp/lambda-response.json
+      ```
+
+      ### Step 5: IAM権限の確認
+      bedrock-agentcore:InvokeRuntime 権限があるか
+      ```bash
+      aws lambda get-function-configuration --function-name <関数名> --region ap-northeast-1 --query "Role"
+      ```
+
+      ### Step 6: 修正実施 → cdk deploy で再デプロイ
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      handler_path: "output/izakaya-agent/lambda/handler.py"
+      runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+      region: "ap-northeast-1"
+      references:
+        - "output/izakaya-agent/lambda/handler.py"
+        - "output/izakaya-agent/cdk/"
+    expected_outputs:
+      - "エラーの根本原因の特定レポート"
+      - "修正方針と修正実施"
+      - "LINE Botが正常に応答することの確認"
+
+  - command_id: "cmd-20260206T122832"
+    timestamp: "2026-02-06T12:28:32"
+    type: investigation-fix
+    priority: high
+    status: done
+    description: |
+      【🔍🔧 LINE Bot 接続エラー + ホットペッパーAPI調査・修正】
+
+      ## 状況（ご主人からの報告）
+      - AgentCore自体は動くことを確認済み（CLIで成功）
+      - LINE Bot経由だとまだエラーが返る
+      - 2つの問題の可能性:
+        1. システム接続エラー（LINE → Lambda → AgentCore の経路）
+        2. ホットペッパーAPIのシークレット設定ミス
+
+      ## 前回修正済み
+      - Lambda LayerのバイナリMB互換性問題 → manylinux wheelで修正済み
+      - Lambda正常起動確認済み、署名検証まで到達
+
+      ## 調査チェックリスト（上から順に）
+
+      ### Step 1: CloudWatch Logs で最新エラーを確認（最優先）
+      LINEからメッセージを送った時の最新ログを見る
+      ```bash
+      # Lambda関数名の特定
+      aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 \
+        --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text
+      # 最新ログ確認（直近30分）
+      aws logs filter-log-events --log-group-name /aws/lambda/<関数名> \
+        --start-time $(date -d '30 minutes ago' +%s)000 --region ap-northeast-1 --limit 50
+      ```
+
+      ### Step 2: handler.py の接続フロー確認
+      LINE → Lambda → AgentCore Runtime の接続コードを精査
+      - SigV4認証の実装確認
+      - AgentCore Runtime API呼び出し部分のエラーハンドリング
+      - レスポンスのパース・LINE返信処理
+      ファイル: output/izakaya-agent/lambda/handler.py
+
+      ### Step 3: ホットペッパーAPIシークレット確認
+      - エージェント定義でホットペッパーAPIキーをどう参照しているか確認
+      - Lambda環境変数に HOTPEPPER_API_KEY が設定されているか
+      - AgentCoreエージェント設定にAPIキーが渡されているか
+      ```bash
+      # Lambda環境変数の全量確認
+      aws lambda get-function-configuration --function-name <関数名> \
+        --region ap-northeast-1 --query "Environment.Variables"
+      # AgentCoreエージェント定義ファイルの確認
+      cat output/izakaya-agent/agent/agent.py
+      cat output/izakaya-agent/agent/tools.py  # ツール定義
+      ```
+
+      ### Step 4: Lambda直接invokeテスト（接続確認）
+      ```bash
+      aws lambda invoke --function-name <関数名> \
+        --payload '{"body": "{\"events\":[{\"type\":\"message\",\"message\":{\"type\":\"text\",\"text\":\"渋谷でおすすめの居酒屋教えて\"},\"source\":{\"userId\":\"test123\"},\"replyToken\":\"test-token\"}]}"}' \
+        --region ap-northeast-1 --log-type Tail /tmp/lambda-response.json
+      cat /tmp/lambda-response.json
+      ```
+
+      ### Step 5: 問題の修正
+      - 接続エラー → handler.pyのAPI呼び出し修正
+      - シークレット問題 → 環境変数追加 or エージェント設定修正
+      - 修正後 → cdk deploy で再デプロイ
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      handler_path: "output/izakaya-agent/lambda/handler.py"
+      runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+      region: "ap-northeast-1"
+      references:
+        - "output/izakaya-agent/lambda/handler.py"
+        - "output/izakaya-agent/agent/"
+        - "output/izakaya-agent/cdk/"
+    expected_outputs:
+      - "CloudWatch Logsのエラー内容レポート"
+      - "接続エラーの原因と修正"
+      - "ホットペッパーAPIシークレットの設定状況と修正"
+      - "修正後の動作確認結果"
+
+  - command_id: "cmd-20260206T125730"
+    timestamp: "2026-02-06T12:57:30"
+    type: investigation-fix
+    priority: urgent
+    status: done
+    description: |
+      【🚨 LINE Bot ツール呼び出し修正】APIキー設定済みだがツールが動かない
+
+      ## 状況
+      - LINE → Lambda → AgentCore の接続は成功（レスポンスが返る）
+      - しかしツール（ホットペッパー検索/Google Places検索）が動いていない
+      - LLMがツール失敗時に一般知識でハルシネーション回答している
+      - APIキーはSecrets Managerに設定済み:
+        - izakaya-agent/hotpepper-api-key ✅
+        - izakaya-agent/google-places-api-key ✅
+      - ご主人からopus使用許可あり（難航したら使え）
+
+      ## 調査チェックリスト
+
+      ### Step 1: CloudWatch Logs でツール呼び出しエラーを確認
+      最新のLINEメッセージ処理ログからツール呼び出し部分のエラーを特定
+      ```bash
+      aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 \
+        --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text
+      aws logs filter-log-events --log-group-name /aws/lambda/<関数名> \
+        --start-time $(date -d '30 minutes ago' +%s)000 --region ap-northeast-1 --limit 100
+      ```
+
+      ### Step 2: エージェントのツール定義を確認
+      ツールがAPIキーをどうやって取得しているか精査
+      ```bash
+      # エージェント定義・ツール定義を全部確認
+      find output/izakaya-agent/agent/ -type f -name "*.py" | head -20
+      cat output/izakaya-agent/agent/agent.py
+      cat output/izakaya-agent/agent/tools.py
+      # その他関連ファイル
+      ls -la output/izakaya-agent/agent/
+      ```
+      確認ポイント:
+      - Secrets ManagerからAPIキーを取得するコードがあるか
+      - 取得したAPIキーをツールに渡すロジックが正しいか
+      - IAM権限でSecrets Managerへのアクセスが許可されているか
+
+      ### Step 3: AgentCore Runtime側のツール設定確認
+      AgentCoreに登録されたエージェント定義でツールがどう設定されているか
+      ```bash
+      # AgentCoreエージェント設定ファイル
+      find output/izakaya-agent/ -name "*.yaml" -o -name "*.yml" -o -name "*.json" | grep -i agent
+      ```
+
+      ### Step 4: 修正実施
+      原因に応じて修正:
+      - ツールのAPIキー取得ロジック修正
+      - Lambda環境変数追加（必要なら）
+      - IAM権限追加（Secrets Managerアクセス）
+      - cdk deploy で再デプロイ
+
+      ### Step 5: 動作確認
+      Lambda直接invokeでツール呼び出しが成功するか確認
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      region: "ap-northeast-1"
+      secrets:
+        hotpepper: "izakaya-agent/hotpepper-api-key"
+        google_places: "izakaya-agent/google-places-api-key"
+      references:
+        - "output/izakaya-agent/agent/"
+        - "output/izakaya-agent/lambda/handler.py"
+        - "output/izakaya-agent/cdk/"
+    expected_outputs:
+      - "ツール呼び出し失敗の根本原因レポート"
+      - "修正実施 + 再デプロイ"
+      - "ツールが正常動作する確認結果"
+
+  - command_id: "cmd-20260206T134916"
+    timestamp: "2026-02-06T13:49:16"
+    type: improvement
+    priority: medium
+    status: done
+    description: |
+      【🔧 イザカヤくん改善提案 #1〜#6 実施】
+
+      LINE Bot「イザカヤくん」完成を受けて、改善提案6件を実施せよ。
+      子猫2名で並列実施可能なものは並列化すること。
+
+      ## タスク一覧
+
+      ### グループA: コード品質（子猫1に割当推奨）
+
+      #### #1 Secrets Manager のシークレット検証機能追加 [high]
+      - エージェント起動時にSecrets Managerのキーが空でないか検証するロジック追加
+      - 空の場合は明確なエラーメッセージを出す（「APIキーが未設定です」等）
+      - 対象: output/izakaya-agent/agent/ 配下のツール定義
+
+      #### #3 Lambda と AgentCore の requirements.txt 統合 [high]
+      - output/izakaya-agent/lambda/requirements.txt と agent/requirements.txt の整合性確認
+      - strands-agents等の共通依存が漏れないよう、統合 or 共有の仕組みを作る
+      - 例: 共通requirements-base.txtを作り、各requirements.txtがそれをinclude
+
+      ### グループB: ドキュメント（子猫2に割当推奨）
+
+      #### #2 Secrets Manager セットアップ手順ドキュメント化 [high]
+      - output/izakaya-agent/docs/secrets-setup.md を作成
+      - APIキー取得先、設定コマンド、確認コマンドをまとめる
+
+      #### #5 AgentCore Runtime デプロイ手順ドキュメント化 [high]
+      - output/izakaya-agent/docs/deployment.md を作成
+      - 今回の7つのハマりポイントを全て記載
+      - CDK deploy、agentcore deploy、Lambda Layer再ビルドの手順
+
+      ### グループC: テスト（グループA完了後に子猫1）
+
+      #### #4 AgentCore Runtime デプロイ後の自動テスト追加 [high]
+      - デプロイ後にagentcore invokeで動作確認するスクリプト作成
+      - output/izakaya-agent/scripts/test-deployment.sh
+      - 成功/失敗を判定して結果を出力
+
+      #### #6 AgentCore Runtime の統合テスト追加 [medium]
+      - Lambda直接invokeでE2Eテスト
+      - 期待値: 居酒屋リストが返ること
+      - output/izakaya-agent/scripts/test-integration.sh
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      region: "ap-northeast-1"
+    expected_outputs:
+      - "シークレット検証機能の実装"
+      - "requirements.txt統合の仕組み"
+      - "docs/secrets-setup.md"
+      - "docs/deployment.md"
+      - "scripts/test-deployment.sh"
+      - "scripts/test-integration.sh"
+
+  - command_id: "cmd-20260206T153407"
+    timestamp: "2026-02-06T15:34:07"
+    type: feature
+    priority: high
+    status: done
+    description: |
+      【🍺 のみべろエージェント v2 Phase 1】Webアプリ基盤 + 全国検索 ✅ 完了
+
+      ## 🚨 重要ルール: 実装前に必ず /clear すること
+      番猫・子猫ともに、このタスクに着手する前に `/clear` でコンテキストをリセットせよ。
+      コンパクションを起こさないようにするための必須手順にゃ。
+      /clear 後は instructions を再読み込みして、このYAMLを読んでタスクに着手せよ。
+
+      ## プロジェクト概要
+      既存のLINE Bot「イザカヤくん」をWebアプリ化するにゃ。
+      LINEの200通/月制限を回避し、機能拡張の土台を作るにゃ。
+
+      ## アーキテクチャ
+      ```
+      ユーザー（ブラウザ）
+          ↓ Cognito認証（招待制）
+      Next.js on AWS Amplify
+          ↓ API呼び出し
+      API Gateway
+          ↓
+      Lambda → AgentCore Runtime（既存）
+          ↓
+      ホットペッパーAPI / Google Places API
+      ```
+
+      ## Phase 1 タスク（子猫2名で並列化）
+
+      ### グループA: フロントエンド基盤（子猫1）
+
+      #### A1: Next.js + Amplify プロジェクトセットアップ
+      - output/nomibero-web/ にNext.js App Routerプロジェクト作成
+      - Amplify設定（amplify init, amplify add hosting）
+      - Tailwind CSS導入
+      - 基本レイアウト（ヘッダー、チャットエリア、入力欄）
+
+      #### A2: Cognito認証（招待制）
+      - amplify add auth でCognito設定
+      - セルフサインアップ無効（管理者がユーザー作成）
+      - ログイン画面、認証状態管理
+      - Amplify UI Componentsの@aws-amplify/ui-react使用
+
+      #### A3: チャットUI
+      - メッセージ送受信コンポーネント
+      - ストリーミング表示（AgentCoreのレスポンス）
+      - チャット履歴表示
+      - レスポンシブデザイン（スマホ対応必須）
+
+      ### グループB: バックエンド連携 + 全国対応（子猫2）
+
+      #### B1: API Gateway連携
+      - フロントエンド → API Gateway → 既存Lambda のルーティング
+      - Cognito Authorizerの設定（認証済みユーザーのみAPIアクセス可）
+      - CORSの設定
+
+      #### B2: 全国対応（resolve_area.py改修）
+      - ハードコーディングのエリアマッピングを廃止
+      - Google Geocoding API で動的にエリア名→座標を解決
+      - 日本全国どこでも検索可能にする
+      - ファイル: output/izakaya-agent/agent/tools/resolve_area.py
+
+      #### B3: Lambda handler修正（Web対応）
+      - LINE Webhook形式だけでなく、Web APIからのリクエストにも対応
+      - リクエスト形式を抽象化（LINE/Web共通化）
+      - レスポンス形式の統一
+
+      ## CDK/Amplifyの選択
+      - フロントエンド: Amplify CLI（amplify init, push）
+      - バックエンド: 既存CDKスタックを拡張（API Gateway + Cognito Authorizer追加）
+      - AgentCore: 既存のまま変更なし
+
+      ## 技術スタック
+      - Next.js 15 (App Router)
+      - Tailwind CSS
+      - @aws-amplify/ui-react（認証UI）
+      - aws-amplify v6
+      - 既存: Lambda + AgentCore Runtime + ホットペッパーAPI + Google Places API
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      existing_backend: "output/izakaya-agent"
+      region: "ap-northeast-1"
+      runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+      references:
+        - "output/izakaya-agent/agent/tools/resolve_area.py"
+        - "output/izakaya-agent/lambda/handler.py"
+        - "output/izakaya-agent/cdk/"
+    expected_outputs:
+      - "output/nomibero-web/ Next.jsプロジェクト"
+      - "Cognito認証（招待制）動作"
+      - "チャットUI（レスポンシブ）"
+      - "API Gateway連携"
+      - "全国対応の resolve_area.py"
+      - "Amplifyデプロイ完了"
+
+  - command_id: "cmd-20260206T161925"
+    timestamp: "2026-02-06T16:19:25"
+    type: infra-fix
+    priority: high
+    status: done
+    description: |
+      【🔧 Cognito User Pool 統一】2つの Pool を Amplify Gen 2 側に一本化
+
+      ## 🚨 重要ルール: 実装前に必ず /clear すること
+      番猫・子猫ともに、このタスクに着手する前に `/clear` でコンテキストをリセットせよ。
+      /clear 後は instructions を再読み込みして、このYAMLを読んでタスクに着手せよ。
+
+      ## 背景
+      Phase 1 で子猫1（フロントエンド）と子猫2（バックエンド）がそれぞれ別の
+      Cognito User Pool を作成してしまった。認証の一貫性のため統一が必要。
+
+      ## 現状
+      | 作成者 | User Pool ID | 用途 | 対応 |
+      |--------|-------------|------|------|
+      | 子猫1（Amplify Gen 2） | ap-northeast-1_VwL7teKWl | フロントエンド認証 | ✅ **残す** |
+      | 子猫2（CDK） | ap-northeast-1_7ctUrtWE6 | API Gateway Authorizer | ❌ **消す** |
+
+      ## タスク（子猫1名で十分）
+
+      ### Step 1: CDK スタック修正（izakaya-stack.ts）
+      - CDK で新規 Cognito User Pool を作成している箇所を削除
+      - 代わりに Amplify の User Pool ID (`ap-northeast-1_VwL7teKWl`) を参照するよう変更
+      - `UserPool.fromUserPoolId()` で既存 Pool をインポート
+      - API Gateway Cognito Authorizer がこの Pool を参照するよう更新
+      - ファイル: output/izakaya-agent/infra/lib/izakaya-stack.ts
+
+      ### Step 2: フロントエンド設定確認
+      - output/nomibero-web/ の Amplify 設定が `ap-northeast-1_VwL7teKWl` を参照していること確認
+      - API Gateway エンドポイントへのリクエスト時に同じ Pool のトークンを使うこと確認
+
+      ### Step 3: CDK デプロイ
+      ```bash
+      cd output/izakaya-agent/infra
+      npx cdk deploy --require-approval never
+      ```
+
+      ### Step 4: 不要な User Pool 削除
+      ```bash
+      aws cognito-idp delete-user-pool --user-pool-id ap-northeast-1_7ctUrtWE6 --region ap-northeast-1
+      ```
+
+      ### Step 5: 動作確認
+      - API Gateway に Cognito トークン付きでリクエストして 200 が返ること
+      - トークンなしで 401 が返ること
+      - フロントエンドのログイン→API呼び出しが通ること
+
+      ## 注意事項
+      - まだユーザー登録はしていないので、データ移行は不要
+      - Amplify Gen 2 の User Pool を正とする（Amplify が管理するため）
+      - CDK 側は既存 Pool の参照のみ（作成しない）
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      frontend_dir: "output/nomibero-web"
+      region: "ap-northeast-1"
+      keep_pool_id: "ap-northeast-1_VwL7teKWl"
+      delete_pool_id: "ap-northeast-1_7ctUrtWE6"
+      references:
+        - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+        - "output/nomibero-web/amplify/"
+    expected_outputs:
+      - "CDKスタック修正（Amplify Pool参照）"
+      - "CDKデプロイ成功"
+      - "不要User Pool削除"
+      - "API Gateway認証テスト成功"
+
+  - command_id: "cmd-20260206T163630"
+    timestamp: "2026-02-06T16:36:30"
+    type: testing
+    priority: high
+    status: done
+    description: |
+      【🧪 のみべろWebアプリ E2Eテスト準備】Cognitoユーザー作成 + ローカル起動 + 動作確認
+
+      ## 🚨 重要ルール: 実装前に必ず /clear すること
+      番猫・子猫ともに、このタスクに着手する前に `/clear` でコンテキストをリセットせよ。
+      /clear 後は instructions を再読み込みして、このYAMLを読んでタスクに着手せよ。
+
+      ## 目的
+      のみべろWebアプリ（Phase 1）の動作をご主人が手動テストできるよう環境を整える。
+
+      ## タスク（子猫1名で十分）
+
+      ### Step 1: Cognito ユーザー作成（招待制）
+      Amplify Gen 2 の User Pool にユーザーを作成する。
+      ```bash
+      # ユーザー作成
+      aws cognito-idp admin-create-user \
+        --user-pool-id ap-northeast-1_VwL7teKWl \
+        --username edgesakura@gmail.com \
+        --user-attributes Name=email,Value=edgesakura@gmail.com Name=email_verified,Value=true \
+        --temporary-password 'Nomibero2026!' \
+        --message-action SUPPRESS \
+        --region ap-northeast-1
+      ```
+      ※ --message-action SUPPRESS でメール送信を抑制（パスワードは直接伝える）
+      ※ 初回ログイン時にパスワード変更を求められる
+
+      ### Step 2: Next.js ローカルサーバー起動確認
+      ```bash
+      cd output/nomibero-web
+      # package.json の依存関係確認
+      npm install
+      # ローカルサーバー起動（バックグラウンド）
+      npm run dev -- -p 3001
+      ```
+      - http://localhost:3001 でアクセスできることを確認
+      - エラーがあれば修正
+
+      ### Step 3: フロントエンド → API Gateway 接続確認
+      フロントエンドのAPI設定が正しいか確認:
+      - API Gateway エンドポイント: https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat
+      - Cognito User Pool ID: ap-northeast-1_VwL7teKWl
+      - Cognito トークンが API Gateway に正しく渡されるか確認
+      - CORS設定が localhost:3001 を許可しているか確認
+
+      ### Step 4: 動作確認テスト
+      1. http://localhost:3001 にアクセス
+      2. ログイン画面が表示されること
+      3. curl でAPI Gateway にCognitoトークン付きリクエストを送って200が返ること
+      ```bash
+      # トークン取得（テスト用）
+      aws cognito-idp admin-initiate-auth \
+        --user-pool-id ap-northeast-1_VwL7teKWl \
+        --client-id <client_id> \
+        --auth-flow ADMIN_NO_SRP_AUTH \
+        --auth-parameters USERNAME=edgesakura@gmail.com,PASSWORD='Nomibero2026!' \
+        --region ap-northeast-1
+      ```
+
+      ### Step 5: ご主人への報告
+      以下を nawabari.md に記載:
+      - ログインURL: http://localhost:3001
+      - ユーザー名: edgesakura@gmail.com
+      - 初期パスワード: Nomibero2026!（初回ログイン時に変更必要）
+      - テスト手順（ログイン → チャット → 居酒屋検索）
+      - 発見した問題点（あれば）
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      region: "ap-northeast-1"
+      user_pool_id: "ap-northeast-1_VwL7teKWl"
+      api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+      cognito_email: "edgesakura@gmail.com"
+      references:
+        - "output/nomibero-web/"
+        - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+    expected_outputs:
+      - "Cognito ユーザー作成完了"
+      - "ローカルサーバー起動"
+      - "API接続確認"
+      - "ご主人向けテスト手順"
+
+  - command_id: "cmd-20260206T164639"
+    timestamp: "2026-02-06T16:46:39"
+    type: bugfix
+    priority: urgent
+    status: done
+    description: |
+      【🚨 CORS修正】API Gateway の allowOrigins に localhost:3002 追加 ✅ 完了
+
+      ## 問題
+      ローカルサーバーがポート3002で起動しているが、API Gateway の CORS設定は
+      localhost:3001 のみ許可している。このままではブラウザからAPIを呼べない。
+
+      ## 修正内容（シンプル・1ファイルのみ）
+
+      ### izakaya-stack.ts の CORS 設定修正
+      - ファイル: output/izakaya-agent/infra/lib/izakaya-stack.ts
+      - allowOrigins に 'http://localhost:3002' を追加
+      - 既存の 'http://localhost:3001' も残す（両方許可）
+
+      ### CDK デプロイ
+      ```bash
+      cd output/izakaya-agent/infra
+      npx cdk deploy --require-approval never
+      ```
+
+      ### 動作確認
+      - curl で localhost:3002 オリジンからのプリフライトリクエストが通ること
+
+      ## ⚠️ /clear 不要
+      修正が1ファイル + デプロイだけなので /clear は不要にゃ。即実行でOK。
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      references:
+        - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+    expected_outputs:
+      - "CORS設定修正 + CDKデプロイ成功"
+      - "localhost:3002 からのAPIアクセス確認"
+
+  - command_id: "cmd-20260206T170000"
+    timestamp: "2026-02-06T17:00:00"
+    type: bugfix
+    priority: urgent
+    status: done
+    description: |
+      【🚨 Next.js Internal Server Error 修正】画面が500エラーで表示されない ✅ 完了
+
+      ## 症状
+      - http://localhost:3002 にアクセスすると Internal Server Error が画面に直接表示される
+      - Next.js のサーバーサイドレンダリングエラー
+      - ブラウザコンソールのエラーはブラウザ拡張のノイズのみ（SES lockdown, content.js等）
+
+      ## 調査チェックリスト
+
+      ### Step 1: Next.js サーバーログ確認（最優先）
+      ローカルサーバーのターミナル出力にエラーが出ているはず
+      ```bash
+      # サーバープロセスを確認
+      ps aux | grep "next dev"
+      # サーバーログを確認（プロセスがバックグラウンドの場合）
+      # 一旦 kill して foreground で起動し直してログを見る
+      cd output/nomibero-web
+      pkill -f "next dev"
+      npm run dev -- -p 3002 2>&1 | head -100
+      ```
+
+      ### Step 2: ビルドエラー確認
+      ```bash
+      cd output/nomibero-web
+      npm run build 2>&1
+      ```
+      ビルドが通らなければコードの問題。エラーメッセージから修正箇所を特定。
+
+      ### Step 3: よくある原因チェック
+      - Amplify Gen 2 の設定ファイル（amplify/backend.ts, amplify/auth/resource.ts）の構文エラー
+      - amplifyconfiguration の参照エラー（aws-exports.js vs amplify_outputs.json）
+      - @aws-amplify/ui-react のインポートエラー
+      - 環境変数の未設定（.env.local が必要か）
+      - node_modules の不整合（npm install 再実行）
+
+      ### Step 4: 修正実施
+      エラー原因に応じて修正
+
+      ### Step 5: 動作確認
+      - http://localhost:3002 でログイン画面が正常表示されること
+      - ログインして チャット画面が表示されること
+
+      ## ⚠️ /clear 推奨
+      番猫のコンテキスト残量42%なので、子猫に /clear させてから着手させること。
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      references:
+        - "output/nomibero-web/src/"
+        - "output/nomibero-web/amplify/"
+        - "output/nomibero-web/package.json"
+    expected_outputs:
+      - "エラー原因の特定"
+      - "修正実施"
+      - "ログイン画面が正常表示されること"
+
+  - command_id: "cmd-20260206T171532"
+    timestamp: "2026-02-06T17:15:32"
+    type: bugfix
+    priority: urgent
+    status: done
+    description: |
+      【🚨 Cognito 400 Bad Request 修正】ログインできない ✅ 完了（ご主人の確認待ち）
+
+      ## 症状
+      - ログイン画面は表示される（500エラーは修正済み）
+      - ユーザー名・パスワード入力後にログインすると 400 Bad Request
+      - エラー: POST https://cognito-idp.ap-northeast-1.amazonaws.com/ 400
+      - page.tsx:23 の <Authenticator> コンポーネントからのリクエスト
+
+      ## 想定原因（優先度順）
+
+      ### 原因1: App Client にシークレットが設定されている（最有力）
+      Amplify UI の Authenticator はクライアントシークレットなしの App Client が必須。
+      ```bash
+      # App Client の設定確認
+      aws cognito-idp list-user-pool-clients \
+        --user-pool-id ap-northeast-1_VwL7teKWl \
+        --region ap-northeast-1
+      # Client の詳細確認（シークレットの有無）
+      aws cognito-idp describe-user-pool-client \
+        --user-pool-id ap-northeast-1_VwL7teKWl \
+        --client-id <client_id> \
+        --region ap-northeast-1
+      ```
+      修正: シークレットなしの App Client を作成、または既存から削除
+
+      ### 原因2: Amplify 設定の Client ID が間違っている
+      amplify_outputs.json や amplify 設定ファイルの client_id が
+      実際の User Pool Client ID と一致しているか確認
+      ```bash
+      # Amplify 設定ファイルを確認
+      cat output/nomibero-web/amplify_outputs.json 2>/dev/null
+      cat output/nomibero-web/amplifyconfiguration.json 2>/dev/null
+      # フロントエンドのAmplify設定コードを確認
+      grep -r "userPoolClientId\|userPoolWebClientId\|appClientId" output/nomibero-web/src/
+      ```
+
+      ### 原因3: 認証フロー設定
+      App Client で ALLOW_USER_SRP_AUTH が有効か確認
+      Authenticator は SRP 認証フローを使う
+
+      ### 原因4: ユーザー状態の問題
+      ユーザーが FORCE_CHANGE_PASSWORD 状態で、Authenticator がそのチャレンジを正しく処理できていない
+      ```bash
+      aws cognito-idp admin-get-user \
+        --user-pool-id ap-northeast-1_VwL7teKWl \
+        --username edgesakura@gmail.com \
+        --region ap-northeast-1
+      ```
+
+      ## 修正手順
+      1. 原因を特定
+      2. 修正実施（App Client再作成 or 設定修正）
+      3. ログインテスト（edgesakura@gmail.com / Nomibero2026!）
+      4. チャット画面まで到達することを確認
+
+      ## ⚠️ /clear 不要
+      デバッグタスクなので /clear 不要。即実行でOK。
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      user_pool_id: "ap-northeast-1_VwL7teKWl"
+      cognito_email: "edgesakura@gmail.com"
+      references:
+        - "output/nomibero-web/src/"
+        - "output/nomibero-web/amplify/"
+    expected_outputs:
+      - "400エラーの原因特定"
+      - "修正実施"
+      - "ログイン成功確認"
+
+  - command_id: "cmd-20260206T174425"
+    timestamp: "2026-02-06T17:44:25"
+    type: bugfix
+    priority: urgent
+    status: done
+    description: |
+      【🚨 チャットAPI未接続修正】フロントエンドがAPI Gatewayを呼んでいない ✅ 完了
+
+      ## 症状
+      - ログインは成功（✅ 解決済み）
+      - チャットでメッセージを送信すると「ご質問ありがとうございます。現在、バックエンド接続を準備中です。」と返る
+      - これはモック/プレースホルダー応答で、実際にAPI Gatewayを呼んでいない
+
+      ## 修正内容
+
+      ### Step 1: 現在のチャットコンポーネントを確認
+      ```bash
+      # チャット関連のコンポーネントを確認
+      find output/nomibero-web/src -name "*.tsx" -o -name "*.ts" | xargs grep -l "chat\|message\|send\|api\|fetch" -i
+      # API呼び出し部分を確認
+      grep -rn "fetch\|axios\|API\|endpoint\|バックエンド接続を準備中" output/nomibero-web/src/
+      ```
+
+      ### Step 2: API Gateway 呼び出しを実装
+      チャットコンポーネントの送信処理を修正:
+      - API Gateway エンドポイント: https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat
+      - Cognito の ID Token を Authorization ヘッダーに付与
+      - リクエストボディ: { "message": "ユーザーの入力" }
+      - レスポンス: AgentCore からの居酒屋検索結果
+
+      ### Amplify でのトークン取得方法（Gen 2）
+      ```typescript
+      import { fetchAuthSession } from 'aws-amplify/auth';
+
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+
+      const response = await fetch(
+        'https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: userMessage }),
+        }
+      );
+      ```
+
+      ### Step 3: レスポンス表示
+      - API Gatewayからのレスポンスをチャット画面に表示
+      - エラー時は適切なメッセージを表示
+      - ローディング状態の表示（送信中...）
+
+      ### Step 4: サーバー再起動 + テスト
+      - next dev 再起動
+      - ログイン → チャット送信 → 居酒屋リスト返却を確認
+
+      ## ⚠️ /clear 推奨
+      番猫のコンテキスト残量を考慮して子猫に /clear させること。
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+      user_pool_id: "ap-northeast-1_VwL7teKWl"
+      references:
+        - "output/nomibero-web/src/"
+    expected_outputs:
+      - "チャットコンポーネントがAPI Gatewayを呼ぶよう修正"
+      - "Cognitoトークン付きリクエスト"
+      - "居酒屋検索結果がチャットに表示される"
+
+  - command_id: "cmd-20260206T180619"
+    timestamp: "2026-02-06T18:06:19"
+    type: deployment
+    priority: high
+    status: blocked
+    description: |
+      【🚀 Amplify Gen 2 デプロイ】GitHub連携 + 本番公開 - ⚠️ AWS Console 手動操作待ち
+
+      ## 🚨 重要ルール: 実装前に必ず /clear すること
+      番猫・子猫ともに、このタスクに着手する前に `/clear` でコンテキストをリセットせよ。
+      /clear 後は instructions を再読み込みして、このYAMLを読んでタスクに着手せよ。
+
+      ## 目的
+      のみべろWebアプリを Amplify Gen 2 でデプロイし、
+      GitHub PR → Codex レビュー → 自動デプロイのパイプラインを構築する。
+
+      ## タスク（子猫2名で並列化）
+
+      ### グループA: GitHub リポジトリ + git push（子猫1）
+
+      #### A1: GitHub プライベートリポジトリ作成
+      ```bash
+      # nomibero-web リポジトリ作成（プライベート）
+      gh repo create nomibero-web --private --description "のみべろエージェント - 居酒屋検索Webアプリ"
+      ```
+
+      #### A2: nomibero-web を git init + push
+      ```bash
+      cd output/nomibero-web
+      git init
+      # .gitignore 作成（node_modules, .next, .amplify, etc.）
+      # 必要なファイルを全て add
+      git add .
+      git commit -m "feat: のみべろWebアプリ Phase 1 - Next.js + Amplify Gen 2 + Cognito認証"
+      git remote add origin https://github.com/edgesakura/nomibero-web.git
+      git branch -M main
+      git push -u origin main
+      ```
+
+      #### A3: izakaya-agent も GitHub に push
+      ```bash
+      # バックエンドも別リポジトリで管理
+      gh repo create izakaya-agent --private --description "イザカヤくん - 居酒屋検索AIエージェント（Lambda + AgentCore）"
+      cd output/izakaya-agent
+      git init
+      # .gitignore 作成（node_modules, cdk.out, __pycache__, .venv, etc.）
+      git add .
+      git commit -m "feat: イザカヤくん - LINE Bot + Web API + AgentCore Runtime"
+      git remote add origin https://github.com/edgesakura/izakaya-agent.git
+      git branch -M main
+      git push -u origin main
+      ```
+
+      ### グループB: Amplify Gen 2 デプロイ設定（子猫2）
+
+      #### B1: Amplify アプリ作成 + GitHub 連携
+      Amplify Gen 2 では AWS Console または CLI でアプリを作成し、GitHub リポジトリを連携する。
+      ```bash
+      # Amplify CLI でアプリ作成（Gen 2）
+      # まず amplify/backend.ts が正しく設定されているか確認
+      cat output/nomibero-web/amplify/backend.ts
+
+      # AWS Amplify コンソールからGitHub連携するか、CLI で設定
+      # Gen 2 の場合: npx ampx pipeline-deploy --branch main
+      # または AWS Console > Amplify > New app > GitHub
+      ```
+
+      ⚠️ Amplify Gen 2 の GitHub 連携は AWS Console から行うのが確実:
+      1. AWS Console > Amplify に移動
+      2. 「New app」→「Host web app」
+      3. GitHub を選択 → nomibero-web リポジトリを選択
+      4. ビルド設定を確認（amplify.yml が自動検出される）
+      5. デプロイ開始
+
+      #### B2: 環境変数設定
+      Amplify の環境変数に以下を設定:
+      - NEXT_PUBLIC_API_ENDPOINT: https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat
+      - NEXT_PUBLIC_COGNITO_USER_POOL_ID: ap-northeast-1_VwL7teKWl
+      （その他必要な環境変数があれば追加）
+
+      #### B3: amplify.yml 確認・作成
+      ```yaml
+      version: 1
+      frontend:
+        phases:
+          preBuild:
+            commands:
+              - npm ci
+          build:
+            commands:
+              - npm run build
+        artifacts:
+          baseDirectory: .next
+          files:
+            - '**/*'
+        cache:
+          paths:
+            - node_modules/**/*
+            - .next/cache/**/*
+      ```
+
+      ### 完了確認
+      - Amplify のデプロイが成功すること
+      - 本番URLでログイン画面が表示されること
+      - ログイン → チャット → 居酒屋検索が動作すること
+      - CORS設定にAmplifyの本番URLを追加（CDKスタック修正が必要）
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      backend_dir: "output/izakaya-agent"
+      region: "ap-northeast-1"
+      github_user: "edgesakura"
+      api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+      user_pool_id: "ap-northeast-1_VwL7teKWl"
+      references:
+        - "output/nomibero-web/"
+        - "output/izakaya-agent/"
+    expected_outputs:
+      - "GitHub プライベートリポジトリ（nomibero-web, izakaya-agent）"
+      - "コード push 完了"
+      - "Amplify Gen 2 デプロイ成功"
+      - "本番URL でのログイン・チャット動作確認"
+
+  - command_id: "cmd-20260206T182456"
+    timestamp: "2026-02-06T18:24:56"
+    type: bugfix
+    priority: high
+    status: done
+    description: |
+      【🔧 本番CORS追加】Amplify本番URLをCORS許可リストに追加 ✅ 完了
+
+      ## 背景
+      Amplify デプロイ完了（デプロイ中）。本番URLが確定:
+      https://main.d2mtz6tk9wfbf0.amplifyapp.com
+
+      ## 修正内容（2箇所）
+
+      ### 修正1: CDK スタック（API Gateway CORS）
+      - ファイル: output/izakaya-agent/infra/lib/izakaya-stack.ts
+      - allowOrigins に 'https://main.d2mtz6tk9wfbf0.amplifyapp.com' を追加
+      - 既存の localhost:3001, localhost:3002 も残す
+
+      ### 修正2: Lambda handler（レスポンス CORS ヘッダー）
+      - ファイル: output/izakaya-agent/lambda/handler.py
+      - Access-Control-Allow-Origin の許可リストに追加
+      - 動的 CORS ヘッダー生成部分を修正
+
+      ### CDK デプロイ
+      ```bash
+      cd output/izakaya-agent/infra
+      npx cdk deploy --require-approval never
+      ```
+
+      ### 動作確認
+      - curl で本番オリジンからのプリフライトリクエストが通ること
+
+      ## ⚠️ /clear 不要
+      修正が軽微なので /clear 不要。即実行でOK。
+
+    context:
+      service_name: "izakaya-agent"
+      project_dir: "output/izakaya-agent"
+      production_url: "https://main.d2mtz6tk9wfbf0.amplifyapp.com"
+      references:
+        - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+        - "output/izakaya-agent/lambda/handler.py"
+    expected_outputs:
+      - "CORS設定に本番URL追加"
+      - "CDKデプロイ成功"
+      - "本番URLからのAPIアクセス確認"
+
+  - command_id: "cmd-20260206T185138"
+    timestamp: "2026-02-06T18:51:38"
+    type: feature
+    priority: high
+    status: done
+    description: |
+      【🍺 のみべろエージェント v2 Phase 2】検索機能拡張 ✅ 完了
+
+      ## 🚨 重要ルール: 実装前に必ず /clear すること
+      番猫・子猫ともに、このタスクに着手する前に `/clear` でコンテキストをリセットせよ。
+      /clear 後は instructions を再読み込みして、このYAMLを読んでタスクに着手せよ。
+
+      ## 🚨 開発ワークフロー（GitHub PR ベース）
+      Phase 2 からは GitHub PR ベースで開発する。
+      1. feature branch を作成（feature/phase2-xxx）
+      2. 実装
+      3. git commit + push
+      4. PR を作成（Codex レビュー用）
+      5. merge → Amplify 自動デプロイ
+
+      ## Phase 2 概要
+      現在はテキストチャットで自由入力のみ。
+      検索精度と UX を向上させるため、以下3機能を追加する。
+
+      ## タスク（子猫2名で並列化）
+
+      ### グループA: バックエンド - エージェントツール拡張（子猫1）
+
+      #### A1: ジャンル検索対応（search_restaurants.py 改修）
+      - ホットペッパーAPIのジャンルコード対応
+        - G001: 居酒屋, G002: ダイニングバー, G003: 創作料理, G004: 和食, G008: 焼肉
+      - search_restaurants ツールに genre パラメータを追加
+      - Google Places API の keyword にジャンルを反映
+      - ファイル: output/izakaya-agent/agent/tools/search_restaurants.py
+
+      #### A2: 予算フィルタ対応
+      - ホットペッパーAPIの budget パラメータ対応
+        - B001: ~500円, B002: 501~1000円, B003: 1001~1500円, B008: 1501~2000円,
+          B004: 2001~3000円, B005: 3001~4000円, B006: 4001~5000円, B012: 5001~7000円
+      - search_restaurants ツールに budget_min, budget_max パラメータ追加
+      - Google Places API の price_level でフィルタ
+      - ファイル: output/izakaya-agent/agent/tools/search_restaurants.py
+
+      #### A3: エージェントプロンプト更新
+      - エージェントのシステムプロンプトにジャンル・予算の選択肢を追記
+      - ユーザーの自然言語から適切なパラメータを推定するよう指示
+      - 例: 「安い焼肉」→ genre=G008, budget_max=3000
+      - ファイル: output/izakaya-agent/agent/agent.py
+
+      #### A4: Lambda handler 修正
+      - Web API リクエストにジャンル・予算パラメータを追加対応
+      - ファイル: output/izakaya-agent/lambda/handler.py
+
+      #### A5: CDK デプロイ + AgentCore 再デプロイ
+      ```bash
+      cd output/izakaya-agent/infra && npx cdk deploy --require-approval never
+      cd output/izakaya-agent && agentcore deploy
+      ```
+
+      ### グループB: フロントエンド - 検索UI拡張（子猫2）
+
+      #### B1: 現在地検索ボタン
+      - ブラウザの Geolocation API で現在地取得
+      - 「現在地で検索」ボタンを追加
+      - 取得した緯度経度をメッセージに含める or API に直接渡す
+      - 位置情報取得の許可ダイアログ対応
+      - ファイル: output/nomibero-web/src/app/components/
+
+      #### B2: ジャンル選択UI
+      - チャット入力欄の上にジャンルタグ/チップを表示
+      - 居酒屋 / ダイニングバー / 和食 / 焼肉 など選択可能
+      - 選択したジャンルをメッセージに自動付加
+      - ファイル: output/nomibero-web/src/app/components/
+
+      #### B3: 予算フィルタUI
+      - スライダー or セレクトボックスで予算範囲指定
+      - 「せんべろ（~1000円）」「普通（2000~3000円）」「贅沢（5000円~）」等のプリセット
+      - 選択した予算をメッセージに自動付加
+      - ファイル: output/nomibero-web/src/app/components/
+
+      #### B4: git commit + push + PR 作成
+      ```bash
+      cd output/nomibero-web
+      git checkout -b feature/phase2-search-ui
+      git add .
+      git commit -m "feat: Phase 2 - ジャンル選択・予算フィルタ・現在地検索UI"
+      git push -u origin feature/phase2-search-ui
+      gh pr create --title "feat: Phase 2 検索UI拡張" --body "ジャンル選択、予算フィルタ、現在地検索を追加"
+      ```
+
+      ## 技術的注意
+      - エージェントは自然言語を解析してツールパラメータを決定する
+        → ツールの docstring が重要（LLM がパラメータの意味を理解する）
+      - ホットペッパーAPIのジャンルコード・予算コードは公式ドキュメント参照
+      - 現在地検索はブラウザ Geolocation API（HTTPS必須 = Amplify本番ならOK）
+
+    context:
+      service_name: "nomibero-web"
+      project_dir: "output/nomibero-web"
+      backend_dir: "output/izakaya-agent"
+      region: "ap-northeast-1"
+      production_url: "https://main.d2mtz6tk9wfbf0.amplifyapp.com"
+      api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+      github_repos:
+        frontend: "edgesakura/nomibero-web"
+        backend: "edgesakura/izakaya-agent"
+      references:
+        - "output/izakaya-agent/agent/tools/search_restaurants.py"
+        - "output/izakaya-agent/agent/agent.py"
+        - "output/izakaya-agent/lambda/handler.py"
+        - "output/nomibero-web/src/"
+    expected_outputs:
+      - "ジャンル検索対応（バックエンド + フロント）"
+      - "予算フィルタ対応（バックエンド + フロント）"
+      - "現在地検索ボタン（フロント）"
+      - "GitHub PR 作成"
+      - "CDK + AgentCore デプロイ"

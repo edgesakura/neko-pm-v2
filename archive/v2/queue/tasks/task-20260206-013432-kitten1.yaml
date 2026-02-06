@@ -1,0 +1,362 @@
+task_id: "task-20260206-013432-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T01:34:32"
+priority: high
+load_skills: []
+description: |
+  ## Phase 2.5: AgentCore Memory機能追加
+
+  居酒屋検索AIエージェント「イザカヤくん」にAgentCore Memory機能を追加し、
+  LINE Botでの会話継続・文脈維持を実現するにゃ。
+
+  ## 背景と目的
+
+  現状のエージェントは各リクエストが独立しており、過去の会話を参照できないにゃ。
+  ユーザーが「さっきの2番目の店の詳細教えて」と言っても、
+  「さっきの2番目」が何を指すのか分からないにゃ。
+
+  AgentCore Memory を導入することで：
+  1. 過去の会話履歴を保持
+  2. セマンティックメモリでユーザーの好みを記憶
+  3. コンテキストを維持した自然な会話が可能
+
+  ## 技術スタック
+
+  - Amazon Bedrock AgentCore Memory
+  - セッションID: LINE ユーザーID を使用
+  - リージョン: ap-northeast-1
+
+  ## MCP ツール活用（必須）
+
+  以下のMCPツールを活用してAgentCore Memoryのベストプラクティスを確認するにゃ：
+
+  ### 1. AgentCore Memory ドキュメント検索
+  ```
+  ToolSearch: "select:mcp__bedrock-agentcore-mcp-server__search_agentcore_docs"
+  ToolSearch: "select:mcp__bedrock-agentcore-mcp-server__fetch_agentcore_doc"
+  ```
+
+  検索クエリ例:
+  - "memory management"
+  - "session handling"
+  - "semantic memory usage"
+
+  ### 2. AgentCore Memory 管理ツール
+  ```
+  ToolSearch: "select:mcp__bedrock-agentcore-mcp-server__manage_agentcore_memory"
+  ```
+
+  このツールでMemory APIの使い方を確認するにゃ。
+
+  ## 実装内容
+
+  ### ステップ1: utils/memory.py を新規作成
+
+  AgentCore Memory クライアントの初期化と操作を実装にゃ：
+
+  ```python
+  import boto3
+  from functools import lru_cache
+  from typing import List, Dict, Any
+  from datetime import datetime
+
+  # MCPツールでベストプラクティスを確認してから実装にゃ
+
+  @lru_cache(maxsize=None)
+  def get_memory_client(region: str = "ap-northeast-1"):
+      """
+      AgentCore Memory クライアントを取得（キャッシュ付き）
+
+      Args:
+          region: AWSリージョン
+
+      Returns:
+          Memory クライアント
+      """
+      # AgentCore Memory クライアント初期化
+      # MCPツールで正しいクライアント初期化方法を確認にゃ
+      pass
+
+  def save_conversation(
+      session_id: str,
+      user_message: str,
+      agent_response: str,
+      metadata: Dict[str, Any] = None
+  ) -> bool:
+      """
+      会話をMemoryに保存
+
+      Args:
+          session_id: セッションID（LINEユーザーID）
+          user_message: ユーザーのメッセージ
+          agent_response: エージェントの応答
+          metadata: 追加メタデータ（検索結果など）
+
+      Returns:
+          保存成功 = True
+      """
+      client = get_memory_client()
+
+      try:
+          # イベントとして会話を保存
+          # MCPツールで正しいAPI呼び出し方法を確認にゃ
+          event = {
+              "timestamp": datetime.utcnow().isoformat(),
+              "user_message": user_message,
+              "agent_response": agent_response,
+              "metadata": metadata or {}
+          }
+
+          # Memory API 呼び出し（MCPツールで確認）
+          # client.save_event(session_id=session_id, event=event)
+
+          return True
+      except Exception as e:
+          print(f"Failed to save conversation: {e}")
+          return False
+
+  def get_conversation_history(
+      session_id: str,
+      limit: int = 10
+  ) -> List[Dict[str, Any]]:
+      """
+      過去の会話履歴を取得
+
+      Args:
+          session_id: セッションID
+          limit: 取得件数
+
+      Returns:
+          会話履歴のリスト
+      """
+      client = get_memory_client()
+
+      try:
+          # Memory APIで会話履歴を取得（MCPツールで確認）
+          # history = client.get_events(session_id=session_id, limit=limit)
+          # return history
+          return []
+      except Exception as e:
+          print(f"Failed to retrieve conversation history: {e}")
+          return []
+
+  def get_semantic_memory(
+      session_id: str,
+      query: str
+  ) -> List[Dict[str, Any]]:
+      """
+      セマンティックメモリを検索
+      ユーザーの好み、過去の選択などを検索
+
+      Args:
+          session_id: セッションID
+          query: 検索クエリ
+
+      Returns:
+          関連するメモリのリスト
+      """
+      client = get_memory_client()
+
+      try:
+          # セマンティック検索（MCPツールで確認）
+          # results = client.search_memory(session_id=session_id, query=query)
+          # return results
+          return []
+      except Exception as e:
+          print(f"Failed to search semantic memory: {e}")
+          return []
+
+  def save_user_preference(
+      session_id: str,
+      preference_key: str,
+      preference_value: Any
+  ) -> bool:
+      """
+      ユーザーの好みを保存
+      例: 好きなエリア、予算、食事スタイルなど
+
+      Args:
+          session_id: セッションID
+          preference_key: 好みのキー（例: "favorite_area"）
+          preference_value: 好みの値（例: "新橋"）
+
+      Returns:
+          保存成功 = True
+      """
+      client = get_memory_client()
+
+      try:
+          # ユーザー好みを保存（MCPツールで確認）
+          # client.save_preference(
+          #     session_id=session_id,
+          #     key=preference_key,
+          #     value=preference_value
+          # )
+          return True
+      except Exception as e:
+          print(f"Failed to save user preference: {e}")
+          return False
+  ```
+
+  ### ステップ2: main.py を修正
+
+  Session ID対応とMemory統合を追加にゃ：
+
+  ```python
+  from strands import Agent
+  from bedrock_agentcore import BedrockAgentCoreApp
+  from utils.memory import (
+      save_conversation,
+      get_conversation_history,
+      get_semantic_memory
+  )
+
+  app = BedrockAgentCoreApp()
+
+  @app.entrypoint
+  def main(event: dict):
+      """
+      エージェントのエントリーポイント
+
+      Args:
+          event: Lambda イベント
+              - session_id: LINEユーザーID（セッション識別用）
+              - user_message: ユーザーのメッセージ
+      """
+      # セッションIDを取得（LINEユーザーID）
+      session_id = event.get("session_id", "default-session")
+      user_message = event.get("user_message", "")
+
+      # 過去の会話履歴を取得
+      conversation_history = get_conversation_history(session_id, limit=5)
+
+      # セマンティックメモリを検索（ユーザーの好みなど）
+      user_preferences = get_semantic_memory(
+          session_id=session_id,
+          query="user preferences and favorite areas"
+      )
+
+      # Strands Agent初期化
+      agent = Agent(
+          name="izakaya-agent",
+          model="anthropic.claude-sonnet-4-20250514-v1:0",
+          region="ap-northeast-1",
+          instructions=f"""
+          あなたは居酒屋検索AIエージェント「イザカヤくん」です。
+          ユーザーが指定したエリアで、評価の高い居酒屋を検索します。
+
+          【重要】過去の会話履歴:
+          {format_conversation_history(conversation_history)}
+
+          【重要】ユーザーの好み:
+          {format_user_preferences(user_preferences)}
+
+          検索の流れ:
+          1. エリア名を座標に変換（resolve_area）
+          2. ハイブリッド検索でおすすめ居酒屋を検索（search_restaurants）
+          3. 営業時間を確認（check_availability）
+          4. 結果をわかりやすく提示
+
+          過去の会話を参照して、コンテキストを維持した応答を心がけてください。
+          """
+      )
+
+      # Tools登録
+      from tools.search_restaurants import search_restaurants
+      from tools.resolve_area import resolve_area
+      from tools.check_availability import check_availability
+
+      agent.add_tool(search_restaurants)
+      agent.add_tool(resolve_area)
+      agent.add_tool(check_availability)
+
+      # エージェント実行
+      response = agent.run(user_message)
+
+      # 会話をMemoryに保存
+      save_conversation(
+          session_id=session_id,
+          user_message=user_message,
+          agent_response=response,
+          metadata={"timestamp": datetime.utcnow().isoformat()}
+      )
+
+      return response
+
+  def format_conversation_history(history: List[Dict]) -> str:
+      """会話履歴をフォーマット"""
+      if not history:
+          return "（初回の会話です）"
+
+      formatted = []
+      for item in history[-5:]:  # 直近5件
+          formatted.append(f"ユーザー: {item.get('user_message', '')}")
+          formatted.append(f"エージェント: {item.get('agent_response', '')}")
+      return "\n".join(formatted)
+
+  def format_user_preferences(preferences: List[Dict]) -> str:
+      """ユーザー好みをフォーマット"""
+      if not preferences:
+          return "（好みは未登録です）"
+
+      formatted = []
+      for pref in preferences:
+          formatted.append(f"- {pref.get('key', '')}: {pref.get('value', '')}")
+      return "\n".join(formatted)
+
+  if __name__ == "__main__":
+      app.run()
+  ```
+
+  ### ステップ3: requirements.txt を更新
+
+  AgentCore Memory の依存関係を追加にゃ：
+
+  ```
+  strands-agents>=0.1.0
+  boto3>=1.34.0
+  requests>=2.31.0
+  # AgentCore Memory パッケージ（MCPツールで正しいパッケージ名を確認）
+  # bedrock-agentcore>=1.0.0
+  ```
+
+  **重要**: MCPツールで正しいパッケージ名とバージョンを確認してから追加にゃ。
+
+  ## 注意事項
+
+  - **MCPツールを必ず活用**してAgentCore Memoryのベストプラクティスを確認にゃ
+  - セッションIDはLINEユーザーIDを使用（Lambda の event から取得）
+  - Memoryリソースの作成は agentcore CLI で行う（CDKではなく）
+  - リージョン: ap-northeast-1
+  - エラーハンドリングを実装（Memory API が失敗してもエージェントは動作続行）
+  - 型ヒント（typing）を全関数に付与
+  - ドキュメント文字列を全関数に記載
+
+  ## 期待する動作確認
+
+  以下のシナリオでテストするにゃ：
+
+  1. **初回会話**
+     - ユーザー: "渋谷で飲みたい"
+     - エージェント: 渋谷の居酒屋を検索して提示
+
+  2. **文脈維持**
+     - ユーザー: "さっきの2番目の店の詳細教えて"
+     - エージェント: 過去の会話履歴から2番目の店を特定して詳細を提示
+
+  3. **好みの記憶**
+     - ユーザー: "私は静かな雰囲気が好き"
+     - エージェント: ユーザー好みとして保存
+     - 次回検索時に静かな店を優先
+
+context:
+  output_dir: "output/izakaya-agent/agent"
+  region: "ap-northeast-1"
+  references:
+    - "Phase 2で実装したmain.py"
+    - "元記事: https://dev.classmethod.jp/articles/shoma-struggling-with-after-party-venue-search-built-shimbashi-izakaya-search-ai-agent-shimbashi-kun-with-bedrock-agentcore/"
+expected_outputs:
+  - "output/izakaya-agent/agent/utils/memory.py（新規）"
+  - "output/izakaya-agent/agent/main.py（修正）"
+  - "output/izakaya-agent/agent/requirements.txt（更新）"
+  - "queue/reports/report-task-20260206-013432-kitten1.yaml"

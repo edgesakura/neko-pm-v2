@@ -1,0 +1,131 @@
+task_id: "task-2026-02-05T17:39:18-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T17:39:18"
+priority: medium
+load_skills:
+  - "ppt"
+description: |
+  PPTXベーステンプレート作成（html2pptx使用）
+
+  ## 目的
+  html2pptxを使ってDatadogブランドのPPTXテンプレートを生成する
+
+  ## 作業手順
+
+  ### 1. サンプルJSON作成
+  `/home/edgesakura/git/skills/ppt/templates/datadog-sample.json` を作成:
+  ```json
+  {
+    "title": "Datadog資料テンプレート",
+    "author": "neko-pm",
+    "company": "Datadog",
+    "slides": [
+      {
+        "type": "title",
+        "title": "Datadog監視設計",
+        "subtitle": "運用設計書",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "目次",
+        "bullets": [
+          "システム構成",
+          "SLI/SLO設計",
+          "ダッシュボード設計",
+          "アラート設計",
+          "運用フロー"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "システム構成",
+        "background": "#8000FF"
+      },
+      {
+        "type": "content",
+        "title": "監視対象システム",
+        "bullets": [
+          "Mule: APIゲートウェイ",
+          "Pega (EKS): ワークフローエンジン",
+          "Java: バックエンドサービス"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "content",
+        "title": "SLI（Service Level Indicator）",
+        "bullets": [
+          "可用性: 成功リクエスト / 総リクエスト",
+          "レイテンシ: P99応答時間",
+          "エラー率: エラー数 / 総リクエスト数"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "section",
+        "title": "ダッシュボード設計",
+        "background": "#632CA6"
+      },
+      {
+        "type": "content",
+        "title": "ダッシュボード構成",
+        "bullets": [
+          "システム全体ビュー",
+          "APMメトリクス",
+          "インフラメトリクス",
+          "ログ分析",
+          "アラート状況"
+        ],
+        "background": "#1a1a2e"
+      },
+      {
+        "type": "end",
+        "title": "ありがとうございました",
+        "background": "#632CA6"
+      }
+    ]
+  }
+  ```
+
+  ### 2. PPTXテンプレート生成
+  ```bash
+  cd /home/edgesakura/git/skills/ppt
+  node dist/index.js templates/datadog-sample.json /home/edgesakura/git/knowledge/ppt/templates/datadog-dark.pptx
+  ```
+
+  ### 3. ライトテーマ版も生成
+  datadog-sample.jsonをコピーして背景色を調整:
+  - #632CA6 → #632CA6（タイトルはそのまま）
+  - #1a1a2e → #ffffff（コンテンツは白背景）
+
+  保存先: `/home/edgesakura/git/knowledge/ppt/templates/datadog-light.pptx`
+
+  ### 4. ディレクトリ作成
+  もし存在しない場合:
+  ```bash
+  mkdir -p /home/edgesakura/git/knowledge/ppt/templates
+  ```
+
+  ## 完了条件
+  - [ ] datadog-sample.json 作成完了
+  - [ ] datadog-dark.pptx 生成成功
+  - [ ] datadog-light.pptx 生成成功（オプション）
+  - [ ] 生成されたPPTXの確認（ファイルサイズ > 0）
+  - [ ] queue/reports/ に報告YAML作成
+
+  ## 注意事項
+  - node dist/index.js でエラーが出たらビルド: `npm run build`
+  - html2pptxはインストール済み（前回作業で確認済み）
+
+context:
+  references:
+    - "skills/ppt/templates/sre-runbook.json（参考）"
+    - "knowledge/ppt/html2pptx.md"
+  working_directory: "/home/edgesakura/git/skills/ppt"
+expected_outputs:
+  - "skills/ppt/templates/datadog-sample.json"
+  - "knowledge/ppt/templates/datadog-dark.pptx"
+  - "knowledge/ppt/templates/datadog-light.pptx（オプション）"
+  - "queue/reports/task-2026-02-05T17:39:18-kitten2.yaml"

@@ -1,0 +1,165 @@
+task_id: "task-20260206T180951-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T18:09:51"
+priority: high
+load_skills: []
+description: |
+  【🚀 Amplify Gen 2 デプロイ - グループB】izakaya-agent GitHub push + Amplify連携
+
+  ## 目的
+  バックエンド（izakaya-agent）を GitHub にpushし、
+  Amplify Gen 2 で nomibero-web をデプロイする。
+
+  ## タスク手順
+
+  ### Step 1: GitHub プライベートリポジトリ作成（izakaya-agent）
+  ```bash
+  gh repo create izakaya-agent --private --description "イザカヤくん - 居酒屋検索AIエージェント（Lambda + AgentCore）"
+  ```
+  - プライベートリポジトリで作成（⚠️ ボスねこ承認済み）
+  - リポジトリURL: https://github.com/edgesakura/izakaya-agent.git
+
+  ### Step 2: .gitignore 作成
+  ```bash
+  cd output/izakaya-agent
+  cat > .gitignore << 'EOF'
+  # Python
+  __pycache__/
+  *.py[cod]
+  *$py.class
+  *.so
+  .Python
+  .venv/
+  venv/
+  ENV/
+
+  # CDK
+  cdk.out/
+  node_modules/
+
+  # Lambda Layer
+  lambda/layer/
+  lambda/layer.zip
+
+  # IDE
+  .vscode/
+  .idea/
+
+  # OS
+  .DS_Store
+
+  # Secrets
+  .env
+  .env.local
+
+  # Logs
+  *.log
+
+  # AWS
+  *.zip
+  EOF
+  ```
+
+  ### Step 3: git init + commit + push
+  ```bash
+  cd output/izakaya-agent
+  git init
+  git add .
+  git commit -m "$(cat <<'COMMIT_EOF'
+  feat: イザカヤくん - LINE Bot + Web API + AgentCore Runtime
+
+  ## 実装内容
+  - Lambda + AgentCore Runtime 統合
+  - LINE Bot Webhook対応
+  - Web API対応（Cognito認証）
+  - ホットペッパーAPI + Google Places API 統合
+  - 全国対応（Geocoding API）
+
+  ## インフラ
+  - CDK スタック（API Gateway + Lambda + Cognito Authorizer）
+  - Secrets Manager（APIキー管理）
+  - CloudWatch Logs
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  COMMIT_EOF
+  )"
+  git remote add origin https://github.com/edgesakura/izakaya-agent.git
+  git branch -M main
+  git push -u origin main
+  ```
+
+  ### Step 4: 子猫1の完了待ち
+  - 子猫1が nomibero-web を GitHub に push するのを待つ
+  - queue/reports/task-20260206T180951-kitten1.yaml が作成されたら次に進む
+
+  ### Step 5: Amplify アプリ作成 + GitHub 連携
+  ⚠️ Amplify Gen 2 の GitHub 連携は AWS Console から行うのが確実:
+
+  1. AWS Console > Amplify に移動
+     ```bash
+     # AWS Console を開く
+     echo "https://ap-northeast-1.console.aws.amazon.com/amplify/home?region=ap-northeast-1"
+     ```
+
+  2. 「New app」→「Host web app」を選択
+
+  3. GitHub を選択 → 認証
+
+  4. リポジトリ: edgesakura/nomibero-web を選択
+
+  5. ブランチ: main を選択
+
+  6. ビルド設定を確認:
+     - amplify.yml が自動検出される
+     - Framework: Next.js - SSR が検出される
+
+  7. 環境変数を設定:
+     ```
+     NEXT_PUBLIC_API_ENDPOINT=https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat
+     NEXT_PUBLIC_COGNITO_USER_POOL_ID=ap-northeast-1_VwL7teKWl
+     ```
+
+  8. 「Save and deploy」をクリック
+
+  9. デプロイ完了を待つ（5〜10分）
+
+  ### Step 6: 本番URL確認
+  - Amplify のデプロイが成功したら、本番URLを確認
+  - URL形式: https://main.xxxxx.amplifyapp.com
+
+  ### Step 7: CORS設定追加（CDKスタック修正）
+  Amplify の本番URLを API Gateway の CORS に追加:
+  ```bash
+  cd output/izakaya-agent/infra
+  # izakaya-stack.ts の allowOrigins に Amplify URL を追加
+  # 例: 'https://main.d1a2b3c4d5e6f7.amplifyapp.com'
+  ```
+  ⚠️ この作業は本番URL確定後に実施
+
+  ### Step 8: 動作確認
+  - 本番URLでログイン画面が表示されること
+  - ログイン → チャット → 居酒屋検索が動作すること
+
+  ## 重要な注意事項
+  - ⚠️ git push はボスねこ承認済み（プライベートリポジトリ）
+  - Amplify GitHub 連携は AWS Console から手動で行う（CLI非推奨）
+  - 環境変数は Amplify Console で設定すること
+  - CORS設定追加は本番URL確定後に実施
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  frontend_dir: "output/nomibero-web"
+  github_user: "edgesakura"
+  repo_url: "https://github.com/edgesakura/izakaya-agent.git"
+  api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+  user_pool_id: "ap-northeast-1_VwL7teKWl"
+  references:
+    - "output/izakaya-agent/"
+    - "output/nomibero-web/"
+expected_outputs:
+  - "GitHub プライベートリポジトリ（izakaya-agent）作成"
+  - "コード push 完了"
+  - "Amplify Gen 2 デプロイ成功"
+  - "本番URL でのログイン・チャット動作確認"
+  - "CORS設定追加（次タスク）"

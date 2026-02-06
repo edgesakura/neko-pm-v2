@@ -1,0 +1,458 @@
+task_id: "task-20260202-151546-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T15:15:46"
+priority: high
+command_id: "cmd-20260202-151546"
+description: |
+  【作戦名】chat-app UI大改修 - タブ構成への変更
+
+  ## 目的
+  chat-appのUIをタブ構成に変更して、機能を整理し、スマホからの操作性を向上させるにゃ。
+
+  ## タブ構成（4つ）
+
+  1. **💬 Chat**：テキスト入力、スクショ送信、コマンドボタン
+  2. **🖥️ Terminal**：xterm.js出力確認
+  3. **📋 Status**：nawabari.md表示
+  4. **🚨 Alerts**：フクロウ警告表示
+
+  ## 実装内容
+
+  ### フェーズ1: タブUI構造の実装（index.html）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/index.html
+
+  #### 1-1. タブナビゲーション追加
+
+  `<div id="mainApp">` 内の最初に、タブナビゲーションを追加：
+
+  ```html
+  <!-- タブナビゲーション -->
+  <div id="tab-navigation">
+    <button class="tab-btn active" data-tab="chat">💬 Chat</button>
+    <button class="tab-btn" data-tab="terminal">🖥️ Terminal</button>
+    <button class="tab-btn" data-tab="status">📋 Status</button>
+    <button class="tab-btn" data-tab="alerts">🚨 Alerts</button>
+  </div>
+  ```
+
+  #### 1-2. タブコンテンツエリアの実装
+
+  タブナビゲーションの後に、各タブのコンテンツエリアを追加：
+
+  ```html
+  <!-- タブコンテンツ -->
+  <div id="tab-content">
+    <!-- 💬 Chat タブ -->
+    <div id="tab-chat" class="tab-pane active">
+      <!-- boss-chat の内容をここに移動 -->
+      <div id="boss-chat">
+        <div id="chat-messages"></div>
+        <div id="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Type message...">
+          <input type="file" id="screenshot-input" accept="image/*" style="display:none">
+          <button id="screenshot-btn">📷</button>
+          <button id="send-btn">Send</button>
+        </div>
+      </div>
+
+      <!-- コマンドボタンをここに移動 -->
+      <div id="quick-commands">
+        <button class="cmd-btn approve" data-cmd="1">✅ 承認</button>
+        <button class="cmd-btn reject" data-cmd="2">❌ 拒否</button>
+        <button class="cmd-btn status" data-cmd="cat nawabari.md | tail -50">📊 状況確認</button>
+        <button class="cmd-btn delegate" data-cmd="番猫、この作業をお願いするにゃ">🐱 番猫に委譲</button>
+        <button class="cmd-btn stop" data-cmd="\x03">🚨 緊急停止</button>
+      </div>
+    </div>
+
+    <!-- 🖥️ Terminal タブ -->
+    <div id="tab-terminal" class="tab-pane">
+      <div id="connection-status"></div>
+      <div id="terminal-container"></div>
+    </div>
+
+    <!-- 📋 Status タブ -->
+    <div id="tab-status" class="tab-pane">
+      <div id="status-container">
+        <h2>📋 作戦状況板（nawabari.md）</h2>
+        <div id="nawabari-content">読み込み中...</div>
+        <button id="refresh-status-btn">🔄 更新</button>
+      </div>
+    </div>
+
+    <!-- 🚨 Alerts タブ -->
+    <div id="tab-alerts" class="tab-pane">
+      <div id="alerts-container">
+        <h2>🚨 フクロウ警告</h2>
+        <div id="alerts-content">警告はありません</div>
+        <button id="refresh-alerts-btn">🔄 更新</button>
+      </div>
+    </div>
+  </div>
+  ```
+
+  **ポイント**:
+  - 既存の `#boss-chat` と `#quick-commands` を `#tab-chat` 内に移動
+  - 既存の `#connection-status` と `#terminal-container` を `#tab-terminal` 内に移動
+  - 新しく `#tab-status` と `#tab-alerts` を追加
+
+  ### フェーズ2: タブ切り替えロジック（terminal.js）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  #### 2-1. タブ切り替え関数を追加
+
+  `initTerminal()` 関数の最後に、タブ切り替えロジックを追加：
+
+  ```javascript
+  // タブ切り替え機能
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.getAttribute('data-tab');
+
+      // 全てのタブボタンとペインから active を削除
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanes.forEach(p => p.classList.remove('active'));
+
+      // クリックされたタブを active に
+      btn.classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // Terminal タブが表示された時に xterm.js をリサイズ
+      if (tabName === 'terminal' && term && fitAddon) {
+        setTimeout(() => {
+          fitAddon.fit();
+        }, 100);
+      }
+
+      // Status タブが表示された時に nawabari.md を読み込む
+      if (tabName === 'status') {
+        loadNawabariMd();
+      }
+
+      // Alerts タブが表示された時にフクロウ警告を読み込む
+      if (tabName === 'alerts') {
+        loadAlerts();
+      }
+    });
+  });
+  ```
+
+  #### 2-2. nawabari.md 読み込み関数を追加
+
+  ```javascript
+  // nawabari.md を読み込む関数
+  async function loadNawabariMd() {
+    const nawabariContent = document.getElementById('nawabari-content');
+    try {
+      const response = await fetch('/api/nawabari');
+      const data = await response.json();
+      if (data.success) {
+        // Markdown をプレーンテキストで表示（改行を<br>に変換）
+        nawabariContent.innerHTML = `<pre>${data.content}</pre>`;
+      } else {
+        nawabariContent.innerHTML = `<p>エラー: ${data.error}</p>`;
+      }
+    } catch (error) {
+      nawabariContent.innerHTML = `<p>読み込みエラー: ${error.message}</p>`;
+    }
+  }
+
+  // 更新ボタンのイベントリスナー
+  document.getElementById('refresh-status-btn').addEventListener('click', loadNawabariMd);
+  ```
+
+  #### 2-3. フクロウ警告読み込み関数を追加
+
+  ```javascript
+  // フクロウ警告を読み込む関数
+  async function loadAlerts() {
+    const alertsContent = document.getElementById('alerts-content');
+    try {
+      const response = await fetch('/api/alerts');
+      const data = await response.json();
+      if (data.success && data.alerts.length > 0) {
+        alertsContent.innerHTML = data.alerts.map(alert => `
+          <div class="alert-item ${alert.severity}">
+            <strong>${alert.timestamp}</strong>: ${alert.message}
+          </div>
+        `).join('');
+      } else {
+        alertsContent.innerHTML = '<p>警告はありません</p>';
+      }
+    } catch (error) {
+      alertsContent.innerHTML = `<p>読み込みエラー: ${error.message}</p>`;
+    }
+  }
+
+  // 更新ボタンのイベントリスナー
+  document.getElementById('refresh-alerts-btn').addEventListener('click', loadAlerts);
+  ```
+
+  ### フェーズ3: スタイル追加（styles.css）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/styles.css
+
+  #### 3-1. タブナビゲーションのスタイル
+
+  ```css
+  /* タブナビゲーション */
+  #tab-navigation {
+    display: flex;
+    background: #2c2c2c;
+    border-bottom: 2px solid #444;
+    padding: 0;
+    margin: 0;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 15px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    background: #2c2c2c;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid #444;
+  }
+
+  .tab-btn:last-child {
+    border-right: none;
+  }
+
+  .tab-btn:hover {
+    background: #3c3c3c;
+    color: #fff;
+  }
+
+  .tab-btn.active {
+    background: #1e1e1e;
+    color: #4caf50;
+    border-bottom: 3px solid #4caf50;
+  }
+
+  /* モバイル最適化 */
+  @media (max-width: 768px) {
+    .tab-btn {
+      padding: 12px 8px;
+      font-size: 12px;
+    }
+  }
+  ```
+
+  #### 3-2. タブコンテンツエリアのスタイル
+
+  ```css
+  /* タブコンテンツエリア */
+  #tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  /* Chat タブ */
+  #tab-chat {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  #boss-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* コマンドボタン（Chat タブ内に移動） */
+  #quick-commands {
+    position: static;  /* 固定位置から相対位置に変更 */
+    bottom: auto;
+    left: auto;
+    transform: none;
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 0;
+    z-index: auto;
+    flex-wrap: wrap;
+  }
+
+  /* Terminal タブ */
+  #tab-terminal {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  /* Status タブ */
+  #status-container {
+    padding: 20px;
+  }
+
+  #nawabari-content {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  #nawabari-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  #refresh-status-btn,
+  #refresh-alerts-btn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  #refresh-status-btn:hover,
+  #refresh-alerts-btn:hover {
+    background: #45a049;
+  }
+
+  /* Alerts タブ */
+  #alerts-container {
+    padding: 20px;
+  }
+
+  #alerts-content {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .alert-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: #2c2c2c;
+    border-left: 4px solid #ff9800;
+  }
+
+  .alert-item.high {
+    border-left-color: #f44336;
+  }
+
+  .alert-item.medium {
+    border-left-color: #ff9800;
+  }
+
+  .alert-item.low {
+    border-left-color: #4caf50;
+  }
+  ```
+
+  ### フェーズ4: バックエンドAPI追加（server.js）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/server.js
+
+  #### 4-1. nawabari.md 読み込みAPI
+
+  ```javascript
+  // nawabari.md を返すAPI
+  app.get('/api/nawabari', (req, res) => {
+    try {
+      const content = fs.readFileSync('/home/edgesakura/git/neko-pm/nawabari.md', 'utf8');
+      res.json({ success: true, content });
+    } catch (error) {
+      res.json({ success: false, error: error.message });
+    }
+  });
+  ```
+
+  #### 4-2. フクロウ警告API（仮実装）
+
+  ```javascript
+  // フクロウ警告を返すAPI（仮実装：後で実装）
+  app.get('/api/alerts', (req, res) => {
+    // TODO: 実際のフクロウ警告ログから読み取る
+    res.json({
+      success: true,
+      alerts: [
+        // {
+        //   timestamp: '2026-02-02 15:00:00',
+        //   message: 'Dangerous command detected: pkill -f ...',
+        //   severity: 'high'
+        // }
+      ]
+    });
+  });
+  ```
+
+  ## 動作確認
+
+  実装後、以下を確認するにゃ：
+  1. ブラウザで http://localhost:3000 にアクセス
+  2. パスワード認証 → ログイン成功
+  3. 4つのタブが表示されること
+  4. 各タブをクリックして切り替えが動作すること
+  5. 💬 Chat タブ：テキスト入力、スクショ送信、コマンドボタンが動作すること
+  6. 🖥️ Terminal タブ：xterm.js が表示され、キー入力が動作すること
+  7. 📋 Status タブ：nawabari.md が表示されること
+  8. 🚨 Alerts タブ：警告が表示されること（仮実装では空）
+  9. モバイル表示（Chrome DevTools）でタブがタップしやすいこと
+
+  ## 注意事項
+  - 既存の機能（テキスト入力、スクショ送信、xterm.js、コマンドボタン）を**移動するだけ**で、動作を変更しないこと
+  - タブ切り替え時に xterm.js が正しくリサイズされること（fitAddon.fit()）
+  - WebSocket接続は維持されること
+  - コマンドボタンは固定位置から相対位置に変更（Chat タブ内に配置）
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "public/index.html"
+    - "public/terminal.js"
+    - "public/styles.css"
+    - "server.js"
+  references:
+    - "既存のタブなし構成"
+    - "xterm.js"
+    - "コマンドボタン"
+    - "WebSocket接続"
+
+expected_outputs:
+  - "public/index.html（タブ構造追加）"
+  - "public/terminal.js（タブ切り替えロジック追加）"
+  - "public/styles.css（タブスタイル追加）"
+  - "server.js（nawabari.md API、Alerts API追加）"
+  - "動作確認完了報告"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - スマホからの操作性を最優先にするにゃ
+  - タブは追加・カスタマイズしやすい設計にするにゃ
+  - 既存機能は移動するだけで、動作を変更しないにゃ
+  - フクロウ警告APIは仮実装（後で実装）にゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

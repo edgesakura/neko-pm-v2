@@ -1,0 +1,161 @@
+task_id: "task-20260206-034201-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T03:42:01"
+priority: urgent
+load_skills: []
+description: |
+  ## 🚨 Lambda handler.py を AgentCore Runtime API に書き換え（タスク1+2）
+
+  現在の Lambda handler.py は **bedrock-agent-runtime** API を使用しているが、
+  デプロイしたエージェントは **AgentCore Runtime** なので、API が異なるにゃ。
+  正しい AgentCore Runtime HTTP POST API に書き換えるにゃ〜。
+
+  ## 背景
+
+  - 現在のコード: `bedrock-agent-runtime` クライアント + `invoke_agent` 関数
+  - 正しいアプローチ: AgentCore Runtime HTTP POST `/invocations` + SigV4 認証
+
+  ## 作業ディレクトリ
+
+  `/home/edgesakura/neko-pm/output/izakaya-agent/`
+
+  ## タスク1: handler.py の修正
+
+  **ファイル**: `lambda/handler.py`
+
+  ### 修正内容
+
+  1. **インポート追加**
+     ```python
+     import requests
+     from urllib.parse import quote
+     from botocore.auth import SigV4Auth
+     from botocore.awsrequest import AWSRequest
+     ```
+
+  2. **環境変数変更**
+     ```python
+     # 削除
+     AGENT_ID = os.environ.get("AGENT_ID")
+     AGENT_ALIAS_ID = os.environ.get("AGENT_ALIAS_ID")
+
+     # 追加
+     RUNTIME_ARN = os.environ.get("RUNTIME_ARN")
+     REGION = "ap-northeast-1"
+     ```
+
+  3. **bedrock-agent-runtime クライアントを削除**
+     ```python
+     # 削除
+     bedrock_client = boto3.client("bedrock-agent-runtime", region_name=REGION)
+     ```
+
+  4. **invoke_agentcore_runtime 関数を書き換え**
+     ```python
+     def get_data_plane_endpoint(region: str) -> str:
+         """AgentCore Runtime のデータプレーンエンドポイントを取得"""
+         return f"https://bedrock-agentcore-runtime.{region}.amazonaws.com"
+
+     def invoke_agentcore_runtime(user_id: str, user_message: str) -> str:
+         """
+         AgentCore Runtime を HTTP POST + SigV4 で呼び出す
+
+         Args:
+             user_id: LINE ユーザーID（セッションID）
+             user_message: ユーザーからのメッセージ
+
+         Returns:
+             エージェントの応答テキスト
+         """
+         # エンドポイント構築
+         endpoint = get_data_plane_endpoint(REGION)
+         runtime_arn_encoded = quote(RUNTIME_ARN, safe='')
+         url = f"{endpoint}/runtimes/{runtime_arn_encoded}/invocations"
+
+         # ペイロード
+         payload = json.dumps({"prompt": user_message})
+
+         # SigV4 署名
+         session = boto3.Session()
+         credentials = session.get_credentials().get_frozen_credentials()
+
+         request = AWSRequest(
+             method="POST",
+             url=url,
+             data=payload,
+             headers={
+                 "Content-Type": "application/json",
+                 "X-Amzn-Bedrock-AgentCore-Runtime-Session-Id": user_id,
+             }
+         )
+         SigV4Auth(credentials, "bedrock-agentcore", REGION).add_auth(request)
+
+         # リクエスト送信
+         response = requests.post(
+             url,
+             data=payload,
+             headers=dict(request.headers),
+             timeout=30
+         )
+         response.raise_for_status()
+
+         # レスポンス解析
+         response_data = response.json()
+         return response_data.get("response", "応答を取得できませんでした")
+     ```
+
+  5. **呼び出し部分の修正**
+     - `process_message_event` 関数内の `invoke_agentcore_runtime` 呼び出しは変更不要
+     - セッションID = LINE user_id のままでOK
+
+  ## タスク2: requirements.txt の更新
+
+  **ファイル**: `lambda/requirements.txt`
+
+  ### 追加内容
+
+  ```
+  requests>=2.31.0
+  ```
+
+  **注意**: boto3 は既に含まれているはずなので、追加不要
+
+  ## 成功判定基準
+
+  以下を全て満たす場合、タスク完了とするにゃ：
+
+  - [ ] handler.py のインポート追加（requests, SigV4Auth, AWSRequest）
+  - [ ] 環境変数変更（RUNTIME_ARN 追加、AGENT_ID/AGENT_ALIAS_ID 削除）
+  - [ ] bedrock-agent-runtime クライアント削除
+  - [ ] invoke_agentcore_runtime 関数書き換え（HTTP POST + SigV4）
+  - [ ] requirements.txt に requests 追加
+
+  ## エラーハンドリング
+
+  ### エラー1: RUNTIME_ARN が未設定
+  **症状**: `KeyError: 'RUNTIME_ARN'`
+  **対処法**: CDK で環境変数設定（子猫2のタスク）
+
+  ### エラー2: requests モジュールがない
+  **症状**: `ModuleNotFoundError: No module named 'requests'`
+  **対処法**: Lambda Layer に requests を追加（デプロイ時）
+
+  ### エラー3: SigV4 署名エラー
+  **症状**: `403 Forbidden`
+  **対処法**: IAM 権限確認（子猫2のタスク）
+
+  ## 注意事項
+
+  - RUNTIME_ARN は子猫2が CDK で設定する
+  - requests ライブラリは Lambda Layer または pip install で追加
+  - デプロイは子猫1・子猫2のタスク完了後に実行
+
+context:
+  lambda_handler: "/home/edgesakura/neko-pm/output/izakaya-agent/lambda/handler.py"
+  lambda_requirements: "/home/edgesakura/neko-pm/output/izakaya-agent/lambda/requirements.txt"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  region: "ap-northeast-1"
+expected_outputs:
+  - "handler.py 修正完了"
+  - "requirements.txt 更新完了"
+  - "queue/reports/report-task-20260206-034201-kitten1.yaml"

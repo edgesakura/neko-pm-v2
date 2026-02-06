@@ -1,0 +1,144 @@
+task_id: "task-20260206-030707-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T03:07:07"
+priority: high
+load_skills: []
+description: |
+  ## 🔧 agentcore CLI インストール + 再デプロイ
+
+  仮想環境を有効化してから agentcore CLI をインストールし、再デプロイを実行するにゃ。
+
+  ## 背景
+
+  前回のタスクで「agentcore CLI 未インストール」エラーが発生したにゃ。
+  Python 3.12 の externally-managed-environment 制約により、
+  仮想環境が必要にゃ〜。
+
+  ## 作業ディレクトリ
+
+  すでに /home/edgesakura/neko-pm/output/izakaya-agent/agent にいるにゃ！
+
+  ## 作業手順
+
+  ### ステップ1: 仮想環境を有効化
+
+  ```bash
+  source .venv/bin/activate
+  ```
+
+  **確認**: プロンプトに (.venv) が表示されるにゃ
+
+  ### ステップ2: agentcore CLI インストール
+
+  ```bash
+  pip install bedrock-agentcore-starter-toolkit
+  ```
+
+  **期待結果**:
+  - Successfully installed bedrock-agentcore-starter-toolkit
+
+  ### ステップ3: インストール確認
+
+  ```bash
+  which agentcore
+  agentcore --version
+  ```
+
+  **期待結果**:
+  - which agentcore: /home/edgesakura/neko-pm/output/izakaya-agent/agent/.venv/bin/agentcore
+  - agentcore --version: バージョン番号が表示される
+
+  ### ステップ4: 環境変数設定
+
+  ```bash
+  export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+  ```
+
+  ### ステップ5: 再デプロイ
+
+  ```bash
+  agentcore launch
+  ```
+
+  **期待結果**:
+  - デプロイ成功メッセージが表示される
+  - Agent ID と Agent Alias ID が表示される
+
+  ### ステップ6: 動作確認
+
+  ```bash
+  agentcore invoke '{"prompt": "こんにちは"}'
+  ```
+
+  **期待結果**:
+  - ModuleNotFoundError が発生しない
+  - エージェントが正常な応答を返す
+
+  ### ステップ7: ステータス確認
+
+  ```bash
+  agentcore status
+  ```
+
+  **期待結果**:
+  - Agent ID: izakaya_agent-9JGtN3Enat
+  - Memory ID: izakaya_agent_mem-ZOMh0R8tfz
+  - Status: ACTIVE
+
+  ## エラーハンドリング
+
+  ### エラー1: .venv が存在しない
+
+  **症状**: `No such file or directory: .venv/bin/activate`
+
+  **対処法**:
+  ```bash
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install bedrock-agentcore-starter-toolkit
+  ```
+
+  ### エラー2: pip install が失敗
+
+  **症状**: `ERROR: ...`
+
+  **対処法**:
+  - エラーメッセージを確認
+  - .venv が有効化されているか確認（プロンプトに (.venv) があるか）
+
+  ### エラー3: ModuleNotFoundError が依然として発生
+
+  **症状**: `ModuleNotFoundError: No module named 'bedrock_agentcore.context'`
+
+  **対処法**:
+  - 緊急バグ修正が正しく適用されているか確認
+  - main.py と utils/memory.py の内容を確認
+
+  ## 成功判定基準
+
+  以下を全て満たす場合、タスク完了とするにゃ：
+
+  - [ ] agentcore CLI がインストールされた（which agentcore で確認）
+  - [ ] agentcore launch が成功した
+  - [ ] agentcore invoke で正常な応答が返った
+  - [ ] ModuleNotFoundError が発生しなかった
+  - [ ] agentcore status でステータスが ACTIVE
+
+  ## 注意事項
+
+  - 必ず .venv を有効化してからインストールするにゃ
+  - MEMORY_ID 環境変数を忘れずに設定するにゃ
+  - デプロイには数分かかる場合があるにゃ
+  - エラーが出たら CloudWatch Logs を確認するにゃ
+
+context:
+  agent_dir: "/home/edgesakura/neko-pm/output/izakaya-agent/agent"
+  memory_id: "izakaya_agent_mem-ZOMh0R8tfz"
+  agent_id: "izakaya_agent-9JGtN3Enat"
+  venv_path: "/home/edgesakura/neko-pm/output/izakaya-agent/agent/.venv"
+expected_outputs:
+  - "agentcore CLI インストール成功"
+  - "agentcore launch 成功"
+  - "agentcore invoke テスト成功"
+  - "agentcore status 確認完了"
+  - "queue/reports/report-task-20260206-030707-kitten1.yaml"

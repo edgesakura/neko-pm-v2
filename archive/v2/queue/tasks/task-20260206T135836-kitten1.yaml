@@ -1,0 +1,133 @@
+task_id: "task-20260206T135836-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T13:58:36"
+priority: high
+load_skills: []
+description: |
+  【グループC: テスト自動化】改善提案 #4, #6 を実施せよ
+
+  LINE Bot「イザカヤくん」のテスト自動化を目的とする2つのタスクにゃ。
+  グループA（コード品質改善）完了後の続きにゃ〜。
+
+  ## タスク1: #4 AgentCore Runtime デプロイ後の自動テスト追加 [high]
+
+  ### 目的
+  agentcore deploy 後に自動的にツール動作確認テストを実行し、
+  デプロイ後の問題を早期に検出する仕組みを追加するにゃ。
+
+  ### 実装内容
+  1. scripts/test-deployment.sh を作成
+     ```bash
+     #!/bin/bash
+     set -e
+
+     echo "🧪 AgentCore Runtime デプロイ後テスト開始..."
+
+     # テストプロンプト
+     TEST_PROMPT='{"prompt": "渋谷でおすすめの居酒屋を教えて"}'
+
+     # agentcore invoke でテスト
+     echo "📡 agentcore invoke を実行中..."
+     RESPONSE=$(agentcore invoke "$TEST_PROMPT")
+
+     # レスポンスに居酒屋リストが含まれているか確認
+     if echo "$RESPONSE" | grep -q "居酒屋"; then
+       echo "✅ デプロイ後テスト成功: 居酒屋リストが返された"
+       exit 0
+     else
+       echo "❌ デプロイ後テスト失敗: 居酒屋リストが返されなかった"
+       echo "Response: $RESPONSE"
+       exit 1
+     fi
+     ```
+  2. 実行権限を付与: chmod +x scripts/test-deployment.sh
+  3. テスト実行:
+     ```bash
+     cd output/izakaya-agent
+     source agent/.venv/bin/activate
+     ./scripts/test-deployment.sh
+     ```
+  4. 成功/失敗の判定を確認
+
+  ## タスク2: #6 AgentCore Runtime の統合テスト追加 [medium]
+
+  ### 目的
+  Lambda 直接 invoke でE2Eテストを実施し、
+  LINE Bot 全体の動作を保証するにゃ。
+
+  ### 実装内容
+  1. scripts/test-integration.sh を作成
+     ```bash
+     #!/bin/bash
+     set -e
+
+     echo "🧪 Lambda 統合テスト開始..."
+
+     # Lambda関数名を取得
+     FUNCTION_NAME=$(aws cloudformation describe-stack-resources \
+       --stack-name IzakayaStack \
+       --region ap-northeast-1 \
+       --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" \
+       --output text)
+
+     echo "📡 Lambda 関数: $FUNCTION_NAME"
+
+     # テストペイロード作成
+     TEST_PAYLOAD='{
+       "body": "{\"events\":[{\"type\":\"message\",\"message\":{\"type\":\"text\",\"text\":\"渋谷でおすすめの居酒屋を教えて\"},\"source\":{\"userId\":\"test-user-123\"},\"replyToken\":\"test-token-456\"}]}"
+     }'
+
+     # Lambda invoke
+     echo "📡 Lambda invoke を実行中..."
+     aws lambda invoke \
+       --function-name "$FUNCTION_NAME" \
+       --payload "$TEST_PAYLOAD" \
+       --region ap-northeast-1 \
+       --log-type Tail \
+       /tmp/lambda-response.json > /tmp/lambda-invoke-log.json
+
+     # レスポンス確認
+     RESPONSE=$(cat /tmp/lambda-response.json)
+     echo "Response: $RESPONSE"
+
+     # ステータスコード確認
+     STATUS_CODE=$(cat /tmp/lambda-response.json | jq -r '.statusCode // 200')
+
+     if [ "$STATUS_CODE" == "200" ]; then
+       echo "✅ Lambda 統合テスト成功: ステータスコード 200"
+       exit 0
+     else
+       echo "❌ Lambda 統合テスト失敗: ステータスコード $STATUS_CODE"
+       cat /tmp/lambda-response.json
+       exit 1
+     fi
+     ```
+  2. 実行権限を付与: chmod +x scripts/test-integration.sh
+  3. テスト実行:
+     ```bash
+     cd output/izakaya-agent
+     ./scripts/test-integration.sh
+     ```
+  4. 成功/失敗の判定を確認
+
+  ## 実装のポイント
+  - 両スクリプトとも set -e でエラー時に即座に終了
+  - 成功時は exit 0、失敗時は exit 1 で明確に判定
+  - エラーメッセージは具体的に（デバッグしやすく）
+  - CI/CD パイプラインで実行できる形式
+
+  ## 成果物
+  - output/izakaya-agent/scripts/test-deployment.sh
+  - output/izakaya-agent/scripts/test-integration.sh
+  - 両スクリプトの実行結果（成功確認）
+
+context:
+  references:
+    - "output/izakaya-agent/agent/"
+    - "output/izakaya-agent/infra/"
+    - "output/izakaya-agent/lambda/"
+
+expected_outputs:
+  - "scripts/test-deployment.sh（実装 + 実行結果）"
+  - "scripts/test-integration.sh（実装 + 実行結果）"
+  - "テスト成功の確認"

@@ -1,0 +1,69 @@
+task_id: "task-20260206T120209-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T12:02:09"
+priority: high
+parent_command_id: "cmd-20260206T115850"
+description: |
+  【🔍 LINE Bot エラー調査】
+  LINE Bot経由でエラーが返る問題の根本原因を特定・修正せよ。
+
+  ## 調査チェックリスト（上から順に実施）
+
+  ### Step 1: CloudWatch Logs 確認（最優先）
+  Lambda関数名を特定して、最新の実行ログからエラーを確認
+  ```bash
+  aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId"
+  aws logs filter-log-events --log-group-name /aws/lambda/<関数名> --start-time $(date -d '1 hour ago' +%s)000 --region ap-northeast-1
+  ```
+
+  ### Step 2: Lambda 環境変数の確認
+  RUNTIME_ARN, LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN が正しいか
+  期待RUNTIME_ARN: arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat
+  ```bash
+  aws lambda get-function-configuration --function-name <関数名> --region ap-northeast-1 --query "Environment.Variables"
+  ```
+
+  ### Step 3: handler.py のコード確認
+  - AgentCore Runtime API対応版か
+  - SigV4認証が正しいか
+  - エラーハンドリングでログ出力されるか
+  ファイル: output/izakaya-agent/lambda/handler.py
+
+  ### Step 4: Lambda 直接 invoke テスト
+  ```bash
+  aws lambda invoke --function-name <関数名> --payload '{"body": "{\"events\":[{\"type\":\"message\",\"message\":{\"type\":\"text\",\"text\":\"テスト\"},\"source\":{\"userId\":\"test123\"},\"replyToken\":\"test-token\"}]}"}' --region ap-northeast-1 /tmp/lambda-response.json
+  cat /tmp/lambda-response.json
+  ```
+
+  ### Step 5: IAM権限の確認
+  bedrock-agentcore:InvokeRuntime 権限があるか
+  ```bash
+  aws lambda get-function-configuration --function-name <関数名> --region ap-northeast-1 --query "Role"
+  ```
+
+  ### Step 6: 修正実施
+  - 原因に応じて修正
+  - cdk deploy で再デプロイ
+  - LINE Botが正常に応答することを確認
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  handler_path: "output/izakaya-agent/lambda/handler.py"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  region: "ap-northeast-1"
+  references:
+    - "output/izakaya-agent/lambda/handler.py"
+    - "output/izakaya-agent/cdk/"
+
+expected_outputs:
+  - "エラーの根本原因の特定レポート（nawabari.md形式）"
+  - "修正方針と修正実施内容"
+  - "LINE Botが正常に応答することの確認結果"
+  - "skill_candidate の評価（必須）"
+
+note: |
+  - Step 1から順に実施せよ
+  - 各Stepの結果を報告に含めること
+  - エラーログを詳細に確認し、根本原因を特定すること
+  - 修正後は必ず動作確認を実施すること

@@ -1,0 +1,77 @@
+task_id: "task-20260206T182609-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T18:26:09"
+priority: high
+load_skills: []
+description: |
+  【🔧 本番CORS追加】Amplify本番URLをCORS許可リストに追加
+
+  ## 背景
+  Amplify デプロイ完了。本番URLが確定:
+  https://main.d2mtz6tk9wfbf0.amplifyapp.com
+
+  ## タスク手順
+
+  ### Step 1: CDK スタック修正（API Gateway CORS）
+  ```bash
+  cd output/izakaya-agent/infra/lib
+  # izakaya-stack.ts の allowOrigins に本番URL追加
+  # 既存: ['http://localhost:3001', 'http://localhost:3002']
+  # 追加後: ['http://localhost:3001', 'http://localhost:3002', 'https://main.d2mtz6tk9wfbf0.amplifyapp.com']
+  ```
+
+  ファイル: `output/izakaya-agent/infra/lib/izakaya-stack.ts`
+
+  該当箇所を探して、allowOrigins 配列に本番URLを追加するにゃ。
+
+  ### Step 2: Lambda handler 修正（レスポンス CORS ヘッダー）
+  ```bash
+  cd output/izakaya-agent/lambda
+  # handler.py の Access-Control-Allow-Origin 許可リストに追加
+  ```
+
+  ファイル: `output/izakaya-agent/lambda/handler.py`
+
+  CORS ヘッダーを動的に生成している部分を探して、本番URLを許可リストに追加するにゃ。
+
+  ### Step 3: CDK デプロイ
+  ```bash
+  cd output/izakaya-agent/infra
+  npx cdk deploy --require-approval never
+  ```
+
+  デプロイが成功することを確認するにゃ。
+
+  ### Step 4: 動作確認
+  ```bash
+  # 本番オリジンからのプリフライトリクエストをテスト
+  curl -X OPTIONS \
+    https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat \
+    -H "Origin: https://main.d2mtz6tk9wfbf0.amplifyapp.com" \
+    -H "Access-Control-Request-Method: POST" \
+    -H "Access-Control-Request-Headers: Content-Type,Authorization" \
+    -v
+  ```
+
+  レスポンスヘッダーに以下が含まれることを確認:
+  - `access-control-allow-origin: https://main.d2mtz6tk9wfbf0.amplifyapp.com`
+  - `access-control-allow-credentials: true`
+  - `access-control-allow-methods: POST,OPTIONS`
+
+  ## 重要な注意事項
+  - ⚠️ 既存の localhost:3001, localhost:3002 も残すこと（削除しない）
+  - ⚠️ 本番URLは https:// で始まる（http:// ではない）
+  - ⚠️ CORS設定は2箇所（CDKスタック + Lambda handler）両方修正すること
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  production_url: "https://main.d2mtz6tk9wfbf0.amplifyapp.com"
+  api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+  references:
+    - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+    - "output/izakaya-agent/lambda/handler.py"
+expected_outputs:
+  - "CORS設定に本番URL追加（2箇所）"
+  - "CDKデプロイ成功"
+  - "本番URLからのAPIアクセス確認（curlテスト成功）"

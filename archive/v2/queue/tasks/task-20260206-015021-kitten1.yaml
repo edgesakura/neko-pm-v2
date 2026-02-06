@@ -1,0 +1,290 @@
+task_id: "task-20260206-015021-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T01:50:21"
+priority: high
+load_skills: []
+description: |
+  ## Phase 3: LINE Bot連携 - Lambda Webhook実装
+
+  LINE Messaging APIからのWebhookを受け取り、
+  Bedrock AgentCore Runtimeを呼び出すLambda関数を実装するにゃ。
+
+  ## 背景と目的
+
+  Phase 1でCDKインフラ、Phase 2でエージェント、Phase 2.5でMemory機能を実装したにゃ。
+  Phase 3ではLINE Botとして動作させるため、Lambda WebhookでLINEとAgentCoreを連携するにゃ。
+
+  **重要**: セッションID = LINE user_id を渡すことで、
+  Phase 2.5で実装したMemory機能が動作し、会話継続が可能になるにゃ〜。
+
+  ## 技術スタック
+
+  - LINE Bot SDK for Python v3
+  - AWS Lambda (Python 3.11+)
+  - Bedrock AgentCore Runtime
+  - boto3 (bedrock-agent-runtime client)
+
+  ## 参考資料
+
+  - LINE Bot化記事: https://dev.classmethod.jp/articles/shoma-bedrock-agentcore-izakaya-search-ai-agent-shinbashi-kun-line-official-account-messaging-api-bot/
+  - LINE SDK: https://github.com/line/line-bot-sdk-python
+
+  ## 実装内容
+
+  ### ステップ1: lambda/handler.py の完全実装
+
+  現在スケルトンのみ。以下を実装するにゃ：
+
+  ```python
+  import json
+  import os
+  import boto3
+  from linebot.v3 import WebhookHandler
+  from linebot.v3.exceptions import InvalidSignatureError
+  from linebot.v3.messaging import (
+      Configuration,
+      ApiClient,
+      MessagingApi,
+      ReplyMessageRequest,
+      TextMessage
+  )
+  from linebot.v3.webhooks import MessageEvent, TextMessageContent
+
+  # Secrets Manager から取得（Phase 1で実装済み）
+  def get_secret(secret_name):
+      """Secrets Managerからシークレット取得"""
+      client = boto3.client('secretsmanager', region_name='ap-northeast-1')
+      response = client.get_secret_value(SecretId=secret_name)
+      return response['SecretString']
+
+  # 環境変数
+  AGENT_ID = os.environ.get('AGENT_ID', 'PLACEHOLDER_AGENT_ID')
+  AGENT_ALIAS_ID = os.environ.get('AGENT_ALIAS_ID', 'PLACEHOLDER_AGENT_ALIAS_ID')
+
+  # Secrets Manager から取得
+  CHANNEL_SECRET = get_secret('izakaya-agent/line-channel-secret')
+  CHANNEL_ACCESS_TOKEN = get_secret('izakaya-agent/line-channel-access-token')
+
+  # LINE Bot API クライアント
+  handler = WebhookHandler(CHANNEL_SECRET)
+  configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
+
+  # Bedrock AgentCore Runtime クライアント
+  bedrock_client = boto3.client('bedrock-agent-runtime', region_name='ap-northeast-1')
+
+  def lambda_handler(event, context):
+      """
+      Lambda エントリーポイント
+      LINE Messaging API からの Webhook を受け取る
+      """
+      # 署名検証用のヘッダー取得
+      signature = event.get('headers', {}).get('x-line-signature', '')
+      body = event.get('body', '')
+
+      # LINE署名検証
+      try:
+          handler.handle(body, signature)
+      except InvalidSignatureError:
+          return {
+              'statusCode': 400,
+              'body': json.dumps({'error': 'Invalid signature'})
+          }
+
+      # Webhook イベント処理
+      events = json.loads(body).get('events', [])
+
+      for evt in events:
+          if evt.get('type') == 'message' and evt.get('message', {}).get('type') == 'text':
+              process_message_event(evt)
+
+      return {
+          'statusCode': 200,
+          'body': json.dumps({'message': 'OK'})
+      }
+
+  def process_message_event(event):
+      """
+      テキストメッセージイベント処理
+
+      Args:
+          event: LINE Webhook イベント
+      """
+      # ユーザー情報取得
+      user_id = event.get('source', {}).get('userId')
+      reply_token = event.get('replyToken')
+      user_message = event.get('message', {}).get('text')
+
+      if not user_id or not reply_token or not user_message:
+          return
+
+      try:
+          # Bedrock AgentCore Runtime 呼び出し
+          response_text = invoke_agentcore_runtime(user_id, user_message)
+
+          # LINE返信
+          send_line_reply(reply_token, response_text)
+
+      except Exception as e:
+          print(f"Error processing message: {e}")
+          # エラー時はユーザーにエラーメッセージを返す
+          send_line_reply(
+              reply_token,
+              "申し訳ございません。エラーが発生しました。もう一度お試しください。"
+          )
+
+  def invoke_agentcore_runtime(user_id: str, user_message: str) -> str:
+      """
+      Bedrock AgentCore Runtime を呼び出し
+
+      Args:
+          user_id: LINE ユーザーID（セッションIDとして使用）
+          user_message: ユーザーのメッセージ
+
+      Returns:
+          エージェントの応答テキスト
+      """
+      try:
+          response = bedrock_client.invoke_agent(
+              agentId=AGENT_ID,
+              agentAliasId=AGENT_ALIAS_ID,
+              sessionId=user_id,  # 重要: LINE user_id をセッションIDとして使用
+              inputText=user_message,
+          )
+
+          # レスポンスストリームから応答テキストを抽出
+          response_text = ""
+          for event in response.get('completion', []):
+              if 'chunk' in event:
+                  chunk_data = event['chunk']
+                  if 'bytes' in chunk_data:
+                      response_text += chunk_data['bytes'].decode('utf-8')
+
+          return response_text if response_text else "応答を取得できませんでした。"
+
+      except Exception as e:
+          print(f"AgentCore Runtime error: {e}")
+          raise
+
+  def send_line_reply(reply_token: str, message: str):
+      """
+      LINE返信メッセージ送信
+
+      Args:
+          reply_token: LINE返信トークン
+          message: 返信メッセージ
+      """
+      try:
+          with ApiClient(configuration) as api_client:
+              line_bot_api = MessagingApi(api_client)
+              line_bot_api.reply_message(
+                  ReplyMessageRequest(
+                      reply_token=reply_token,
+                      messages=[TextMessage(text=message)]
+                  )
+              )
+      except Exception as e:
+          print(f"LINE reply error: {e}")
+          raise
+  ```
+
+  ### ステップ2: lambda/requirements.txt の作成
+
+  ```
+  line-bot-sdk>=3.0.0
+  boto3>=1.34.0
+  ```
+
+  ## 重要な実装ポイント
+
+  ### 1. LINE署名検証（セキュリティ必須）
+
+  LINE Messaging APIからのWebhookが正当なものか検証するにゃ：
+  ```python
+  from linebot.v3 import WebhookHandler
+  from linebot.v3.exceptions import InvalidSignatureError
+
+  handler = WebhookHandler(CHANNEL_SECRET)
+  try:
+      handler.handle(body, signature)
+  except InvalidSignatureError:
+      return {"statusCode": 400, "body": "Invalid signature"}
+  ```
+
+  ### 2. セッションID = LINE user_id（超重要）
+
+  Phase 2.5で実装したMemory機能を有効にするため、
+  LINE user_id をセッションIDとして渡すにゃ：
+  ```python
+  response = bedrock_client.invoke_agent(
+      agentId=AGENT_ID,
+      agentAliasId=AGENT_ALIAS_ID,
+      sessionId=user_id,  # LINE user_id
+      inputText=user_message,
+  )
+  ```
+
+  ### 3. AgentCore Runtime レスポンスストリーム処理
+
+  invoke_agent() のレスポンスはストリーム形式にゃ：
+  ```python
+  response_text = ""
+  for event in response.get('completion', []):
+      if 'chunk' in event:
+          chunk_data = event['chunk']
+          if 'bytes' in chunk_data:
+              response_text += chunk_data['bytes'].decode('utf-8')
+  ```
+
+  ### 4. エラーハンドリング
+
+  - LINE署名検証失敗 → 400 Bad Request
+  - AgentCore Runtime エラー → ユーザーにエラーメッセージ
+  - タイムアウト考慮（Lambda 60秒設定済み）
+
+  ### 5. Secrets Manager 連携
+
+  Phase 1で実装したSecrets Managerから取得にゃ：
+  - izakaya-agent/line-channel-secret
+  - izakaya-agent/line-channel-access-token
+
+  ### 6. 環境変数（CDKで設定予定）
+
+  - AGENT_ID: AgentCoreのエージェントID（デプロイ後に設定）
+  - AGENT_ALIAS_ID: エージェントエイリアスID（デプロイ後に設定）
+  - 現時点ではプレースホルダー
+
+  ## テスト方法
+
+  ### ローカルテスト（難しい）
+  - LINE Webhook シミュレーターが必要
+  - 署名生成が複雑
+
+  ### デプロイ後テスト（推奨）
+  1. Lambda Function URL をLINE Messaging APIに設定
+  2. LINE公式アカウントにメッセージ送信
+  3. CloudWatch Logsで動作確認
+
+  ## 注意事項
+
+  - Lambda タイムアウト: 60秒（CDKで設定済み）
+  - Function URL 認証なし（LINE署名検証で保護）
+  - AgentCore の agentId と agentAliasId は現時点でプレースホルダー
+    - Phase 4（デプロイ・テスト）でCDKスタックに環境変数として追加
+  - セッションID = LINE user_id（会話継続のため重要）
+  - エラーログは CloudWatch Logs に出力
+  - 型ヒント（typing）を全関数に付与
+  - ドキュメント文字列を全関数に記載
+
+context:
+  output_dir: "output/izakaya-agent/lambda"
+  webhook_url: "https://vrterejprjuywaw76qcygbpvwe0ahrdv.lambda-url.ap-northeast-1.on.aws/"
+  region: "ap-northeast-1"
+  secrets_prefix: "izakaya-agent/"
+  references:
+    - "Phase 1で実装したCDKスタック（Secrets Manager, Lambda）"
+    - "Phase 2.5で実装したMemory機能（session_id対応）"
+    - "LINE Bot化記事"
+expected_outputs:
+  - "output/izakaya-agent/lambda/handler.py（完全実装）"
+  - "output/izakaya-agent/lambda/requirements.txt"
+  - "queue/reports/report-task-20260206-015021-kitten1.yaml"

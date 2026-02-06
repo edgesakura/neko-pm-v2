@@ -1,0 +1,81 @@
+task_id: "task-20260202-143147-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T14:31:47"
+priority: urgent
+command_id: "cmd-20260202-143147"
+description: |
+  【🚨緊急修正】terminal.js WebSocket接続先ハードコード修正
+
+  ## 目的
+  WebSocket接続先を動的に取得し、localhost以外からもアクセス可能にするにゃ。
+
+  ## 問題
+  terminal.js の line 102 で WebSocket接続先が localhost にハードコードされているにゃ：
+  ```javascript
+  const ws = new WebSocket('ws://localhost:3000');
+  ```
+
+  これにより、Tailscale経由等の外部アクセス時にWebSocketが接続できないにゃ。
+
+  ## 修正内容
+
+  ### 修正: terminal.js の line 102
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  **Before**:
+  ```javascript
+  const ws = new WebSocket('ws://localhost:3000');
+  ```
+
+  **After**:
+  ```javascript
+  const ws = new WebSocket(`ws://${window.location.host}`);
+  ```
+
+  **ポイント**:
+  - `window.location.host` は現在アクセスしているホスト名とポート番号を返すにゃ
+  - localhost:3000 → `ws://localhost:3000`
+  - tailscale-ip:3000 → `ws://tailscale-ip:3000`
+  - 動的に接続先が決まるにゃ〜
+
+  ## 修正後の作業
+
+  ### 1. サーバー再起動
+  ```bash
+  cd /home/edgesakura/git/neko-pm/output/chat-app
+  pkill -f "node.*chat-app.*server.js"
+  nohup node server.js > server.log 2>&1 &
+  sleep 2
+  tail -20 server.log
+  ```
+
+  ### 2. 動作確認
+  - サーバーが正常に起動していること
+  - ログにエラーがないこと
+  - PTYプロセスが起動していること
+
+  ## 報告内容
+
+  以下を含めて報告するにゃ：
+  1. 修正箇所の確認（line 102）
+  2. サーバー再起動の結果
+  3. server.log の内容（最後の20行）
+  4. 動作確認結果
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_file: "public/terminal.js"
+  target_line: 102
+  modification: "ws://localhost:3000 → ws://${window.location.host}"
+
+expected_outputs:
+  - "public/terminal.js（line 102 修正済み）"
+  - "サーバー再起動完了"
+  - "server.log（最後の20行）"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - 1行のみの修正にゃ（超簡単）
+  - 修正後は必ずサーバー再起動するにゃ
+  - WebSocket接続が動的になるにゃ〜
+  - 完了したら queue/reports/ に報告YAML作成にゃ

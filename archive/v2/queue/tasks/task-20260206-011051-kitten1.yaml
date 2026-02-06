@@ -1,0 +1,383 @@
+task_id: "task-20260206-011051-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T01:10:51"
+priority: high
+load_skills:
+  - "strands"
+  - "bedrock-agentcore-mcp-server"
+description: |
+  ## Phase 2: エージェント実装 - Strands Agents + Bedrock AgentCore
+
+  居酒屋検索AIエージェント「イザカヤくん」のコア部分を
+  Strands Agents SDK + Bedrock AgentCore で実装するにゃ。
+
+  ## 技術スタック
+  - Strands Agents SDK
+  - Amazon Bedrock AgentCore Runtime
+  - Claude Sonnet 4 (ap-northeast-1)
+  - Python 3.11+
+
+  ## MCP ツール活用（必須）
+
+  以下のMCPツールを活用してStrandsとAgentCoreのベストプラクティスを確認するにゃ：
+
+  ### 1. Strands Agents ドキュメント確認
+  ```
+  ToolSearch: "select:mcp__strands__search_docs"
+  ToolSearch: "select:mcp__strands__fetch_doc"
+  ```
+
+  検索クエリ例:
+  - "BedrockAgentCoreApp setup"
+  - "@app.entrypoint decorator usage"
+  - "@tool decorator best practices"
+
+  ### 2. Bedrock AgentCore ドキュメント確認
+  ```
+  ToolSearch: "select:mcp__bedrock-agentcore-mcp-server__search_agentcore_docs"
+  ToolSearch: "select:mcp__bedrock-agentcore-mcp-server__fetch_agentcore_doc"
+  ```
+
+  検索クエリ例:
+  - "Runtime API usage"
+  - "Agent deployment best practices"
+
+  ## 実装内容
+
+  ### ステップ1: プロジェクト構成作成
+
+  output/izakaya-agent/agent/ に以下のディレクトリ構造を作成にゃ：
+
+  ```
+  agent/
+  ├── main.py
+  ├── tools/
+  │   ├── __init__.py
+  │   ├── search_restaurants.py
+  │   ├── check_availability.py
+  │   └── resolve_area.py
+  ├── utils/
+  │   ├── __init__.py
+  │   └── secrets.py
+  └── requirements.txt
+  ```
+
+  ### ステップ2: main.py 実装
+
+  BedrockAgentCoreApp でラップしたStrands Agent を実装にゃ：
+
+  ```python
+  from strands import Agent
+  from strands.bedrock import BedrockAgentCoreApp
+
+  # MCPツールでベストプラクティスを確認してから実装にゃ
+  app = BedrockAgentCoreApp()
+
+  @app.entrypoint
+  def main():
+      # Strands Agent初期化
+      agent = Agent(
+          name="izakaya-agent",
+          model="anthropic.claude-sonnet-4-20250514-v1:0",  # Claude Sonnet 4
+          region="ap-northeast-1",
+          instructions="""
+          あなたは居酒屋検索AIエージェント「イザカヤくん」です。
+          ユーザーが指定したエリアで、評価の高い居酒屋を検索します。
+
+          検索の流れ:
+          1. エリア名を座標に変換（resolve_area）
+          2. ハイブリッド検索でおすすめ居酒屋を検索（search_restaurants）
+          3. 営業時間を確認（check_availability）
+          4. 結果をわかりやすく提示
+          """
+      )
+
+      # Tools登録
+      from tools.search_restaurants import search_restaurants
+      from tools.resolve_area import resolve_area
+      from tools.check_availability import check_availability
+
+      agent.add_tool(search_restaurants)
+      agent.add_tool(resolve_area)
+      agent.add_tool(check_availability)
+
+      return agent
+
+  if __name__ == "__main__":
+      app.run()
+  ```
+
+  ### ステップ3: utils/secrets.py 実装
+
+  Secrets Manager から API キーを取得するユーティリティにゃ：
+
+  ```python
+  import boto3
+  from functools import lru_cache
+  from typing import Dict
+
+  @lru_cache(maxsize=None)
+  def get_secret(secret_name: str, region: str = "ap-northeast-1") -> str:
+      """
+      Secrets Manager からシークレットを取得（キャッシュ付き）
+
+      Args:
+          secret_name: シークレット名（例: izakaya-agent/hotpepper-api-key）
+          region: AWSリージョン
+
+      Returns:
+          シークレット値
+      """
+      client = boto3.client('secretsmanager', region_name=region)
+      response = client.get_secret_value(SecretId=secret_name)
+      return response['SecretString']
+
+  def get_api_keys() -> Dict[str, str]:
+      """
+      全APIキーを一括取得
+
+      Returns:
+          APIキーの辞書
+      """
+      return {
+          "hotpepper": get_secret("izakaya-agent/hotpepper-api-key"),
+          "google_places": get_secret("izakaya-agent/google-places-api-key"),
+          "line_channel_secret": get_secret("izakaya-agent/line-channel-secret"),
+          "line_access_token": get_secret("izakaya-agent/line-channel-access-token"),
+      }
+  ```
+
+  ### ステップ4: tools/resolve_area.py 実装
+
+  エリア名を座標に変換するツールにゃ：
+
+  ```python
+  from strands import tool
+  from typing import Dict
+
+  # エリア名→座標の固定マッピング（主要エリア）
+  AREA_MAPPING = {
+      "新橋": {"lat": 35.6658, "lon": 139.7575, "radius": 500},
+      "渋谷": {"lat": 35.6595, "lon": 139.7004, "radius": 500},
+      "新宿": {"lat": 35.6896, "lon": 139.7006, "radius": 500},
+      "池袋": {"lat": 35.7295, "lon": 139.7109, "radius": 500},
+      "六本木": {"lat": 35.6627, "lon": 139.7308, "radius": 500},
+      "銀座": {"lat": 35.6717, "lon": 139.7647, "radius": 500},
+  }
+
+  @tool
+  def resolve_area(area_name: str) -> Dict[str, float]:
+      """
+      エリア名を緯度経度に変換
+
+      Args:
+          area_name: エリア名（例: 新橋、渋谷、新宿）
+
+      Returns:
+          座標情報（lat, lon, radius）
+      """
+      if area_name in AREA_MAPPING:
+          return AREA_MAPPING[area_name]
+
+      # マッピングにない場合は新橋をデフォルト
+      return AREA_MAPPING["新橋"]
+  ```
+
+  ### ステップ5: tools/search_restaurants.py 実装（最も重要）
+
+  ハイブリッド検索（ホットペッパー + Google Places）を実装にゃ：
+
+  ```python
+  from strands import tool
+  from typing import List, Dict
+  import requests
+  from utils.secrets import get_api_keys
+
+  @tool
+  def search_restaurants(lat: float, lon: float, radius: int = 500, limit: int = 10) -> List[Dict]:
+      """
+      ハイブリッド検索でおすすめ居酒屋を検索
+
+      Args:
+          lat: 緯度
+          lon: 経度
+          radius: 検索半径（メートル）
+          limit: 返す件数
+
+      Returns:
+          スコアリング済みの居酒屋リスト
+      """
+      api_keys = get_api_keys()
+
+      # 1. ホットペッパーAPI呼び出し
+      hotpepper_results = search_hotpepper(lat, lon, radius, api_keys["hotpepper"])
+
+      # 2. Google Places API呼び出し
+      google_results = search_google_places(lat, lon, radius, api_keys["google_places"])
+
+      # 3. マージしてスコアリング
+      merged = merge_and_score(hotpepper_results, google_results)
+
+      # 4. スコア順にソートして上位N件を返す
+      merged.sort(key=lambda x: x["score"], reverse=True)
+      return merged[:limit]
+
+  def search_hotpepper(lat: float, lon: float, radius: int, api_key: str) -> List[Dict]:
+      """ホットペッパーAPI呼び出し"""
+      url = "https://webservice.recruit.co.jp/hotpepper/gourmet/v1/"
+      params = {
+          "key": api_key,
+          "lat": lat,
+          "lng": lon,
+          "range": 3,  # 300m圏内
+          "genre": "G001",  # 居酒屋
+          "format": "json",
+          "count": 50,
+      }
+      response = requests.get(url, params=params)
+      data = response.json()
+
+      restaurants = []
+      for shop in data.get("results", {}).get("shop", []):
+          restaurants.append({
+              "name": shop["name"],
+              "source": "hotpepper",
+              "address": shop["address"],
+              "url": shop["urls"]["pc"],
+              "budget": shop.get("budget", {}).get("average", "不明"),
+          })
+      return restaurants
+
+  def search_google_places(lat: float, lon: float, radius: int, api_key: str) -> List[Dict]:
+      """Google Places API呼び出し"""
+      url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+      params = {
+          "key": api_key,
+          "location": f"{lat},{lon}",
+          "radius": radius,
+          "type": "restaurant",
+          "keyword": "居酒屋",
+      }
+      response = requests.get(url, params=params)
+      data = response.json()
+
+      restaurants = []
+      for place in data.get("results", []):
+          restaurants.append({
+              "name": place["name"],
+              "source": "google",
+              "rating": place.get("rating", 0),
+              "user_ratings_total": place.get("user_ratings_total", 0),
+              "place_id": place["place_id"],
+          })
+      return restaurants
+
+  def merge_and_score(hotpepper: List[Dict], google: List[Dict]) -> List[Dict]:
+      """
+      両APIの結果をマージしてスコアリング
+
+      スコアリングルール:
+      - 両方に掲載: +10点
+      - Google評価 × 20点
+      - レビュー数（正規化） × 10点
+      """
+      # 名前でマッチング（簡易実装）
+      hotpepper_names = {r["name"]: r for r in hotpepper}
+      merged = []
+
+      for google_r in google:
+          score = 0
+          name = google_r["name"]
+
+          # Google評価スコア
+          score += google_r.get("rating", 0) * 20
+
+          # レビュー数スコア（正規化）
+          review_count = google_r.get("user_ratings_total", 0)
+          score += min(review_count / 100, 1.0) * 10
+
+          # 両方に掲載ボーナス
+          if name in hotpepper_names:
+              score += 10
+              hotpepper_info = hotpepper_names[name]
+              google_r.update({"budget": hotpepper_info.get("budget")})
+
+          google_r["score"] = score
+          merged.append(google_r)
+
+      return merged
+  ```
+
+  ### ステップ6: tools/check_availability.py 実装
+
+  営業時間確認ツールにゃ：
+
+  ```python
+  from strands import tool
+  import requests
+  from datetime import datetime
+  from utils.secrets import get_api_keys
+
+  @tool
+  def check_availability(place_id: str) -> Dict[str, any]:
+      """
+      Google Places APIで営業時間を確認
+
+      Args:
+          place_id: Google PlacesのPlace ID
+
+      Returns:
+          営業状態（open_now, opening_hours）
+      """
+      api_keys = get_api_keys()
+      url = "https://maps.googleapis.com/maps/api/place/details/json"
+      params = {
+          "key": api_keys["google_places"],
+          "place_id": place_id,
+          "fields": "opening_hours",
+      }
+
+      response = requests.get(url, params=params)
+      data = response.json()
+
+      result = data.get("result", {})
+      opening_hours = result.get("opening_hours", {})
+
+      return {
+          "open_now": opening_hours.get("open_now", False),
+          "weekday_text": opening_hours.get("weekday_text", []),
+      }
+  ```
+
+  ### ステップ7: requirements.txt 作成
+
+  ```
+  strands-agents>=0.1.0
+  boto3>=1.34.0
+  requests>=2.31.0
+  ```
+
+  ## 注意事項
+
+  - MCPツールを**必ず**活用してStrandsとAgentCoreのベストプラクティスを確認にゃ
+  - Secrets Manager プレフィックス: izakaya-agent/
+  - リージョン: ap-northeast-1
+  - 複数エリア対応が必須（新橋固定ではない）
+  - エラーハンドリングを実装にゃ
+  - 型ヒント（typing）を全関数に付与にゃ
+  - ドキュメント文字列を全関数に記載にゃ
+
+context:
+  output_dir: "output/izakaya-agent/agent"
+  secrets_prefix: "izakaya-agent/"
+  region: "ap-northeast-1"
+  references:
+    - "Phase 1で取得した参考記事のスコアリングロジック"
+expected_outputs:
+  - "output/izakaya-agent/agent/main.py"
+  - "output/izakaya-agent/agent/tools/search_restaurants.py"
+  - "output/izakaya-agent/agent/tools/resolve_area.py"
+  - "output/izakaya-agent/agent/tools/check_availability.py"
+  - "output/izakaya-agent/agent/utils/secrets.py"
+  - "output/izakaya-agent/agent/requirements.txt"
+  - "queue/reports/report-task-20260206-011051-kitten1.yaml"

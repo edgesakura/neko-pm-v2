@@ -1,0 +1,170 @@
+task_id: "task-20260206T135354-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T13:53:54"
+priority: high
+load_skills: []
+description: |
+  【グループB: ドキュメント整備】改善提案 #2, #5 を実施せよ
+
+  LINE Bot「イザカヤくん」の運用性向上を目的とする2つのドキュメント作成タスクにゃ。
+
+  ## タスク1: #2 Secrets Manager セットアップ手順ドキュメント化 [high]
+
+  ### 目的
+  APIキーのセットアップ手順を明確にし、再現性を高めるにゃ。
+
+  ### 作成内容
+  ファイル: output/izakaya-agent/docs/secrets-setup.md
+
+  以下のセクションを含むこと:
+  1. 概要
+     - 必要なAPIキー（Hotpepper API、Google Places API）
+     - Secrets Managerに保存する理由（セキュリティ、環境分離）
+
+  2. APIキー取得手順
+     - Hotpepper API:
+       - リクルートWebサービスへの登録
+       - APIキー発行手順
+       - URL: https://webservice.recruit.co.jp/
+     - Google Places API:
+       - Google Cloud Consoleでの設定
+       - Places API有効化
+       - APIキー作成・制限設定
+       - URL: https://console.cloud.google.com/
+
+  3. Secrets Manager設定手順
+     ```bash
+     # Hotpepper API Key
+     aws secretsmanager create-secret \
+       --name izakaya-agent/hotpepper-api-key \
+       --secret-string "YOUR_HOTPEPPER_API_KEY" \
+       --region ap-northeast-1
+
+     # Google Places API Key
+     aws secretsmanager create-secret \
+       --name izakaya-agent/google-places-api-key \
+       --secret-string "YOUR_GOOGLE_PLACES_API_KEY" \
+       --region ap-northeast-1
+     ```
+
+  4. 設定確認コマンド
+     ```bash
+     # シークレットが設定されているか確認
+     aws secretsmanager describe-secret \
+       --secret-id izakaya-agent/hotpepper-api-key \
+       --region ap-northeast-1
+
+     # シークレットの値を取得（テスト用）
+     aws secretsmanager get-secret-value \
+       --secret-id izakaya-agent/hotpepper-api-key \
+       --region ap-northeast-1 \
+       --query SecretString --output text
+     ```
+
+  5. トラブルシューティング
+     - シークレットが見つからない場合
+     - IAM権限不足の場合
+     - 空のシークレット値の場合
+
+  ## タスク2: #5 AgentCore Runtime デプロイ手順ドキュメント化 [high]
+
+  ### 目的
+  今回の7つのハマりポイントを全て記載し、同じ問題を繰り返さないにゃ。
+
+  ### 作成内容
+  ファイル: output/izakaya-agent/docs/deployment.md
+
+  以下のセクションを含むこと:
+  1. 概要
+     - デプロイの全体フロー
+     - 必要な権限（AWS CLI、IAM）
+
+  2. 前提条件チェックリスト
+     - [ ] AWS CLI設定済み
+     - [ ] IAM権限確認（Lambda、AgentCore、Secrets Manager）
+     - [ ] Secrets Manager にAPIキー設定済み
+     - [ ] Python 3.11環境
+
+  3. デプロイ手順（ステップバイステップ）
+
+     ### Step 1: 依存パッケージのインストール
+     ```bash
+     cd output/izakaya-agent/agent
+     python -m venv .venv
+     source .venv/bin/activate
+     pip install -r requirements.txt
+     ```
+
+     ### Step 2: Lambda Layer のビルド（manylinux wheel）
+     ```bash
+     cd output/izakaya-agent
+     pip install --platform manylinux2014_x86_64 --python-version 3.11 \
+       --only-binary=:all: --target lambda-layer/python \
+       -r lambda/requirements.txt
+     ```
+     **⚠️ 重要**: Ubuntu/WSLで直接ビルドすると、Amazon Linux 2023と互換性がないにゃ！
+
+     ### Step 3: CDK デプロイ（Lambda + Layer）
+     ```bash
+     cd output/izakaya-agent/infra
+     npm install
+     npx cdk deploy --require-approval never
+     ```
+
+     ### Step 4: AgentCore Runtime デプロイ
+     ```bash
+     cd output/izakaya-agent/agent
+     source .venv/bin/activate
+     agentcore deploy
+     ```
+     **⚠️ 重要**: エージェントコードを変更したら必ず agentcore deploy を実行するにゃ！
+
+     ### Step 5: IAM権限の確認・追加
+
+     #### Lambda IAM権限
+     - bedrock-agentcore:InvokeAgentRuntime（InvokeRuntimeではない！）
+
+     #### AgentCore Runtime IAM権限
+     - secretsmanager:GetSecretValue（izakaya-agent/*）
+
+     IAM権限追加コマンド例:
+     ```bash
+     # AgentCore Runtime の IAM ロールに Secrets Manager 権限を追加
+     aws iam put-role-policy \
+       --role-name AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-XXXXXXXX \
+       --policy-name IzakayaAgentSecretsAccess \
+       --policy-document file://secrets-policy.json
+     ```
+
+     ### Step 6: 動作確認
+     ```bash
+     # AgentCore invoke でツール動作確認
+     agentcore invoke '{"prompt": "渋谷でおすすめの居酒屋を教えて"}'
+     ```
+
+  4. ハマりポイント7つ（今回の教訓）
+     1. Lambda Layer のバイナリ互換性問題（manylinux wheel必須）
+     2. Lambda → AgentCore の 403 Forbidden（boto3クライアント推奨）
+     3. Lambda Layer に strands-agents なし（requirements.txt統合で防止）
+     4. Lambda IAM 権限のアクション名誤り（InvokeAgentRuntime）
+     5. AgentCore Runtime 未デプロイ（agentcore deploy忘れ）
+     6. AgentCore IAM に Secrets Manager 権限なし
+     7. Secrets Manager の値が空（検証ロジックで防止）
+
+  5. トラブルシューティング
+     - CloudWatch Logs の確認方法
+     - Lambda 直接 invoke でのテスト
+     - IAM権限のデバッグ方法
+
+  ## 成果物
+  - output/izakaya-agent/docs/secrets-setup.md
+  - output/izakaya-agent/docs/deployment.md
+
+context:
+  references:
+    - "nawabari.md"  # 今回の完了タスクから教訓を抽出
+    - "queue/reports/task-20260206T125933-kitten1.yaml"  # 根本原因の詳細
+
+expected_outputs:
+  - "docs/secrets-setup.md"
+  - "docs/deployment.md"

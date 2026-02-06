@@ -1,0 +1,75 @@
+task_id: "task-20260205-234946-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T23:49:46"
+priority: medium
+load_skills:
+  - "skill-creator"
+description: |
+  ## Phase D: 自動化スクリプト作戦（子猫1担当）
+
+  ### タスク1: スキル化候補2件の実行
+
+  以下2件のスキル化を実行するにゃ：
+
+  | スキル名 | スコア | 判断 |
+  |----------|--------|------|
+  | cross-project-pattern-migration | 17/20 | ✅ 承認 |
+  | docs-integration-guide | 15/20 | ✅ 承認 |
+
+  **実行方法:**
+  1. skill-creator スキル（.claude/skills/skill-creator/SKILL.md）を読み込む
+  2. 各スキルの SKILL.md を生成
+  3. 保存先: ~/.claude/skills/neko-{skill-name}/SKILL.md
+
+  **スキル1: cross-project-pattern-migration**
+  - 説明: 複数プロジェクト間で共通パターンを移植するスキル
+  - 用途: multi-agent-shogun → neko-pm のような移植作業
+  - 元提案: 子猫2（Phase A）
+
+  **スキル2: docs-integration-guide**
+  - 説明: ドキュメント統合・相互参照の設計パターン
+  - 用途: 既存ドキュメントへの整合性を保った追加
+  - 元提案: 子猫2（Phase C）
+
+  ### タスク2: context/ の活用方法を指示書に明記
+
+  instructions/guard-cat.md と instructions/kitten.md に、
+  context/ ディレクトリの使い方を追記するにゃ。
+
+  **追記内容:**
+
+  ```markdown
+  ## context/ ディレクトリの活用
+
+  プロジェクト固有のコンテキスト情報は `context/{project_id}.md` に保存するにゃ。
+
+  ### いつ使うか
+  - タスク開始前に関連する context ファイルを読み込む
+  - プロジェクト固有の技術制約・注意事項を確認
+
+  ### 誰が使うか
+  - 子猫: タスク実行前に読み込み
+  - 番猫: タスク配分時に参照先を指定
+
+  ### どう使うか
+  1. タスクYAMLの `context.references` に context ファイルを指定
+  2. 子猫がタスク開始時に読み込む
+  3. 重要な決定事項は context ファイルに追記
+  ```
+
+  **追記先:**
+  - instructions/guard-cat.md: タスク配分セクションに追加
+  - instructions/kitten.md: タスク開始手順セクションに追加
+
+context:
+  references:
+    - ".claude/skills/skill-creator/SKILL.md"
+    - "instructions/guard-cat.md"
+    - "instructions/kitten.md"
+    - "context/README.md"
+expected_outputs:
+  - "~/.claude/skills/neko-cross-project-pattern-migration/SKILL.md"
+  - "~/.claude/skills/neko-docs-integration-guide/SKILL.md"
+  - "instructions/guard-cat.md（context使用方法追加）"
+  - "instructions/kitten.md（context使用方法追加）"
+  - "queue/reports/report-task-20260205-234946-kitten1.yaml"

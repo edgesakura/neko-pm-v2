@@ -1,0 +1,113 @@
+task_id: "task-20260205T231742-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T23:17:42"
+priority: high
+parent_command: "cmd-20260205-231447"
+
+description: |
+  🐱 Phase A: 基盤改善作戦 - 子猫1担当にゃ！
+
+  ## タスク1: CLAUDE.md に四層モデル + GitHub解析ルール追加
+
+  /tmp/multi-agent-shogun/CLAUDE.md の以下を参考に、neko-pm/CLAUDE.md に追加:
+
+  ### 追加内容1: コンテキスト保持の四層モデル
+  参考元: /tmp/multi-agent-shogun/CLAUDE.md (95-126行目)
+
+  ```markdown
+  ## コンテキスト保持の四層モデル
+
+  ```
+  Layer 1: Memory MCP（永続・セッション跨ぎ）
+    └─ ご主人の好み・ルール、プロジェクト横断知見
+    └─ 保存条件: ①gitに書けない/未反映 ②毎回必要 ③非冗長
+
+  Layer 2: Project（永続・プロジェクト固有）
+    └─ config/: プロジェクト設定・状態
+    └─ context/: プロジェクト固有の技術知見・注意事項
+
+  Layer 3: YAML Queue（永続・ファイルシステム）
+    └─ queue/boss_to_guard.yaml, queue/tasks/, queue/reports/
+    └─ タスクの正データ源
+
+  Layer 4: Session（揮発・コンテキスト内）
+    └─ CLAUDE.md（自動読み込み）, instructions/*.md
+    └─ /clearで全消失、コンパクションでsummary化
+  ```
+  ```
+
+  ### 追加内容2: GitHubリポジトリ解析ルール
+
+  ```markdown
+  ## GitHubリポジトリ解析ルール
+
+  外部リポジトリを参照する場合:
+  1. **WebFetch禁止**: GitHubのURLをfetchしない
+  2. **git clone必須**: /tmp/ にcloneしてローカルで解析
+  3. **参照履歴保持**: cloneしたリポジトリは残す（過去参照用）
+
+  理由:
+  - WebFetchはHTMLを取得するため、ソースコードの解析に不向き
+  - git cloneでローカルに取得すれば、Glob/Grep/Readツールで効率的に解析可能
+  - cloneしたリポジトリは後続タスクでも参照できる
+  ```
+
+  ## タスク3: shuugou.sh に @agent_id 設定追加
+
+  shuugou.sh の334行目付近（specialists のレイアウト調整後）に以下を追加:
+
+  ```bash
+  # ===========================================
+  # @agent_id 設定（コンパクション復帰時の自己同定用）
+  # ===========================================
+  echo -e "${CYAN}🏷️  @agent_id 設定中にゃ...${NC}"
+
+  # bossウィンドウ
+  tmux set-option -p -t ${SESSION_NAME}:boss @agent_id "boss-cat"
+
+  # workersウィンドウ
+  tmux set-option -p -t ${SESSION_NAME}:workers.0 @agent_id "guard-cat"
+  for i in $(seq 1 $WORKERS); do
+      tmux set-option -p -t ${SESSION_NAME}:workers.${i} @agent_id "kitten${i}"
+  done
+  OWL_PANE=$((1 + WORKERS))
+  tmux set-option -p -t ${SESSION_NAME}:workers.${OWL_PANE} @agent_id "owl-reviewer"
+
+  # specialistsウィンドウ
+  tmux set-option -p -t ${SESSION_NAME}:specialists.0 @agent_id "sage-fox"
+  tmux set-option -p -t ${SESSION_NAME}:specialists.1 @agent_id "research-tanuki"
+
+  echo -e "${GREEN}✅ @agent_id 設定完了にゃ〜${NC}"
+  ```
+
+  ## 完了報告
+  タスク1とタスク3が完了したら、queue/reports/ に報告YAMLを作成にゃ。
+
+context:
+  references:
+    - "CLAUDE.md"
+    - "shuugou.sh"
+    - "/tmp/multi-agent-shogun/CLAUDE.md"
+  reference_repo: "/tmp/multi-agent-shogun/"
+
+expected_outputs:
+  - "CLAUDE.md（四層モデル + GitHub解析ルール追加）"
+  - "shuugou.sh（@agent_id設定追加）"
+  - "queue/reports/report-20260205T231742-kitten1.yaml"
+
+pre_task_checklist:
+  - "/tmp/multi-agent-shogun/CLAUDE.md の存在確認"
+  - "CLAUDE.md の現在の構造確認"
+  - "shuugou.sh の334行目付近を確認"
+
+post_task_checklist:
+  - "CLAUDE.md に四層モデルが追加されているか確認"
+  - "CLAUDE.md にGitHub解析ルールが追加されているか確認"
+  - "shuugou.sh に @agent_id 設定が追加されているか確認"
+  - "完了報告YAMLに skill_candidate と improvement_proposals を記入"
+
+notes: |
+  - 2つのタスクを順次実行にゃ（タスク1 → タスク3）
+  - 参照元は /tmp/multi-agent-shogun/ にあるにゃ
+  - 四層モデルは neko-pm に合わせて調整（Layer 2 を簡略化）にゃ
+  - @agent_id 設定は全ペインに付けるにゃ〜

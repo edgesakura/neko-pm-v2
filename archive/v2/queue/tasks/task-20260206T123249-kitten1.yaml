@@ -1,0 +1,87 @@
+task_id: "task-20260206T123249-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T12:32:49"
+priority: high
+parent_command_id: "cmd-20260206T122832"
+description: |
+  【🔍🔧 LINE Bot 接続エラー + ホットペッパーAPI調査・修正】
+  LINE Bot経由でエラーが返る問題を調査・修正せよ。
+
+  ## 状況
+  - 前回修正: Lambda LayerのバイナリMB互換性問題 → manylinux wheelで修正済み
+  - Lambda正常起動確認済み、署名検証まで到達
+  - **今回**: LINE Bot経由だとまだエラーが返る
+  - 2つの問題の可能性:
+    1. システム接続エラー（LINE → Lambda → AgentCore の経路）
+    2. ホットペッパーAPIのシークレット設定ミス
+
+  ## 調査チェックリスト（上から順に実施）
+
+  ### Step 1: CloudWatch Logs で最新エラーを確認（最優先）
+  LINEからメッセージを送った時の最新ログを見る
+  ```bash
+  # Lambda関数名の特定
+  aws cloudformation describe-stack-resources --stack-name IzakayaStack --region ap-northeast-1 \
+    --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text
+  # 最新ログ確認（直近30分）
+  aws logs filter-log-events --log-group-name /aws/lambda/<関数名> \
+    --start-time $(date -d '30 minutes ago' +%s)000 --region ap-northeast-1 --limit 50
+  ```
+
+  ### Step 2: handler.py の接続フロー確認
+  LINE → Lambda → AgentCore Runtime の接続コードを精査
+  - SigV4認証の実装確認
+  - AgentCore Runtime API呼び出し部分のエラーハンドリング
+  - レスポンスのパース・LINE返信処理
+  ファイル: output/izakaya-agent/lambda/handler.py
+
+  ### Step 3: ホットペッパーAPIシークレット確認
+  - エージェント定義でホットペッパーAPIキーをどう参照しているか確認
+  - Lambda環境変数に HOTPEPPER_API_KEY が設定されているか
+  - AgentCoreエージェント設定にAPIキーが渡されているか
+  ```bash
+  # Lambda環境変数の全量確認
+  aws lambda get-function-configuration --function-name <関数名> \
+    --region ap-northeast-1 --query "Environment.Variables"
+  # AgentCoreエージェント定義ファイルの確認
+  cat output/izakaya-agent/agent/agent.py
+  cat output/izakaya-agent/agent/tools.py  # ツール定義
+  ```
+
+  ### Step 4: Lambda直接invokeテスト（接続確認）
+  ```bash
+  aws lambda invoke --function-name <関数名> \
+    --payload '{"body": "{\"events\":[{\"type\":\"message\",\"message\":{\"type\":\"text\",\"text\":\"渋谷でおすすめの居酒屋教えて\"},\"source\":{\"userId\":\"test123\"},\"replyToken\":\"test-token\"}]}"}' \
+    --region ap-northeast-1 --log-type Tail /tmp/lambda-response.json
+  cat /tmp/lambda-response.json
+  ```
+
+  ### Step 5: 問題の修正
+  - 接続エラー → handler.pyのAPI呼び出し修正
+  - シークレット問題 → 環境変数追加 or エージェント設定修正
+  - 修正後 → cdk deploy で再デプロイ
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  handler_path: "output/izakaya-agent/lambda/handler.py"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  region: "ap-northeast-1"
+  references:
+    - "output/izakaya-agent/lambda/handler.py"
+    - "output/izakaya-agent/agent/"
+    - "output/izakaya-agent/cdk/"
+
+expected_outputs:
+  - "CloudWatch Logsのエラー内容レポート（nawabari.md形式）"
+  - "接続エラーの原因と修正"
+  - "ホットペッパーAPIシークレットの設定状況と修正"
+  - "修正後の動作確認結果"
+  - "skill_candidate の評価（必須）"
+
+note: |
+  - Step 1から順に実施せよ
+  - 各Stepの結果を報告に含めること
+  - エラーログを詳細に確認し、根本原因を特定すること
+  - 修正後は必ず動作確認を実施すること
+  - 前回の修正（Lambda Layer）との違いを明確にすること

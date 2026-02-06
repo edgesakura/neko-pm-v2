@@ -1,0 +1,64 @@
+task_id: "task-20260206T164740-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T16:47:40"
+priority: urgent
+load_skills: []
+description: |
+  🚨 CORS修正 - API Gateway の allowOrigins に localhost:3002 追加
+
+  ## 問題
+  ローカルサーバーがポート3002で起動しているが、API Gateway の CORS設定は
+  localhost:3001 のみ許可している。このままではブラウザからAPIを呼べないにゃ。
+
+  ## 修正内容（シンプル・1ファイルのみ）
+
+  ### Step 1: izakaya-stack.ts の CORS 設定修正
+  - ファイル: output/izakaya-agent/infra/lib/izakaya-stack.ts
+  - allowOrigins に 'http://localhost:3002' を追加
+  - 既存の 'http://localhost:3001' も残す（両方許可）
+
+  **修正例**:
+  ```typescript
+  // Before
+  allowOrigins: ['http://localhost:3001']
+
+  // After
+  allowOrigins: ['http://localhost:3001', 'http://localhost:3002']
+  ```
+
+  ### Step 2: CDK デプロイ
+  ```bash
+  cd output/izakaya-agent/infra
+  npx cdk deploy --require-approval never
+  ```
+
+  ### Step 3: 動作確認
+  - curl で localhost:3002 オリジンからのプリフライトリクエストが通ること確認
+
+  ```bash
+  # プリフライトリクエスト（OPTIONS）
+  curl -X OPTIONS https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat \
+    -H "Origin: http://localhost:3002" \
+    -H "Access-Control-Request-Method: POST" \
+    -v
+  ```
+
+  期待値: `access-control-allow-origin: http://localhost:3002` が返ること
+
+  ## 注意事項
+  - 既存の 'http://localhost:3001' を削除しないこと（両方許可）
+  - 全オリジン許可（`*`）にしないこと（セキュリティリスク）
+  - デプロイ完了まで約2-3分かかる
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  infra_dir: "output/izakaya-agent/infra"
+  api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+  references:
+    - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+
+expected_outputs:
+  - "CORS設定修正（allowOrigins に localhost:3002 追加）"
+  - "CDKデプロイ成功"
+  - "localhost:3002 からのAPIアクセス確認"

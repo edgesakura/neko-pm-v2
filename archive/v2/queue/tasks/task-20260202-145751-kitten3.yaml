@@ -1,0 +1,223 @@
+task_id: "task-20260202-145751-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T14:57:51"
+priority: high
+command_id: "cmd-20260202-145751"
+description: |
+  【作戦名】chat-app「よく使うコマンドボタン」追加作戦
+
+  ## 目的
+  スマホからキーボードを打たなくても、よく使うコマンドをボタンで送信できるようにするにゃ。
+
+  ## 実装内容
+
+  ### フェーズ1: ボタンUI追加（index.html）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/index.html
+
+  ターミナルコンテナの下部に、コマンドボタンを追加するにゃ：
+
+  ```html
+  <!-- ターミナルコンテナの後に追加 -->
+  <div id="terminal-container"></div>
+
+  <!-- よく使うコマンドボタン -->
+  <div id="quick-commands">
+    <button class="cmd-btn approve" data-cmd="1">✅ 承認</button>
+    <button class="cmd-btn reject" data-cmd="2">❌ 拒否</button>
+    <button class="cmd-btn status" data-cmd="cat nawabari.md | tail -50">📊 状況確認</button>
+    <button class="cmd-btn delegate" data-cmd="番猫、この作業をお願いするにゃ">🐱 番猫に委譲</button>
+    <button class="cmd-btn stop" data-cmd="\x03">🚨 緊急停止</button>
+  </div>
+  ```
+
+  **ポイント**:
+  - `data-cmd` 属性に送信するコマンドを設定
+  - 各ボタンに絵文字を付けて視認性向上
+  - 承認/拒否は数字（1/2）を送信
+
+  ### フェーズ2: ボタンロジック実装（terminal.js）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/terminal.js
+
+  `initTerminal()` 関数内に、ボタンクリックハンドラーを追加するにゃ：
+
+  ```javascript
+  function initTerminal() {
+    // ... 既存のターミナル初期化コード
+
+    // よく使うコマンドボタンのハンドラー
+    const quickCommandBtns = document.querySelectorAll('.cmd-btn');
+    quickCommandBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cmd = btn.getAttribute('data-cmd');
+
+        // 緊急停止（Ctrl+C）の場合
+        if (cmd === '\\x03') {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'terminal-input',
+              data: '\x03'  // Ctrl+C
+            }));
+          }
+        } else {
+          // 通常コマンドの場合（改行を追加）
+          const command = cmd + '\n';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'terminal-input',
+              data: command
+            }));
+          }
+          // ターミナルにも表示（エコーバック）
+          term.write(command);
+        }
+      });
+    });
+
+    // ... 既存のWebSocket接続コード
+  }
+  ```
+
+  **ポイント**:
+  - 緊急停止（Ctrl+C）は改行なしで送信
+  - 通常コマンドは改行（`\n`）を追加
+  - ターミナルにエコーバック表示
+
+  ### フェーズ3: スタイル追加（styles.css）
+
+  **ファイル**: /home/edgesakura/git/neko-pm/output/chat-app/public/styles.css
+
+  ボタンのスタイルを追加するにゃ：
+
+  ```css
+  /* よく使うコマンドボタン */
+  #quick-commands {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    z-index: 1000;
+  }
+
+  .cmd-btn {
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .cmd-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .cmd-btn:active {
+    transform: scale(0.95);
+  }
+
+  .cmd-btn.approve {
+    background: #4caf50;
+    color: white;
+  }
+
+  .cmd-btn.reject {
+    background: #f44336;
+    color: white;
+  }
+
+  .cmd-btn.status {
+    background: #2196f3;
+    color: white;
+  }
+
+  .cmd-btn.delegate {
+    background: #ff9800;
+    color: white;
+  }
+
+  .cmd-btn.stop {
+    background: #9c27b0;
+    color: white;
+  }
+
+  /* モバイル最適化 */
+  @media (max-width: 768px) {
+    #quick-commands {
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      bottom: 5px;
+    }
+
+    .cmd-btn {
+      padding: 8px 12px;
+      font-size: 12px;
+      /* タップしやすいサイズ（最小44x44px） */
+      min-height: 44px;
+    }
+  }
+  ```
+
+  **ポイント**:
+  - 固定位置（画面下部中央）
+  - ボタンごとに色分け（承認=緑、拒否=赤、等）
+  - ホバー＆アクティブ効果
+  - モバイルでタップしやすいサイズ（最小44x44px）
+
+  ## コマンドマッピング
+
+  | ボタン | コマンド | 説明 |
+  |--------|---------|------|
+  | ✅ 承認 | `1` | 承認プロンプトに「1」を送信 |
+  | ❌ 拒否 | `2` | 承認プロンプトに「2」を送信 |
+  | 📊 状況確認 | `cat nawabari.md \| tail -50` | 縄張りの最後50行を表示 |
+  | 🐱 番猫に委譲 | `番猫、この作業をお願いするにゃ` | 番猫にタスクを委譲 |
+  | 🚨 緊急停止 | `\x03` | Ctrl+C（実行中のコマンドを停止） |
+
+  ## 動作確認
+
+  実装後、以下を確認するにゃ：
+  1. ブラウザで http://localhost:3000 にアクセス
+  2. パスワード認証 → ログイン成功
+  3. ターミナル下部にボタンが表示されること
+  4. 各ボタンをクリックしてコマンドが送信されること
+  5. モバイル表示（Chrome DevTools）でボタンがタップしやすいこと
+
+  ## 注意事項
+  - 既存のターミナルUIと共存すること
+  - ボタンがターミナル表示を隠さないこと
+  - モバイルでのタップ領域を十分に確保すること（最小44x44px）
+  - WebSocket接続が確立されている場合のみコマンド送信
+
+context:
+  chat_app_location: "/home/edgesakura/git/neko-pm/output/chat-app/"
+  target_files:
+    - "public/index.html"
+    - "public/terminal.js"
+    - "public/styles.css"
+  references:
+    - "既存のターミナルUI"
+    - "WebSocket接続"
+
+expected_outputs:
+  - "public/index.html（ボタンUI追加）"
+  - "public/terminal.js（ボタンロジック追加）"
+  - "public/styles.css（ボタンスタイル追加）"
+  - "動作確認完了報告"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - スマホからの操作性を最優先にするにゃ
+  - ボタンは追加・カスタマイズしやすい設計にするにゃ
+  - WebSocket接続が切れている場合は、ボタンを無効化するのが望ましいにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

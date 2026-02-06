@@ -1,0 +1,173 @@
+task_id: "task-20260206T155950-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T15:59:50"
+priority: critical
+load_skills: []
+description: |
+  🚨【CRITICAL修正】のみべろエージェント v2 - セキュリティリスク全件修正
+
+  ## 背景
+  フクロウ（Codex CLI）のセキュリティレビューで、CRITICAL 1件、HIGH 3件の問題が検出されたにゃ。
+  ボスねこからの指示により、本番投入前に全件修正せよにゃ。
+
+  ## 修正指示（優先度順）
+
+  ### 1. CRITICAL: Lambda内でイベントソース検証
+
+  **問題**: Lambda Function URLが`authType: NONE`で公開され、未認証ユーザーがCognitoを迂回して推論実行できる
+
+  **修正内容**:
+  - Lambda handler.py にイベントソース検証ロジックを追加
+  - Function URLからのリクエスト: LINE署名検証必須、署名なしは即座に拒否（401 Unauthorized）
+  - Web APIからのリクエスト: API Gateway + Cognito経由のみ受付、`requestContext.authorizer.claims`が存在しない場合は拒否
+
+  **実装例**:
+  ```python
+  def validate_event_source(event):
+      # API Gateway + Cognito経由の場合
+      if 'requestContext' in event and 'authorizer' in event.get('requestContext', {}):
+          if 'claims' in event['requestContext']['authorizer']:
+              return 'web_api'  # 認証済みWeb APIリクエスト
+
+      # Function URL経由（LINE Webhook）の場合
+      if 'headers' in event:
+          signature = event['headers'].get('x-line-signature')
+          if signature:
+              # LINE署名検証（既存のverify_line_signatureを使用）
+              if verify_line_signature(event, signature):
+                  return 'line_webhook'
+
+      # どちらでもない場合は拒否
+      return None
+
+  def lambda_handler(event, context):
+      source = validate_event_source(event)
+      if source is None:
+          return {
+              'statusCode': 401,
+              'body': json.dumps({'error': 'Unauthorized'})
+          }
+      # 以降の処理...
+  ```
+
+  ### 2. HIGH-1: user_idはCognitoトークンのsubから強制取得
+
+  **問題**: Web APIで`user_id`をボディから受け入れて`runtimeSessionId`に使用、なりすまし可能
+
+  **修正内容**:
+  - Web APIの場合、`user_id`は`requestContext.authorizer.claims.sub`から強制取得
+  - リクエストボディの`user_id`は無視
+
+  **実装例**:
+  ```python
+  def parse_request(event):
+      source = validate_event_source(event)
+
+      if source == 'web_api':
+          # Cognitoの`sub`から強制取得
+          user_id = event['requestContext']['authorizer']['claims']['sub']
+          body = json.loads(event['body'])
+          return {
+              "message": body['message'],
+              "user_id": user_id,  # ボディのuser_idは無視
+              "source": "web"
+          }
+      # LINE Webhookの場合は既存ロジック...
+  ```
+
+  ### 3. HIGH-2: API GatewayのCORSをAmplifyフロントのオリジンのみに制限
+
+  **問題**: `allowOrigins: *`で全オリジン許可、セキュリティリスク
+
+  **修正内容**:
+  - infra/lib/izakaya-stack.ts のCORS設定を修正
+  - フロントエンドURL確定後に制限（現在は開発中なので`http://localhost:3001`のみ許可）
+
+  **実装例**:
+  ```typescript
+  // izakaya-stack.ts
+  const chatResource = api.root.addResource('chat');
+  chatResource.addMethod('POST', new apigateway.LambdaIntegration(webhookLambda), {
+    authorizer: cognitoAuthorizer,
+    methodResponses: [
+      {
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': true,
+          'method.response.header.Access-Control-Allow-Headers': true,
+        },
+      },
+    ],
+  });
+
+  chatResource.addCorsPreflight({
+    allowOrigins: ['http://localhost:3001'],  // フロントエンドURL（本番時は確定URLに変更）
+    allowMethods: ['POST', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  });
+  ```
+
+  ### 4. HIGH-3: Function URLのCORS設定削除
+
+  **問題**: Webhook用途にCORS不要なのに全オリジン許可、ブラウザ起点での悪用容易化
+
+  **修正内容**:
+  - infra/lib/izakaya-stack.ts のFunction URL設定からCORS設定を削除
+
+  **実装例**:
+  ```typescript
+  // izakaya-stack.ts
+  const functionUrl = webhookLambda.addFunctionUrl({
+    authType: lambda.FunctionUrlAuthType.NONE,
+    // cors 設定を削除（以下を削除）
+    // cors: { ... }
+  });
+  ```
+
+  ## 検証手順
+
+  1. **修正実施**
+     - lambda/handler.py の修正
+     - infra/lib/izakaya-stack.ts の修正
+
+  2. **デプロイ**
+     ```bash
+     # AgentCore再デプロイ（handler.py変更反映）
+     cd output/izakaya-agent/agent
+     source .venv/bin/activate
+     agentcore deploy
+
+     # CDK再デプロイ（izakaya-stack.ts変更反映）
+     cd ../infra
+     npx cdk deploy
+     ```
+
+  3. **動作確認**
+     - LINE Webhook: 正常動作を確認
+     - Web API（未認証）: 401 Unauthorizedが返ることを確認
+     - Web API（Cognito認証済み）: 正常動作を確認
+     - CORS: 許可されたオリジンのみアクセス可能を確認
+
+  ## 成果物
+
+  - lambda/handler.py（イベントソース検証、user_id強制取得）
+  - infra/lib/izakaya-stack.ts（CORS制限、Function URL CORS削除）
+  - 動作確認結果レポート
+  - フクロウによる再レビュー結果（PASSED確認）
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  region: "ap-northeast-1"
+  references:
+    - "lambda/handler.py"
+    - "infra/lib/izakaya-stack.ts"
+    - "CLAUDE.md"
+
+expected_outputs:
+  - "lambda/handler.py（セキュリティ修正版）"
+  - "infra/lib/izakaya-stack.ts（CORS制限版）"
+  - "AgentCore再デプロイ完了"
+  - "CDK再デプロイ完了"
+  - "動作確認レポート"
+  - "フクロウ再レビュー結果（PASSED）"

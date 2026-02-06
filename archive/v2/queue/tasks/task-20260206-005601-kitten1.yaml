@@ -1,0 +1,75 @@
+task_id: "task-20260206-005601-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T00:56:01"
+priority: urgent
+load_skills: []
+description: |
+  ## 🔥 緊急バグ修正: CDKデプロイエラー - IAM description に日本語
+
+  ご主人がCDKデプロイを実行したところ、IAM::Roleのdescriptionに
+  日本語が含まれていてデプロイが失敗したにゃ。
+
+  IAMはASCII文字のみ許可されるため、全ての日本語descriptionを
+  英語に置換する必要があるにゃ。
+
+  ## エラー内容
+  IAM::Role の description に日本語が含まれていてデプロイ失敗。
+  IAMはASCII文字のみ許可。
+
+  ## 修正対象ファイル
+  output/izakaya-agent/infra/lib/izakaya-stack.ts
+
+  ## 修正内容（6箇所）
+
+  以下の6箇所の日本語descriptionを英語に置換するにゃ：
+
+  ### 1. Secrets Manager (4箇所)
+
+  **line 18付近: ホットペッパーAPI**
+  - 修正前: `description: 'ホットペッパーグルメAPI キー'`
+  - 修正後: `description: 'Hotpepper Gourmet API Key'`
+
+  **line 23付近: Google Places API**
+  - 修正前: `description: 'Google Places API キー'`
+  - 修正後: `description: 'Google Places API Key'`
+
+  **line 28付近: LINE チャネルシークレット**
+  - 修正前: `description: 'LINE チャネルシークレット'`
+  - 修正後: `description: 'LINE Channel Secret'`
+
+  **line 33付近: LINE チャネルアクセストークン**
+  - 修正前: `description: 'LINE チャネルアクセストークン'`
+  - 修正後: `description: 'LINE Channel Access Token'`
+
+  ### 2. IAM Role (1箇所)
+
+  **line 43付近: Lambda実行ロール**
+  - 修正前: `description: 'LINE Webhook Lambda実行ロール'`
+  - 修正後: `description: 'LINE Webhook Lambda Execution Role'`
+
+  ### 3. Lambda Function (1箇所)
+
+  **line 77付近: Lambda Function description**
+  - 修正前: `description: 'LINE Webhook → Bedrock AgentCore連携'`
+  - 修正後: `description: 'LINE Webhook to Bedrock AgentCore'`
+
+  ## 作業手順
+
+  1. まず output/izakaya-agent/infra/lib/izakaya-stack.ts を読み取るにゃ
+  2. Edit tool で上記6箇所を正確に置換するにゃ
+  3. 置換後、ファイル全体を確認して漏れがないかチェックするにゃ
+
+  ## 注意事項
+
+  - 🔥 緊急度が urgent のため、最速で対応するにゃ
+  - ご主人がデプロイ待ちなので、確認は最小限にして迅速に修正するにゃ
+  - 全6箇所を確実に修正し、漏れがないようにするにゃ
+  - 修正後、他の箇所に日本語が残っていないか確認するにゃ〜
+
+context:
+  error_type: "CDK Deploy Error"
+  affected_file: "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+  urgency: "ご主人がデプロイ待ち"
+expected_outputs:
+  - "output/izakaya-agent/infra/lib/izakaya-stack.ts（修正完了）"
+  - "queue/reports/report-task-20260206-005601-kitten1.yaml"

@@ -1,0 +1,41 @@
+task_id: "task-20260206T173624-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T17:36:24"
+priority: high
+load_skills: []
+description: |
+  【サーバー再起動】Next.js サーバーを再起動して最新設定を反映
+
+  ## 目的
+  Next.js サーバーを再起動して、OAuth 無効化の設定を確実に反映させるにゃ。
+
+  ## 実行手順
+
+  ### Step 1: 既存の Next.js サーバーを停止
+  ```bash
+  pkill -f 'next dev'
+  ```
+
+  ### Step 2: Next.js サーバーを再起動（ポート 3002）
+  ```bash
+  cd output/nomibero-web
+  npm run dev -- -p 3002 &
+  ```
+
+  ### Step 3: サーバー起動確認
+  - http://localhost:3002 にアクセスできることを確認
+  - プロセスが正常に起動していることを確認
+
+  ## 重要な注意事項
+  - ポートは 3002 を使用すること（3001 ではない）
+  - バックグラウンド起動（&）を使うこと
+  - サーバーが正常に起動したことを確認すること
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  port: 3002
+expected_outputs:
+  - "Next.js サーバー再起動完了"
+  - "http://localhost:3002 で正常稼働"
+  - "nawabari.md への報告"

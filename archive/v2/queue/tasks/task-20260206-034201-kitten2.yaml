@@ -1,0 +1,129 @@
+task_id: "task-20260206-034201-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T03:42:01"
+priority: urgent
+load_skills: []
+description: |
+  ## 🚨 CDK 環境変数 + IAM 権限追加（タスク3+4）
+
+  Lambda handler.py が AgentCore Runtime を呼び出すために、
+  CDK で環境変数と IAM 権限を設定するにゃ〜。
+
+  ## 背景
+
+  - 子猫1が handler.py を AgentCore Runtime API に書き換える
+  - そのために RUNTIME_ARN 環境変数と IAM 権限が必要
+
+  ## 作業ディレクトリ
+
+  `/home/edgesakura/neko-pm/output/izakaya-agent/`
+
+  ## タスク3: CDK 環境変数修正
+
+  **ファイル**: `infra/lib/izakaya-stack.ts`
+
+  ### 修正内容
+
+  Lambda Function の環境変数を修正するにゃ：
+
+  ```typescript
+  // Lambda Function の environment セクション
+  environment: {
+    // 削除（もし存在すれば）
+    // AGENT_ID: props?.agentId || "",
+    // AGENT_ALIAS_ID: props?.agentAliasId || "",
+
+    // 追加
+    RUNTIME_ARN: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat",
+    MEMORY_ID: props?.memoryId || "izakaya_agent_mem-ZOMh0R8tfz",
+    ...
+  }
+  ```
+
+  **重要**: AGENT_ID と AGENT_ALIAS_ID は削除、RUNTIME_ARN を追加にゃ。
+
+  ## タスク4: Lambda IAM 権限追加
+
+  **ファイル**: `infra/lib/izakaya-stack.ts`
+
+  ### 修正内容
+
+  Lambda Execution Role に `bedrock-agentcore:InvokeRuntime` 権限を追加するにゃ：
+
+  ```typescript
+  // Lambda Execution Role のポリシーステートメント追加
+  lambdaRole.addToPolicy(new iam.PolicyStatement({
+    effect: iam.Effect.ALLOW,
+    actions: [
+      "bedrock-agentcore:InvokeRuntime"
+    ],
+    resources: [
+      "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+    ]
+  }));
+  ```
+
+  **または** ManagedPolicyStatement を使う場合：
+
+  ```typescript
+  lambdaRole.addToPolicy(new iam.PolicyStatement({
+    effect: iam.Effect.ALLOW,
+    actions: ["bedrock-agentcore:InvokeRuntime"],
+    resources: ["arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/*"]
+  }));
+  ```
+
+  ### 既存の Bedrock 権限について
+
+  現在のコードに `bedrock:InvokeAgent` などの権限があれば、
+  `bedrock-agentcore:InvokeRuntime` を追加で記述するにゃ。
+
+  ## 成功判定基準
+
+  以下を全て満たす場合、タスク完了とするにゃ：
+
+  - [ ] RUNTIME_ARN 環境変数を Lambda に追加
+  - [ ] AGENT_ID, AGENT_ALIAS_ID 環境変数を削除（もし存在すれば）
+  - [ ] bedrock-agentcore:InvokeRuntime 権限を Lambda Role に追加
+  - [ ] CDK ファイルに構文エラーがない
+
+  ## エラーハンドリング
+
+  ### エラー1: TypeScript 構文エラー
+  **症状**: `npx tsc` でエラー
+  **対処法**: 構文を確認、型定義を修正
+
+  ### エラー2: CDK デプロイエラー
+  **症状**: `cdk deploy` 失敗
+  **対処法**: CloudFormation エラーを確認、リソース名やARNを確認
+
+  ## 参考情報
+
+  ### RUNTIME_ARN の形式
+  ```
+  arn:aws:bedrock-agentcore:{region}:{account-id}:runtime/{runtime-id}
+  ```
+
+  **今回の値**:
+  ```
+  arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat
+  ```
+
+  ### IAM Action
+  - `bedrock-agentcore:InvokeRuntime`: AgentCore Runtime 呼び出し権限
+
+  ## 注意事項
+
+  - CDK デプロイは子猫1・子猫2のタスク完了後に実行
+  - デプロイ時に Lambda Function が再作成される可能性がある
+  - Function URL は変わらないはず（既存リソース）
+
+context:
+  cdk_stack: "/home/edgesakura/neko-pm/output/izakaya-agent/infra/lib/izakaya-stack.ts"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  region: "ap-northeast-1"
+  account_id: "921563379197"
+expected_outputs:
+  - "CDK 環境変数修正完了"
+  - "IAM 権限追加完了"
+  - "queue/reports/report-task-20260206-034201-kitten2.yaml"

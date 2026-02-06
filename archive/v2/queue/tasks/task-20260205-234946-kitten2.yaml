@@ -1,0 +1,90 @@
+task_id: "task-20260205-234946-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T23:49:46"
+priority: medium
+load_skills: []
+description: |
+  ## Phase D: 自動化スクリプト作戦（子猫2担当）
+
+  ### タスク1: ロック確認の自動化スクリプト
+
+  scripts/check-lock.sh を作成するにゃ。
+
+  **機能:**
+  - nawabari.md の「🔒 ファイルロック」セクションをパース
+  - 指定ファイルがロック中かどうかを判定
+  - 使用例: `./scripts/check-lock.sh src/auth.ts`
+  - 出力: "LOCKED by 子猫1" or "UNLOCKED"
+
+  **実装詳細:**
+  ```bash
+  #!/bin/bash
+  # scripts/check-lock.sh
+
+  TARGET_FILE="$1"
+
+  if [ -z "$TARGET_FILE" ]; then
+    echo "Usage: $0 <file_path>"
+    exit 1
+  fi
+
+  # nawabari.md の「🔒 ファイルロック」セクションを抽出
+  LOCK_SECTION=$(sed -n '/^## 🔒 ファイルロック/,/^## /p' nawabari.md | grep -v '^##')
+
+  # 対象ファイルがロック中か確認
+  if echo "$LOCK_SECTION" | grep -q "| $TARGET_FILE |"; then
+    OWNER=$(echo "$LOCK_SECTION" | grep "| $TARGET_FILE |" | awk -F'|' '{print $3}' | xargs)
+    echo "LOCKED by $OWNER"
+    exit 1
+  else
+    echo "UNLOCKED"
+    exit 0
+  fi
+  ```
+
+  ### タスク2: チェックリスト自動検証ツール
+
+  scripts/verify-checklist.sh を作成するにゃ。
+
+  **機能:**
+  - 指定ファイルのチェックリスト項目を抽出
+  - 未チェック項目があれば警告
+  - 使用例: `./scripts/verify-checklist.sh instructions/kitten.md`
+
+  **実装詳細:**
+  ```bash
+  #!/bin/bash
+  # scripts/verify-checklist.sh
+
+  TARGET_FILE="$1"
+
+  if [ -z "$TARGET_FILE" ]; then
+    echo "Usage: $0 <file_path>"
+    exit 1
+  fi
+
+  if [ ! -f "$TARGET_FILE" ]; then
+    echo "Error: File not found: $TARGET_FILE"
+    exit 1
+  fi
+
+  # 未チェック項目を抽出（- [ ] で始まる行）
+  UNCHECKED=$(grep -E '^\s*- \[ \]' "$TARGET_FILE")
+
+  if [ -n "$UNCHECKED" ]; then
+    echo "⚠️  未チェック項目が見つかりました:"
+    echo "$UNCHECKED"
+    exit 1
+  else
+    echo "✅ 全てのチェックリスト項目が完了しています"
+    exit 0
+  fi
+  ```
+
+context:
+  references:
+    - "nawabari.md"
+expected_outputs:
+  - "scripts/check-lock.sh"
+  - "scripts/verify-checklist.sh"
+  - "queue/reports/report-task-20260205-234946-kitten2.yaml"

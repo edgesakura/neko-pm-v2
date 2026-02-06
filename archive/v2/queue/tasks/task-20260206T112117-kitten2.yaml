@@ -1,0 +1,53 @@
+task_id: "task-20260206T112117-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T11:21:17"
+priority: high
+load_skills: []
+description: |
+  【Step 2, 3】Lambda環境変数確認 + handler.pyコード確認
+
+  ## 目的
+  LINE Bot経由でエラーが返る問題の根本原因を特定するため、Lambda設定とコードを確認するにゃ。
+
+  ## 実施内容
+
+  ### 1. Lambda環境変数の確認
+  Lambda関数の環境変数を確認するにゃ（子猫1がLambda関数名を特定するまで待つにゃ）。
+  ```bash
+  # 子猫1の報告から Lambda関数名を取得してから実行
+  aws lambda get-function-configuration \
+    --function-name <関数名> \
+    --region ap-northeast-1 \
+    --query "Environment.Variables"
+  ```
+
+  **確認項目**:
+  - RUNTIME_ARN が正しく設定されているか
+    - 期待値: arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat
+  - LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN が設定されているか
+
+  ### 2. handler.py のコード確認
+  現在のhandler.pyがAgentCore Runtime API対応版か確認するにゃ。
+  - ファイル: output/izakaya-agent/lambda/handler.py
+  - SigV4認証が正しく実装されているか
+  - エラーハンドリングが適切か（エラー内容がログに出力されるか）
+  - AgentCore Runtime APIのエンドポイントが正しいか（bedrock-agentcore）
+
+  ## 期待する成果物
+  - Lambda環境変数の確認結果
+  - handler.pyのコードレビュー結果（問題点の指摘）
+  - queue/reports/report-20260206T112117-kitten2.yaml に報告
+
+context:
+  references:
+    - "output/izakaya-agent/lambda/handler.py"
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  handler_path: "output/izakaya-agent/lambda/handler.py"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  region: "ap-northeast-1"
+
+expected_outputs:
+  - "Lambda環境変数の確認結果"
+  - "handler.pyのコードレビュー結果"
+  - "queue/reports/report-20260206T112117-kitten2.yaml"

@@ -1,0 +1,227 @@
+task_id: "task-20260206-015929-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T01:59:29"
+priority: high
+load_skills: []
+description: |
+  ## Phase 4: デプロイ・テスト準備
+
+  AgentCoreデプロイの準備とLambda Layer設定を行うにゃ。
+  実際のデプロイはご主人が実行するにゃ。
+
+  ## 背景と目的
+
+  Phase 1-3 で以下を実装したにゃ：
+  - Phase 1: CDKインフラ構築（Secrets Manager, IAM, Lambda）
+  - Phase 2: エージェント実装（Strands Agents + AgentCore Runtime）
+  - Phase 2.5: Memory機能追加（会話継続・文脈維持）
+  - Phase 3: LINE Bot連携（Lambda Webhook）
+
+  Phase 4 では、実際にデプロイできるように準備するにゃ：
+  - Lambda Layer でPythonパッケージを追加
+  - 環境変数を追加（AGENT_ID, AGENT_ALIAS_ID）
+  - README.md にデプロイ手順を追加
+
+  ## 作業内容
+
+  ### ステップ1: CDKスタック更新（Lambda Layer対応）
+
+  **ファイル**: output/izakaya-agent/infra/lib/izakaya-stack.ts
+
+  以下を追加するにゃ：
+
+  1. **Lambda Layer 作成**（line-bot-sdk用）
+     ```typescript
+     import * as lambda from 'aws-cdk-lib/aws-lambda';
+     import * as path from 'path';
+
+     // Lambda Layer for Python dependencies
+     const pythonDepsLayer = new lambda.LayerVersion(this, 'PythonDepsLayer', {
+       code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda-layer')),
+       compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+       description: 'Python dependencies (line-bot-sdk, boto3)',
+     });
+     ```
+
+  2. **Lambda Function に Layer 追加 + 環境変数追加**
+     ```typescript
+     const webhookFunction = new lambda.Function(this, 'LineWebhookFunction', {
+       runtime: lambda.Runtime.PYTHON_3_11,
+       handler: 'handler.lambda_handler',
+       code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda')),
+       timeout: Duration.seconds(60),
+       role: lambdaRole,
+       layers: [pythonDepsLayer],  // ← Lambda Layer 追加
+       environment: {
+         AGENT_ID: process.env.AGENT_ID || 'PLACEHOLDER_AGENT_ID',
+         AGENT_ALIAS_ID: process.env.AGENT_ALIAS_ID || 'PLACEHOLDER_AGENT_ALIAS_ID',
+       },
+       description: 'LINE Webhook to Bedrock AgentCore',
+     });
+     ```
+
+  3. **Lambda Layer ディレクトリ構造作成**（注意事項として記載）
+     ```
+     lambda-layer/
+     └── python/
+         └── lib/
+             └── python3.11/
+                 └── site-packages/
+                     └── (pip install したパッケージ)
+     ```
+
+     **重要**: ご主人が以下コマンドでLambda Layer を作成する必要があるにゃ：
+     ```bash
+     cd output/izakaya-agent
+     mkdir -p lambda-layer/python
+     pip install -r lambda/requirements.txt -t lambda-layer/python
+     ```
+
+  ### ステップ2: agent/requirements.txt 確認
+
+  **ファイル**: output/izakaya-agent/agent/requirements.txt
+
+  以下が含まれているか確認にゃ：
+  - strands-agents>=0.1.0
+  - boto3>=1.34.0
+  - requests>=2.31.0
+  - bedrock-agentcore-starter-toolkit>=0.1.0（Phase 2.5で追加済み）
+
+  **不足していれば追加**するにゃ。
+
+  ### ステップ3: README.md にPhase 4手順を追加
+
+  **ファイル**: output/izakaya-agent/README.md
+
+  以下のセクションを追加するにゃ：
+
+  ```markdown
+  ## Phase 4: デプロイ・テスト 🚀
+
+  ### 前提条件
+  - AWS CLI 設定済み
+  - Node.js 18+ インストール済み
+  - Python 3.11+ インストール済み
+
+  ### 手順
+
+  #### 1. Lambda Layer 作成
+  ```bash
+  cd output/izakaya-agent
+  mkdir -p lambda-layer/python
+  pip install -r lambda/requirements.txt -t lambda-layer/python
+  ```
+
+  #### 2. AgentCore CLI インストール
+  ```bash
+  pip install bedrock-agentcore-starter-toolkit
+  ```
+
+  #### 3. Memory リソース作成
+  ```bash
+  cd agent
+  agentcore memory create IzakayaAgentMemory \
+    --strategies '[{"semanticMemoryStrategy": {"name": "UserPreferences"}}]' \
+    --region ap-northeast-1 \
+    --wait
+  ```
+
+  #### 4. エージェント設定
+  ```bash
+  agentcore configure \
+    --entrypoint main.py \
+    --name izakaya-agent \
+    --runtime PYTHON_3_11 \
+    --region ap-northeast-1 \
+    --non-interactive
+  ```
+
+  #### 5. エージェントデプロイ
+  ```bash
+  agentcore launch
+  ```
+
+  #### 6. エージェントID取得
+  ```bash
+  agentcore status
+  # AGENT_ID と AGENT_ALIAS_ID をメモ
+  ```
+
+  #### 7. CDKスタックデプロイ
+  ```bash
+  cd ../infra
+  export AGENT_ID="<取得したAGENT_ID>"
+  export AGENT_ALIAS_ID="<取得したAGENT_ALIAS_ID>"
+  npm install
+  cdk deploy
+  ```
+
+  #### 8. Lambda Function URL 取得
+  CDKデプロイ後、Outputs から Function URL をメモ：
+  ```
+  IzakayaStack.LineWebhookFunctionUrl = https://xxxxx.lambda-url.ap-northeast-1.on.aws/
+  ```
+
+  #### 9. LINE Developers で Webhook URL 設定
+  1. LINE Developers Console にログイン
+  2. チャネルを選択
+  3. Messaging API 設定 > Webhook URL に Lambda Function URL を設定
+  4. 「Webhookの利用」をONにする
+  5. 「検証」をクリックして疎通確認
+
+  #### 10. 動作テスト
+  1. LINE公式アカウントを友だち追加
+  2. メッセージを送信
+  3. CloudWatch Logs で動作確認
+     ```bash
+     aws logs tail /aws/lambda/IzakayaStack-LineWebhookFunction --follow
+     ```
+
+  ### トラブルシューティング
+
+  #### Lambda タイムアウト
+  - CloudWatch Logs で実行時間を確認
+  - AgentCore の応答が遅い場合は timeout を延長
+
+  #### LINE署名検証エラー
+  - Secrets Manager に正しいチャネルシークレットが登録されているか確認
+  - `X-Line-Signature` ヘッダーが正しく渡されているか確認
+
+  #### AgentCore Runtime エラー
+  - AGENT_ID, AGENT_ALIAS_ID が正しく設定されているか確認
+  - AgentCore のステータスを確認: `agentcore status`
+  - Memory リソースが作成されているか確認
+
+  #### Memory機能が動作しない
+  - Memory リソースが作成されているか確認
+  - session_id（LINE user_id）が正しく渡されているか確認
+  - CloudWatch Logs でMemory関連エラーを確認
+  ```
+
+  ## 注意事項
+
+  - Lambda Layer は **ご主人が手動で作成**する必要があるにゃ
+  - AGENT_ID, AGENT_ALIAS_ID は **AgentCoreデプロイ後に取得**するにゃ
+  - CDKスタックデプロイ時に環境変数として渡すにゃ
+  - 型ヒント（typing）を全関数に付与にゃ
+  - ドキュメント文字列を全関数に記載にゃ
+
+  ## Phase 4 の成果物
+
+  - ✅ izakaya-stack.ts 更新（Lambda Layer, 環境変数）
+  - ✅ agent/requirements.txt 確認（bedrock-agentcore追加確認）
+  - ✅ README.md にPhase 4手順追加
+
+context:
+  output_dir: "output/izakaya-agent"
+  region: "ap-northeast-1"
+  references:
+    - "Phase 1で実装したCDKスタック"
+    - "Phase 2で実装したエージェント"
+    - "Phase 2.5で実装したMemory機能"
+    - "Phase 3で実装したLambda Webhook"
+expected_outputs:
+  - "output/izakaya-agent/infra/lib/izakaya-stack.ts（Lambda Layer, 環境変数追加）"
+  - "output/izakaya-agent/agent/requirements.txt（確認・更新）"
+  - "output/izakaya-agent/README.md（Phase 4手順追加）"
+  - "queue/reports/report-task-20260206-015929-kitten1.yaml"

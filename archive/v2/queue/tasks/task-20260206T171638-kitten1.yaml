@@ -1,0 +1,109 @@
+task_id: "task-20260206T171638-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T17:16:38"
+priority: urgent
+load_skills: []
+description: |
+  【🚨 緊急デバッグ】Cognito 400 Bad Request 修正
+
+  ## 目的
+  ログイン時の 400 Bad Request エラーを解決し、
+  ご主人がログインしてチャット画面まで到達できるようにするにゃ。
+
+  ## 症状
+  - ログイン画面は表示される（500エラーは修正済み）
+  - ユーザー名・パスワード入力後にログインすると 400 Bad Request
+  - エラー: POST https://cognito-idp.ap-northeast-1.amazonaws.com/ 400
+  - page.tsx:23 の <Authenticator> コンポーネントからのリクエスト
+
+  ## 調査・修正手順（優先度順）
+
+  ### Step 1: App Client にシークレットが設定されているか確認（最有力）
+  Amplify UI の Authenticator はクライアントシークレットなしの App Client が必須。
+  ```bash
+  # App Client の一覧取得
+  aws cognito-idp list-user-pool-clients \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --region ap-northeast-1
+
+  # 各 Client の詳細確認（シークレットの有無）
+  aws cognito-idp describe-user-pool-client \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --client-id <client_id> \
+    --region ap-northeast-1 \
+    --query "UserPoolClient.ClientSecret"
+  ```
+
+  - ClientSecret が存在する → シークレットありの App Client（❌ Authenticator 非対応）
+  - ClientSecret が null → シークレットなしの App Client（✅ Authenticator 対応）
+
+  **修正方法**:
+  - シークレットなしの新しい App Client を作成
+  - または Amplify Gen 2 設定で `generateSecret: false` を明示
+
+  ### Step 2: Amplify 設定の Client ID 確認
+  amplify_outputs.json や Amplify 設定ファイルの client_id が
+  実際の User Pool Client ID と一致しているか確認。
+  ```bash
+  # Amplify 設定ファイルを確認
+  cat output/nomibero-web/amplify_outputs.json 2>/dev/null | jq '.auth'
+  cat output/nomibero-web/amplifyconfiguration.json 2>/dev/null
+
+  # フロントエンドのAmplify設定コードを確認
+  grep -r "userPoolClientId\|userPoolWebClientId\|appClientId" output/nomibero-web/src/
+  ```
+
+  ### Step 3: 認証フロー設定確認
+  App Client で ALLOW_USER_SRP_AUTH が有効か確認。
+  Authenticator は SRP 認証フローを使う。
+  ```bash
+  aws cognito-idp describe-user-pool-client \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --client-id <client_id> \
+    --region ap-northeast-1 \
+    --query "UserPoolClient.ExplicitAuthFlows"
+  ```
+
+  期待値: ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+
+  ### Step 4: ユーザー状態確認
+  ユーザーが FORCE_CHANGE_PASSWORD 状態で、Authenticator がそのチャレンジを正しく処理できていない可能性。
+  ```bash
+  aws cognito-idp admin-get-user \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --username edgesakura@gmail.com \
+    --region ap-northeast-1 \
+    --query "UserStatus"
+  ```
+
+  ### Step 5: 修正実施
+  原因に応じて修正:
+  - App Client再作成（シークレットなし）
+  - Amplify 設定ファイル更新
+  - 認証フロー設定変更
+  - ユーザー状態のリセット
+
+  ### Step 6: ログインテスト
+  - ユーザー名: edgesakura@gmail.com
+  - パスワード: Nomibero2026!
+  - チャット画面まで到達することを確認
+
+  ## 重要な注意事項
+  - **App Client のシークレット設定が最有力の原因**にゃ
+  - Authenticator はクライアントシークレットなしの App Client が必須にゃ
+  - 修正後は必ずログインテストして確認することにゃ
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  user_pool_id: "ap-northeast-1_VwL7teKWl"
+  cognito_email: "edgesakura@gmail.com"
+  references:
+    - "output/nomibero-web/src/"
+    - "output/nomibero-web/amplify/"
+    - "output/nomibero-web/amplify_outputs.json"
+expected_outputs:
+  - "400エラーの原因特定（App Client設定の詳細）"
+  - "修正実施（ファイル名と修正内容）"
+  - "ログイン成功確認"
+  - "nawabari.md への報告"

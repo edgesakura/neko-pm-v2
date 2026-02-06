@@ -1,0 +1,59 @@
+task_id: "task-20260205T215757-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T21:57:57"
+priority: urgent
+parent_command: "cmd-20260205-215648"
+
+description: |
+  fox-launcher.sh 緊急修正にゃ！
+
+  ## 問題
+  `.launchers/fox-launcher.sh` の `--approval-mode full` が無効。
+  Gemini CLIの有効なオプションは: default, auto_edit, yolo, plan
+
+  ## 修正手順
+  1. `.launchers/fox-launcher.sh` を読み取る
+  2. 7行目を以下のように修正:
+     - 変更前: `gemini --approval-mode full`
+     - 変更後: `gemini --approval-mode yolo`
+  3. specialists.0 ペインでキツネを再起動（2回ルール厳守）:
+     ```bash
+     # 1回目: コマンド入力
+     tmux send-keys -t neko:specialists.0 "cd /home/edgesakura/neko-pm && ./.launchers/fox-launcher.sh"
+     # 間を空ける
+     sleep 1
+     # 2回目: Enter送信
+     tmux send-keys -t neko:specialists.0 Enter
+     ```
+  4. specialists.0 ペインを確認して起動成功を確認
+     ```bash
+     tmux capture-pane -t neko:specialists.0 -p | tail -20
+     ```
+  5. 完了報告YAML作成
+
+context:
+  references:
+    - ".launchers/fox-launcher.sh"
+  target_file: ".launchers/fox-launcher.sh"
+  line_number: 7
+  error_message: "Invalid values: Argument: approval-mode, Given: 'full', Choices: 'default', 'auto_edit', 'yolo', 'plan'"
+
+expected_outputs:
+  - "fox-launcher.sh の修正完了"
+  - "specialists.0 ペインでキツネ起動成功"
+  - "queue/reports/report-20260205T215757-kitten1.yaml"
+
+pre_task_checklist:
+  - "fox-launcher.sh の現在の内容を確認"
+  - "修正箇所（7行目）を特定"
+  - "specialists.0 ペインの状態を確認"
+
+post_task_checklist:
+  - "修正内容が正しいか確認（yolo に変更されているか）"
+  - "キツネの起動ログにエラーがないか確認"
+  - "完了報告YAMLに起動ログを含める"
+
+notes: |
+  - send-keys は必ず2回に分けること（2回ルール）
+  - specialists.0 はworkersウィンドウではなく別ウィンドウにゃ
+  - 起動確認まで含めて完了とするにゃ

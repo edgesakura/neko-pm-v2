@@ -1,0 +1,373 @@
+task_id: "task-20260206-024004-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T02:40:04"
+priority: medium
+load_skills: []
+description: |
+  ## 🎯 スキル化作戦 + README更新: 4タスクを実行するにゃ
+
+  既存スキル確認2件 + 新規スキル1件 + README更新にゃ。
+
+  ## タスク1: 既存スキル確認（2件）
+
+  ### 1-1. neko-cross-project-pattern-migration
+
+  **確認先**: ~/.claude/skills/neko-cross-project-pattern-migration/SKILL.md
+
+  **実施内容**:
+  - ファイルが存在するか確認にゃ
+  - 存在すれば「✅ スキップ（既存）」と報告にゃ
+  - 存在しなければ作成にゃ
+
+  **確認済み**: 存在する（Phase Dで作成済み）→ スキップにゃ
+
+  ### 1-2. neko-docs-integration-guide
+
+  **確認先**: ~/.claude/skills/neko-docs-integration-guide/SKILL.md
+
+  **実施内容**:
+  - ファイルが存在するか確認にゃ
+  - 存在すれば「✅ スキップ（既存）」と報告にゃ
+  - 存在しなければ作成にゃ
+
+  **確認済み**: 存在する（Phase Dで作成済み）→ スキップにゃ
+
+  ## タスク2: 新規スキル作成（1件）
+
+  ### project-automation-toolkit（19/20）
+
+  **保存先**: ~/.claude/skills/project-automation-toolkit/SKILL.md
+
+  **内容**:
+  自動化スクリプト生成パターン。Phase Dで作成した check-lock.sh, verify-checklist.sh のベストプラクティスをスキル化にゃ。
+
+  ```markdown
+  # project-automation-toolkit
+
+  プロジェクト固有の自動化スクリプト生成パターン。Phase Dで培った知見をまとめたスキルにゃ。
+
+  ## 使用タイミング
+  - プロジェクト固有の自動化スクリプトを作成する時
+  - ロック機構やチェックリスト検証を実装する時
+  - Bash スクリプトのベストプラクティスを適用する時
+
+  ## 設計原則
+
+  1. **単一責任の原則**: 1スクリプト = 1責務
+  2. **標準Exit code**: 0=成功, 1=失敗
+  3. **明確なエラーメッセージ**: ユーザーに何が起きたか伝える
+  4. **実行権限**: chmod +x で実行可能にする
+  5. **ドキュメント**: Usage コメントを必ず付ける
+
+  ## パターン1: ファイルロック確認スクリプト
+
+  **ユースケース**: nawabari.md の「🔒 ファイルロック」セクションを解析し、指定ファイルがロック中かどうかを判定
+
+  **実装例**: scripts/check-lock.sh
+
+  ```bash
+  #!/usr/bin/env bash
+  # Usage: ./check-lock.sh <file_path>
+  # Exit: 0=UNLOCKED, 1=LOCKED
+
+  set -euo pipefail
+
+  FILE_PATH="${1:-}"
+  NAWABARI="nawabari.md"
+
+  if [[ -z "$FILE_PATH" ]]; then
+    echo "Error: File path required" >&2
+    echo "Usage: $0 <file_path>" >&2
+    exit 2
+  fi
+
+  if [[ ! -f "$NAWABARI" ]]; then
+    echo "Error: nawabari.md not found" >&2
+    exit 2
+  fi
+
+  # ロックセクションを抽出してパース
+  if grep -A 20 "^## 🔒 ファイルロック" "$NAWABARI" | grep -q "| $FILE_PATH |"; then
+    LOCKER=$(grep -A 20 "^## 🔒 ファイルロック" "$NAWABARI" | grep "| $FILE_PATH |" | awk -F'|' '{print $3}' | xargs)
+    echo "🔒 LOCKED by $LOCKER"
+    exit 1
+  else
+    echo "✅ UNLOCKED"
+    exit 0
+  fi
+  ```
+
+  **ポイント**:
+  - `set -euo pipefail` でエラー時即座に終了
+  - 引数チェックでUsageを表示
+  - Exit code で結果を返す（スクリプト連携しやすい）
+
+  ## パターン2: チェックリスト検証スクリプト
+
+  **ユースケース**: Markdownファイル内のチェックリスト（- [ ]）を検証し、未チェック項目があれば警告
+
+  **実装例**: scripts/verify-checklist.sh
+
+  ```bash
+  #!/usr/bin/env bash
+  # Usage: ./verify-checklist.sh <file_path>
+  # Exit: 0=All checked, 1=Unchecked items
+
+  set -euo pipefail
+
+  FILE_PATH="${1:-}"
+
+  if [[ -z "$FILE_PATH" ]]; then
+    echo "Error: File path required" >&2
+    echo "Usage: $0 <file_path>" >&2
+    exit 2
+  fi
+
+  if [[ ! -f "$FILE_PATH" ]]; then
+    echo "Error: File not found: $FILE_PATH" >&2
+    exit 2
+  fi
+
+  # 未チェック項目を検索
+  UNCHECKED=$(grep -c "^- \[ \]" "$FILE_PATH" || true)
+
+  if [[ "$UNCHECKED" -gt 0 ]]; then
+    echo "⚠️  $UNCHECKED unchecked items found in $FILE_PATH"
+    grep -n "^- \[ \]" "$FILE_PATH" | head -5
+    exit 1
+  else
+    echo "✅ All items checked in $FILE_PATH"
+    exit 0
+  fi
+  ```
+
+  **ポイント**:
+  - `|| true` でgrepが見つからなくてもエラーにならない
+  - `-n` で行番号を表示（デバッグしやすい）
+  - Exit code で結果を返す
+
+  ## パターン3: プロジェクト状態確認スクリプト
+
+  **ユースケース**: プロジェクト全体の状態を一括確認
+
+  ```bash
+  #!/usr/bin/env bash
+  # Usage: ./check-project-status.sh
+
+  set -euo pipefail
+
+  echo "🔍 Checking project status..."
+
+  # Git status
+  echo ""
+  echo "📂 Git status:"
+  git status --short
+
+  # Pending tasks
+  echo ""
+  echo "📋 Pending tasks:"
+  grep -c "status: pending" queue/boss_to_guard.yaml || echo "0"
+
+  # File locks
+  echo ""
+  echo "🔒 File locks:"
+  if grep -A 20 "^## 🔒 ファイルロック" nawabari.md | grep -q "| - | - | - |"; then
+    echo "No locks"
+  else
+    grep -A 20 "^## 🔒 ファイルロック" nawabari.md | grep "|" | tail -n +3
+  fi
+
+  # Worker status
+  echo ""
+  echo "🐱 Worker status:"
+  grep -A 5 "^## 子猫状態" nawabari.md | grep "|" | tail -n +3
+
+  echo ""
+  echo "✅ Status check complete"
+  ```
+
+  ## パターン4: 自動クリーンアップスクリプト
+
+  **ユースケース**: 古いレポートファイルや一時ファイルを削除
+
+  ```bash
+  #!/usr/bin/env bash
+  # Usage: ./cleanup-old-reports.sh [days]
+  # Default: 7 days
+
+  set -euo pipefail
+
+  DAYS="${1:-7}"
+  REPORTS_DIR="queue/reports"
+
+  echo "🧹 Cleaning up reports older than $DAYS days..."
+
+  # 7日以上古いファイルを削除
+  find "$REPORTS_DIR" -name "*.yaml" -type f -mtime +"$DAYS" -delete
+
+  echo "✅ Cleanup complete"
+  ```
+
+  ## Exit Code 規約
+
+  | Code | 意味 | 使用例 |
+  |------|------|--------|
+  | 0 | 成功 | チェックOK、処理成功 |
+  | 1 | 失敗（予期された） | チェックNG、ロック中 |
+  | 2 | 使用方法エラー | 引数不足、ファイル不存在 |
+
+  ## エラーハンドリング
+
+  ```bash
+  # 基本テンプレート
+  set -euo pipefail  # エラー時即座に終了
+
+  # 引数チェック
+  if [[ -z "${VAR:-}" ]]; then
+    echo "Error: VAR is required" >&2
+    exit 2
+  fi
+
+  # ファイル存在チェック
+  if [[ ! -f "$FILE" ]]; then
+    echo "Error: File not found: $FILE" >&2
+    exit 2
+  fi
+
+  # コマンド実行（失敗しても続行）
+  RESULT=$(command || true)
+  ```
+
+  ## チェックリスト
+
+  スクリプト作成時に以下を確認せよ：
+
+  - [ ] shebang（#!/usr/bin/env bash）を付与
+  - [ ] set -euo pipefail でエラーハンドリング
+  - [ ] Usage コメントを記載
+  - [ ] 引数チェック実装
+  - [ ] ファイル存在チェック実装
+  - [ ] 標準Exit code（0=成功, 1=失敗, 2=引数エラー）
+  - [ ] エラーメッセージは標準エラー出力（>&2）
+  - [ ] chmod +x で実行権限付与
+  - [ ] ドライラン機能実装（オプション）
+  - [ ] ログ出力（オプション）
+
+  ## 参考資料
+
+  - Bash Best Practices
+  - ShellCheck（静的解析ツール）
+  ```
+
+  ## タスク3: README.md に新API移行手順を追加
+
+  **対象**: output/izakaya-agent/README.md
+
+  **追加箇所**: 「## Phase 4: デプロイ・テスト 🚀」セクション内の「### トラブルシューティング」に追加
+
+  **追加内容**:
+
+  ```markdown
+  #### ModuleNotFoundError: bedrock_agentcore.context
+
+  **問題**: `agentcore invoke` 実行時に以下のエラーが発生:
+  ```
+  ModuleNotFoundError: No module named 'bedrock_agentcore.context'
+  ```
+
+  **原因**: AgentCore の旧API（Phase 2, 2.5で使用）が公式ドキュメントと異なる
+
+  **解決方法**:
+
+  1. **main.py のインポート修正**
+
+  修正前（間違い）:
+  ```python
+  from bedrock_agentcore import BedrockAgentCoreApp
+  from bedrock_agentcore.context import RequestContext
+  ```
+
+  修正後（正解）:
+  ```python
+  from bedrock_agentcore.runtime import BedrockAgentCoreApp
+  # RequestContext は存在しない（削除）
+  ```
+
+  2. **エントリーポイント関数の修正**
+
+  修正前（間違い）:
+  ```python
+  @app.entrypoint
+  def main(payload, context: RequestContext):
+      session_id = context.session_id
+  ```
+
+  修正後（正解）:
+  ```python
+  @app.entrypoint
+  def invoke(payload, context):
+      session_id = getattr(context, 'session_id', None) or payload.get("session_id", "default-session")
+  ```
+
+  **重要**: 関数名を `main` → `invoke` に変更すること！
+
+  3. **utils/memory.py の新API対応**
+
+  修正前（旧API）:
+  ```python
+  from bedrock_agentcore.memory.session import MemorySessionManager
+  from bedrock_agentcore.memory.constants import ConversationalMessage, MessageRole
+  ```
+
+  修正後（新API）:
+  ```python
+  from bedrock_agentcore.memory import MemoryClient
+  import os
+
+  memory_client = MemoryClient(region_name='ap-northeast-1')
+  MEMORY_ID = os.getenv('MEMORY_ID')
+  ```
+
+  **API変更点**:
+
+  | 項目 | 旧API | 新API |
+  |------|-------|-------|
+  | インポート | `MemorySessionManager` | `MemoryClient` |
+  | メッセージ形式 | `ConversationalMessage` | タプル `(content, role)` |
+  | Role | `MessageRole.USER` | `"USER"` (文字列) |
+  | 履歴取得 | `session.get_last_k_turns(k=3)` | `memory_client.get_last_k_turns(memory_id, actor_id, session_id, k=3)` |
+  | 会話保存 | `session.add_turns(messages=[...])` | `memory_client.create_event(memory_id, actor_id, session_id, messages=[...])` |
+
+  4. **環境変数設定**
+
+  ```bash
+  cd agent
+  export MEMORY_ID="izakaya_agent_mem-ZOMh0R8tfz"
+  agentcore launch
+  agentcore invoke '{"prompt": "こんにちは"}'
+  ```
+
+  **参考**: 新API移行の詳細は緊急バグ修正レポート（queue/reports/report-task-20260206-022203-kitten1.yaml）を参照
+  ```
+
+  ## 注意事項
+
+  - 既存スキルの確認は `ls` コマンドで実施にゃ
+  - 存在すれば報告にスキップ理由を記載にゃ
+  - project-automation-toolkit は Claude Code Skills 形式（SKILL.md）で作成にゃ
+  - README.md は既存のトラブルシューティングセクションに追加にゃ（上書きしない）
+  - Markdownフォーマットを維持にゃ
+
+context:
+  skill_base_dir: "~/.claude/skills"
+  readme_path: "output/izakaya-agent/README.md"
+  reference_files:
+    - "scripts/check-lock.sh"
+    - "scripts/verify-checklist.sh"
+    - "queue/reports/report-task-20260206-022203-kitten1.yaml"
+expected_outputs:
+  - "~/.claude/skills/neko-cross-project-pattern-migration/SKILL.md（確認のみ）"
+  - "~/.claude/skills/neko-docs-integration-guide/SKILL.md（確認のみ）"
+  - "~/.claude/skills/project-automation-toolkit/SKILL.md"
+  - "output/izakaya-agent/README.md（新API移行手順追加）"
+  - "queue/reports/report-task-20260206-024004-kitten2.yaml"

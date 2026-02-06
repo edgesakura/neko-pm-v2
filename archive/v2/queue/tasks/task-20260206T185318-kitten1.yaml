@@ -1,0 +1,99 @@
+task_id: "task-20260206T185318-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T18:53:18"
+priority: high
+load_skills: []
+description: |
+  【🍺 Phase 2 - グループA】バックエンド - エージェントツール拡張
+
+  ## 目的
+  ジャンル検索、予算フィルタに対応したエージェントツールを実装する。
+
+  ## タスク手順
+
+  ### A1: ジャンル検索対応（search_restaurants.py 改修）
+
+  ファイル: `output/izakaya-agent/agent/tools/search_restaurants.py`
+
+  - search_restaurants ツールに `genre` パラメータを追加
+  - ホットペッパーAPIのジャンルコード対応:
+    - G001: 居酒屋
+    - G002: ダイニングバー
+    - G003: 創作料理
+    - G004: 和食
+    - G008: 焼肉
+  - Google Places API の keyword にジャンルを反映
+
+  ### A2: 予算フィルタ対応
+
+  同じファイル: `output/izakaya-agent/agent/tools/search_restaurants.py`
+
+  - search_restaurants ツールに `budget_min`, `budget_max` パラメータ追加
+  - ホットペッパーAPIの budget パラメータ対応:
+    - B001: ~500円
+    - B002: 501~1000円
+    - B003: 1001~1500円
+    - B008: 1501~2000円
+    - B004: 2001~3000円
+    - B005: 3001~4000円
+    - B006: 4001~5000円
+    - B012: 5001~7000円
+  - Google Places API の price_level でフィルタ
+
+  ### A3: エージェントプロンプト更新
+
+  ファイル: `output/izakaya-agent/agent/agent.py`
+
+  - エージェントのシステムプロンプトにジャンル・予算の選択肢を追記
+  - ユーザーの自然言語から適切なパラメータを推定するよう指示
+  - 例: 「安い焼肉」→ genre=G008, budget_max=3000
+
+  ### A4: Lambda handler 修正
+
+  ファイル: `output/izakaya-agent/lambda/handler.py`
+
+  - Web API リクエストにジャンル・予算パラメータを追加対応
+  - リクエストボディからパラメータを取得してエージェントに渡す
+
+  ### A5: CDK デプロイ + AgentCore 再デプロイ
+
+  ```bash
+  cd output/izakaya-agent/infra
+  npx cdk deploy --require-approval never
+
+  cd output/izakaya-agent
+  agentcore deploy
+  ```
+
+  ### A6: 動作確認
+
+  ```bash
+  # AgentCore CLI でテスト
+  agentcore invoke --message "安い焼肉を探して"
+  ```
+
+  期待される動作:
+  - ジャンル: 焼肉（G008）が適用される
+  - 予算: ~3000円程度が適用される
+
+  ## 重要な注意事項
+  - ⚠️ ツールの docstring が重要（LLM がパラメータの意味を理解する）
+  - ⚠️ ホットペッパーAPIのジャンルコード・予算コードは公式ドキュメント参照
+  - ⚠️ AgentCore 再デプロイは必須（エージェント定義が変更されるため）
+
+context:
+  service_name: "izakaya-agent"
+  project_dir: "output/izakaya-agent"
+  region: "ap-northeast-1"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  references:
+    - "output/izakaya-agent/agent/tools/search_restaurants.py"
+    - "output/izakaya-agent/agent/agent.py"
+    - "output/izakaya-agent/lambda/handler.py"
+expected_outputs:
+  - "ジャンル検索対応（search_restaurants.py）"
+  - "予算フィルタ対応（search_restaurants.py）"
+  - "エージェントプロンプト更新（agent.py）"
+  - "Lambda handler 修正（handler.py）"
+  - "CDK + AgentCore デプロイ成功"
+  - "動作確認完了"

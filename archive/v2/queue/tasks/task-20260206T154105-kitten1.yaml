@@ -1,0 +1,121 @@
+task_id: "task-20260206T154105-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T15:41:05"
+priority: high
+load_skills: []
+description: |
+  【グループA: フロントエンド基盤】のみべろエージェント v2 Phase 1
+
+  ## タスク概要
+  LINE Bot「イザカヤくん」をWebアプリ化するフロントエンド基盤を構築せよ。
+  Next.js + Amplify + Cognito認証（招待制）+ チャットUIを実装するにゃ。
+
+  ## A1: Next.js + Amplify プロジェクトセットアップ
+
+  ### 実装内容
+  1. output/nomibero-web/ にNext.js 15（App Router）プロジェクト作成
+     ```bash
+     cd output
+     npx create-next-app@latest nomibero-web --typescript --tailwind --app --no-src-dir
+     cd nomibero-web
+     ```
+  2. Amplify CLI初期化
+     ```bash
+     amplify init
+     # Project name: nomiberoweb
+     # Environment: dev
+     # Default editor: None
+     # App type: javascript
+     # Framework: react
+     # Distribution directory: .next
+     # Build command: npm run build
+     # Start command: npm run dev
+     ```
+  3. Amplify Hosting追加
+     ```bash
+     amplify add hosting
+     # Select: Hosting with Amplify Console
+     # Choose: Manual deployment
+     ```
+  4. Tailwind CSS設定確認（create-next-appで自動設定済み）
+  5. 基本レイアウト作成
+     - app/layout.tsx: ヘッダー（ログイン/ログアウトボタン）
+     - app/page.tsx: チャットエリア + 入力欄
+     - レスポンシブデザイン（Tailwind使用）
+
+  ## A2: Cognito認証（招待制）
+
+  ### 実装内容
+  1. Amplify Auth追加
+     ```bash
+     amplify add auth
+     # Default configuration: Manual configuration
+     # Sign-in method: Username
+     # Allow unauthenticated logins: No
+     # Enable Multi-Factor Authentication: No
+     # Email based user registration: No（セルフサインアップ無効）
+     # Specify read/write attributes: Email
+     ```
+  2. Amplify UI Components導入
+     ```bash
+     npm install @aws-amplify/ui-react aws-amplify
+     ```
+  3. Cognito設定ファイル生成
+     ```bash
+     amplify push
+     ```
+  4. 認証UIコンポーネント実装
+     - app/login/page.tsx: Authenticatorコンポーネント使用
+     - app/components/AuthProvider.tsx: 認証状態管理
+     - ログイン済みユーザーのみチャット画面にアクセス可能
+  5. 管理者によるユーザー作成手順をREADME.mdに記載
+
+  ## A3: チャットUI
+
+  ### 実装内容
+  1. メッセージ送受信コンポーネント
+     - app/components/ChatMessage.tsx: メッセージ表示（ユーザー/AI）
+     - app/components/ChatInput.tsx: 入力欄 + 送信ボタン
+     - app/components/ChatArea.tsx: メッセージリスト表示
+  2. ストリーミング表示対応
+     - AgentCoreのストリーミングレスポンスを順次表示
+     - Server-Sent Events (SSE) または Streaming APIを想定
+  3. チャット履歴表示
+     - ローカルストレージまたはCognitoユーザー属性に保存
+     - セッション内での履歴表示
+  4. レスポンシブデザイン
+     - スマホ対応（Tailwind CSSのresponsive utilities使用）
+     - ヘッダー固定、チャットエリアスクロール、入力欄固定
+     - 画面サイズに応じたレイアウト調整
+
+  ## 技術スタック
+  - Next.js 15 (App Router)
+  - TypeScript
+  - Tailwind CSS
+  - @aws-amplify/ui-react（認証UI）
+  - aws-amplify v6
+
+  ## 成果物
+  - output/nomibero-web/ Next.jsプロジェクト（完全動作）
+  - Cognito認証（招待制）動作確認
+  - チャットUI（レスポンシブ）実装
+  - ローカルで動作確認（npm run dev）
+
+  ## 注意事項
+  - Amplify CLI のインストールが必要: `npm install -g @aws-amplify/cli`
+  - AWS認証情報が必要（aws configure済み前提）
+  - セルフサインアップ無効の設定を確実に
+  - レスポンシブデザインはスマホファーストで
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  region: "ap-northeast-1"
+  references:
+    - "CLAUDE.md"
+
+expected_outputs:
+  - "output/nomibero-web/ Next.jsプロジェクト"
+  - "Cognito認証（招待制）動作"
+  - "チャットUI（レスポンシブ）"
+  - "ローカル動作確認完了"

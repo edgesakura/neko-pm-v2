@@ -1,0 +1,78 @@
+task_id: "task-20260206T170104-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T17:01:04"
+priority: urgent
+load_skills: []
+description: |
+  【🚨 緊急デバッグ】Next.js Internal Server Error 修正
+
+  ## 目的
+  http://localhost:3002 にアクセスすると Internal Server Error が画面に表示される問題を解決し、
+  ご主人がWebアプリをテストできるようにするにゃ。
+
+  ## 調査・修正手順
+
+  ### Step 1: Next.js サーバーログ確認（最優先）
+  ローカルサーバーのターミナル出力にエラーが出ているはず。
+  ```bash
+  # サーバープロセス確認
+  ps aux | grep "next dev"
+
+  # 現在のサーバーを停止
+  pkill -f "next dev"
+
+  # foreground で起動してログを確認
+  cd output/nomibero-web
+  npm run dev -- -p 3002 2>&1 | head -100
+  ```
+
+  エラーメッセージから以下を確認:
+  - コンポーネントのエラー（構文エラー、インポートエラー）
+  - Amplify 設定エラー（amplify/backend.ts, amplify/auth/resource.ts）
+  - 環境変数の未設定
+
+  ### Step 2: ビルドエラー確認
+  ```bash
+  cd output/nomibero-web
+  npm run build 2>&1
+  ```
+  ビルドが通らなければコードの問題。エラーメッセージから修正箇所を特定。
+
+  ### Step 3: よくある原因チェック
+  - Amplify Gen 2 の設定ファイル構文エラー
+  - amplifyconfiguration の参照エラー（aws-exports.js vs amplify_outputs.json）
+  - @aws-amplify/ui-react のインポートエラー
+  - 環境変数の未設定（.env.local が必要か）
+  - node_modules の不整合 → npm install 再実行
+
+  ### Step 4: 修正実施
+  エラー原因に応じて修正:
+  - コードのバグ → 修正
+  - 設定ファイルのエラー → 修正
+  - 依存関係の問題 → npm install
+  - 環境変数の未設定 → .env.local 作成
+
+  ### Step 5: 動作確認
+  - http://localhost:3002 でログイン画面が正常表示されること
+  - コンソールエラーがないこと（ブラウザ拡張のノイズは無視）
+  - ログインして チャット画面が表示されること
+
+  ## 重要な注意事項
+  - サーバーログを**必ず確認**すること（エラーの根本原因が書いてある）
+  - ブラウザのコンソールエラーは「SES lockdown」「content.js」等のノイズなので無視
+  - 修正後は必ずサーバーを再起動して確認すること
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  local_url: "http://localhost:3002"
+  references:
+    - "output/nomibero-web/src/"
+    - "output/nomibero-web/amplify/"
+    - "output/nomibero-web/package.json"
+    - "output/nomibero-web/next.config.js"
+expected_outputs:
+  - "エラー原因の特定レポート（サーバーログからの詳細）"
+  - "修正実施（ファイル名と修正内容）"
+  - "ログイン画面が正常表示されることの確認"
+  - "nawabari.md への報告"

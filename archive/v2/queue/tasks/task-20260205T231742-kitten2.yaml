@@ -1,0 +1,116 @@
+task_id: "task-20260205T231742-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-05T23:17:42"
+priority: high
+parent_command: "cmd-20260205-231447"
+
+description: |
+  🐱 Phase A: 基盤改善作戦 - 子猫2担当にゃ！
+
+  ## タスク2: instructions/kitten.md に /clear復帰手順追加
+
+  /tmp/multi-agent-shogun/CLAUDE.md の「/clear後の復帰手順」(50-93行目) を参考に、
+  instructions/kitten.md に以下のセクションを追加:
+
+  ```markdown
+  ## 🔄 /clear後の復帰手順（ライトロード）
+
+  /clear を受けた子猫は、以下の手順で最小コストで復帰せよにゃ。
+  この手順は CLAUDE.md（自動読み込み）のみで完結するにゃ。
+  instructions/kitten.md は初回復帰時には読まなくてよい（2タスク目以降で必要なら読む）にゃ。
+
+  > **復帰モードの違い**:
+  > - **セッション開始**: 白紙状態。Memory MCP + instructions + YAML を全て読む（フルロード）
+  > - **コンパクション復帰**: summaryが残っている。正データから再確認
+  > - **/clear後**: 白紙状態だが、最小限の読み込みで復帰可能（ライトロード ~5,000トークン）
+
+  ### /clear後の復帰フロー（~5,000トークンで復帰）
+
+  ```
+  /clear実行
+    │
+    ▼ CLAUDE.md 自動読み込み（本セクションを認識）
+    │
+    ▼ Step 1: 自分のタスクYAML読み込み（~800トークン）
+    │   queue/tasks/task-*-kitten{N}.yaml を探して読む
+    │   （Nは自分の番号。workers.1なら kitten1）
+    │   → status を確認して次のアクションを決定
+    │
+    ▼ Step 2: Memory MCP 読み込み（~700トークン・オプション）
+    │   ToolSearch("select:mcp__memory__read_graph")
+    │   mcp__memory__read_graph()
+    │   → ご主人の好み・ルール・教訓を復元
+    │   ※ 失敗時もStep 3以降を続行せよ（タスク実行は可能）
+    │
+    ▼ Step 3: 必要なコンテキストファイル読み込み
+    │   タスクYAMLの context.references に記載されたファイルを読む
+    │   （対象ファイル、参照ドキュメント等）
+    │
+    ▼ 作業開始
+  ```
+
+  ### /clear復帰の禁止事項
+  - instructions/kitten.md を読む必要はない（コスト節約。2タスク目以降で必要なら読む）
+  - ポーリング禁止（F004）、番猫への詳細報告禁止（F002）は引き続き有効
+  - /clear前のタスクの記憶は消えている。タスクYAMLだけを信頼せよ
+  ```
+
+  ## タスク4: instructions/guard-cat.md の到達確認基準統一
+
+  instructions/guard-cat.md の send-keys 関連セクションに、以下の到達確認基準を追加:
+
+  ```markdown
+  ### send-keys 到達確認基準（強化版）
+
+  子猫にコマンドを送信した後、到達確認を行うにゃ。
+
+  #### 到達OK の証拠
+  以下のいずれかが表示されていれば到達成功にゃ：
+  - **処理開始インジケーター**:
+    - スピナー記号: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ ✻ ⠂ ✳
+    - ステータス文字: thinking, Effecting, Boondoggling, Puzzling, Calculating, Fermenting, Crunching, Razzle-dazzling, Pouncing
+  - **エコーバック**: 送信したコマンドがペインに表示されている
+  - **処理中ログ**: ファイル読み取り・書き込みログが出力されている
+
+  #### 到達NG の判定
+  以下の場合は未到達と判断にゃ：
+  - `❯` プロンプトのみが表示されている（処理が始まっていない）
+  - `bypass permissions on` の表示だけ（これは常時表示なので証拠にならない）
+  - 送信したコマンドが全く表示されていない
+
+  #### 到達確認の実施タイミング
+  - 子猫にタスク通知後、5秒待ってから1回のみ確認
+  - 未到達の場合はリトライ（最大3回）
+  - 3回失敗したらボスねこにエスカレ
+  ```
+
+  ## 完了報告
+  タスク2とタスク4が完了したら、queue/reports/ に報告YAMLを作成にゃ。
+
+context:
+  references:
+    - "instructions/kitten.md"
+    - "instructions/guard-cat.md"
+    - "/tmp/multi-agent-shogun/CLAUDE.md"
+  reference_repo: "/tmp/multi-agent-shogun/"
+
+expected_outputs:
+  - "instructions/kitten.md（/clear復帰手順追加）"
+  - "instructions/guard-cat.md（到達確認基準統一）"
+  - "queue/reports/report-20260205T231742-kitten2.yaml"
+
+pre_task_checklist:
+  - "/tmp/multi-agent-shogun/CLAUDE.md の /clear復帰手順セクション確認"
+  - "instructions/kitten.md の現在の構造確認"
+  - "instructions/guard-cat.md の send-keys セクション確認"
+
+post_task_checklist:
+  - "instructions/kitten.md に /clear復帰手順が追加されているか確認"
+  - "instructions/guard-cat.md に到達確認基準が追加されているか確認"
+  - "完了報告YAMLに skill_candidate と improvement_proposals を記入"
+
+notes: |
+  - 2つのタスクを順次実行にゃ（タスク2 → タスク4）
+  - 参照元は /tmp/multi-agent-shogun/ にあるにゃ
+  - /clear復帰手順は neko-pm 用に簡略化して記載にゃ
+  - 到達確認基準はスピナー記号を具体的に列挙するにゃ〜

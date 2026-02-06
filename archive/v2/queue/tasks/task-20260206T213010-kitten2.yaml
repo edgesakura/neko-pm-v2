@@ -1,0 +1,123 @@
+task_id: "task-20260206T213010-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T21:30:10"
+priority: medium
+load_skills: []
+description: |
+  【🔧 ChatInput.tsx アクセシビリティ改善】Phase 2 PR 更新
+
+  ## 目的
+  Phase 2 の GitHub PR (#1) に対して、ChatInput.tsx のアクセシビリティと
+  コード品質を改善する軽微な修正を追加する。
+
+  ## タスク内容
+
+  ### 修正1: ジャンルボタンに aria-pressed 追加【MEDIUM】
+
+  現在、ジャンル選択ボタンに視覚的なスタイル変更はあるが、
+  スクリーンリーダー等のアクセシビリティツールに状態が伝わらない。
+
+  **修正箇所**: output/nomibero-web/app/components/ChatInput.tsx
+
+  ジャンルボタンの各 `<button>` タグに以下を追加:
+  ```tsx
+  aria-pressed={selectedGenres.includes(genre)}
+  ```
+
+  これにより、ボタンの選択状態がARIA属性として公開され、
+  アクセシビリティが向上する。
+
+  ### 修正2: メッセージ組み立ての改善【LOW】
+
+  現在、メッセージ組み立てで文字列連結を使っているが、
+  余分なスペースが入る可能性がある。
+
+  **修正方針（どちらか選択）**:
+
+  A) 配列 join 方式:
+  ```tsx
+  const parts = [message];
+  if (selectedGenres.length > 0) {
+    parts.push(`ジャンル: ${selectedGenres.join(', ')}`);
+  }
+  if (selectedBudget) {
+    parts.push(`予算: ${selectedBudget}`);
+  }
+  const finalMessage = parts.join(' ');
+  ```
+
+  B) trim 方式:
+  ```tsx
+  let finalMessage = message;
+  if (selectedGenres.length > 0) {
+    finalMessage += ` ジャンル: ${selectedGenres.join(', ')}`;
+  }
+  if (selectedBudget) {
+    finalMessage += ` 予算: ${selectedBudget}`;
+  }
+  finalMessage = finalMessage.trim();
+  ```
+
+  どちらか好みの方式で実装せよ。
+
+  ## Git作業
+
+  ### ブランチ確認
+  既存の feature/phase2-search-ui ブランチで作業する。
+  ```bash
+  cd output/nomibero-web
+  git checkout feature/phase2-search-ui
+  git pull origin feature/phase2-search-ui
+  ```
+
+  ### 修正 → commit → push
+  ```bash
+  # ChatInput.tsx を修正
+  # TypeScript型チェック
+  npm run type-check || npx tsc --noEmit
+
+  # git add + commit
+  git add app/components/ChatInput.tsx
+  git commit -m "$(cat <<'COMMIT_EOF'
+  refactor(ChatInput): アクセシビリティとコード品質改善
+
+  ## 変更内容
+  - ジャンルボタンに aria-pressed 属性を追加（アクセシビリティ向上）
+  - メッセージ組み立てロジックをリファクタ（余分なスペース削減）
+
+  ## 影響範囲
+  - ChatInput.tsx のみ
+  - UIの見た目は変わらず、内部実装の改善
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  COMMIT_EOF
+  )"
+
+  # push
+  git push origin feature/phase2-search-ui
+  ```
+
+  ### PR 自動更新確認
+  GitHub の PR #1 が自動的に更新されることを確認する。
+  新しいコミットが追加されているはずにゃ。
+
+  ## 重要な注意事項
+  - ⚠️ /clear 不要、即実行にゃ
+  - ⚠️ 既存の機能を壊さないこと（aria-pressed 追加だけなので影響なし）
+  - ⚠️ TypeScript エラーが出ないこと確認
+  - ⚠️ PR は新規作成せず、既存 PR に push で更新
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  branch: "feature/phase2-search-ui"
+  pr_number: 1
+  pr_url: "https://github.com/edgesakura/nomibero-web/pull/1"
+  references:
+    - "output/nomibero-web/app/components/ChatInput.tsx"
+expected_outputs:
+  - "aria-pressed 属性追加"
+  - "メッセージ組み立て改善"
+  - "TypeScript型チェック PASS"
+  - "git commit + push 完了"
+  - "PR #1 更新確認"

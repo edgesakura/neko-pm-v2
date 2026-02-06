@@ -1,0 +1,138 @@
+task_id: "task-20260205T232624-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T23:26:24"
+priority: high
+parent_command: "cmd-20260205-232508"
+
+description: |
+  🐱 Phase B: 品質改善作戦 - 子猫1担当にゃ！
+
+  ## タスク1: ファイルロック機構の追加
+
+  instructions/guard-cat.md に「ファイルロック」セクションを追加するにゃ。
+
+  ### 仕組み
+  - 番猫がタスク配分時に、各子猫の担当ファイルを nawabari.md に記録
+  - 他の子猫は記録されたファイルを編集不可
+  - タスク完了時にロック解除
+
+  ### nawabari.md への追加形式
+  ```markdown
+  ## 🔒 ファイルロック
+
+  | ファイル | ロック者 | 開始時刻 |
+  |----------|----------|----------|
+  | src/auth.ts | 子猫1 | 23:25:00 |
+  ```
+
+  ### instructions/guard-cat.md への追加内容
+  適切な場所（タスク配分セクション付近）に以下を追加:
+
+  ```markdown
+  ## 🔒 ファイルロック機構
+
+  ### 目的
+  複数の子猫が同時に同じファイルを編集することを防ぎ、
+  ファイル競合（RACE-001）を回避するにゃ。
+
+  ### ロックの仕組み
+  1. **タスク配分時**: 番猫が nawabari.md にファイルロックを記録
+  2. **作業中**: 他の子猫はロック中のファイルを編集不可
+  3. **完了時**: ロック解除（nawabari.md から削除）
+
+  ### nawabari.md への記録形式
+  ```markdown
+  ## 🔒 ファイルロック
+
+  | ファイル | ロック者 | 開始時刻 |
+  |----------|----------|----------|
+  | src/auth.ts | 子猫1 | 2026-02-05T23:25:00 |
+  | src/api.ts | 子猫2 | 2026-02-05T23:25:10 |
+  ```
+
+  ### ロック確認手順
+  番猫がタスク配分前に、対象ファイルがロック中でないか確認:
+  1. nawabari.md の「🔒 ファイルロック」セクションを確認
+  2. 対象ファイルがロック中の場合、そのタスクは待機
+  3. ロックされていない場合、タスク配分してロックを記録
+
+  ### ロック解除手順
+  タスク完了時に、番猫が nawabari.md からロックを削除:
+  ```bash
+  # ロック解除例（番猫が実施）
+  # nawabari.md から該当行を削除
+  ```
+  ```
+
+  ## タスク2: 割り込み防止機構の追加
+
+  instructions/guard-cat.md に「割り込み防止」セクションを追加するにゃ。
+
+  ### instructions/guard-cat.md への追加内容
+  適切な場所（子猫の状態確認セクション付近）に以下を追加:
+
+  ```markdown
+  ## 🚫 割り込み防止機構
+
+  ### 目的
+  作業中の子猫に新規タスクを割り当てず、
+  進行中のタスクを保護するにゃ。
+
+  ### ルール
+  - 子猫が作業中（busy）の場合、新規指示は queue/ に待機
+  - 緊急タスク（priority: urgent）のみ割り込み可
+  - 割り込み時は現在タスクを checkpoint 保存
+
+  ### busy判定方法
+  tmux capture-pane で子猫の状態を確認:
+  ```bash
+  tmux capture-pane -t neko:workers.{N} -p | tail -20
+  ```
+
+  **busy の証拠**:
+  - スピナー表示中: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ ✻ ⠂ ✳
+  - ステータス文字: thinking, Effecting, Boondoggling, Puzzling, Calculating
+
+  **idle の証拠**:
+  - `❯` プロンプト表示
+  - `bypass permissions on`（常時表示なので単独では証拠にならない）
+
+  ### タスク配分の判断
+  1. 子猫が idle の場合: 即座にタスク配分
+  2. 子猫が busy の場合:
+     - priority: urgent → 割り込み実行（現在タスクをcheckpoint保存）
+     - priority: high/medium/low → queue/ に待機
+
+  ### 割り込み時の手順（priority: urgent のみ）
+  1. 子猫に /clear を送信（現在のコンテキストをクリア）
+  2. nawabari.md に中断したタスクを記録
+  3. 緊急タスクを配分
+  4. 緊急タスク完了後、中断タスクを再開
+  ```
+
+  ## 完了報告
+  タスク1とタスク2が完了したら、queue/reports/ に報告YAMLを作成にゃ。
+
+context:
+  references:
+    - "instructions/guard-cat.md"
+    - "/tmp/multi-agent-shogun/instructions/ashigaru.md"
+  reference_repo: "/tmp/multi-agent-shogun/"
+
+expected_outputs:
+  - "instructions/guard-cat.md（ファイルロック + 割り込み防止セクション追加）"
+  - "queue/reports/report-20260205T232624-kitten1.yaml"
+
+pre_task_checklist:
+  - "instructions/guard-cat.md の現在の構造確認"
+  - "適切な挿入位置を特定"
+
+post_task_checklist:
+  - "instructions/guard-cat.md にファイルロック機構が追加されているか確認"
+  - "instructions/guard-cat.md に割り込み防止機構が追加されているか確認"
+  - "完了報告YAMLに skill_candidate と improvement_proposals を記入"
+
+notes: |
+  - 2つのセクションを guard-cat.md に追加するにゃ
+  - タスク1とタスク2は同じファイルを編集するので、1匹で順次実行にゃ
+  - RACE-001回避のため、guard-cat.md は子猫1のみが編集にゃ〜

@@ -1,0 +1,95 @@
+task_id: "task-20260202-122315-kitten3"
+assigned_to: "kitten3"
+timestamp: "2026-02-02T12:23:15"
+priority: high
+command_id: "cmd-20260202-121728"
+description: |
+  【追加修正】owl-watcher.sh 承認監視機能の改善
+
+  ## 背景
+  ボスねこからの追加指示：緊急バグ修正に加えて、以下の2点を修正する。
+
+  ## 修正内容
+
+  ### 修正1: -f パターン削除（誤検出対策）
+  **ファイル**: /home/edgesakura/git/neko-pm/owl-watcher.sh
+
+  **問題**: 承認監視の deny_patterns に `-f` が含まれているが、これは誤検出の原因になる可能性がある。
+  - 例: `ls -laf` のような無害なコマンドも拒否される
+
+  **修正方法**:
+  deny_patterns から `-f` を削除する。ただし、以下は残す：
+  - `rm -rf`, `rm -r`: 削除系は明確に拒否
+  - `--force`: 強制オプションは拒否
+  - `-f` 単体は削除（誤検出防止）
+
+  **該当箇所**: owl-watcher.sh の deny_patterns 定義部分
+  ```bash
+  # Before
+  deny_patterns=(
+      "rm -rf"
+      "rm -r"
+      "-f"  # ← これを削除
+      "--force"
+      ...
+  )
+
+  # After
+  deny_patterns=(
+      "rm -rf"
+      "rm -r"
+      # "-f" を削除（誤検出防止）
+      "--force"
+      ...
+  )
+  ```
+
+  ### 修正2: コマンドログ空問題の修正
+  **問題**: 承認ログにコマンド詳細が記録されていない（`[REJECTED]` だけ）
+
+  **修正方法**:
+  承認ログに以下の情報を記録する：
+  1. 対象ペイン
+  2. 検出されたコマンド（または承認プロンプトの内容）
+  3. 判定理由（APPROVED / REJECTED）
+
+  **修正箇所**: logs/approval.log への書き込み部分
+  ```bash
+  # Before
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${pane}] [REJECTED]" >> "${APPROVAL_LOG}"
+
+  # After
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${pane}] [REJECTED] Command: ${command_snippet} Reason: ${reject_reason}" >> "${APPROVAL_LOG}"
+  ```
+
+  ## 動作確認
+
+  修正後、以下を確認：
+  1. `-f` を含む無害なコマンド（`ls -laf`）が承認されること
+  2. 危険なコマンド（`rm -rf`）は拒否されること
+  3. logs/approval.log にコマンド詳細が記録されること
+
+  ```bash
+  # フクロウ再起動
+  ./owl-watcher.sh --stop
+  ./owl-watcher.sh --daemon
+
+  # ログ確認
+  tail -f logs/approval.log
+  ```
+
+context:
+  file: "/home/edgesakura/git/neko-pm/owl-watcher.sh"
+  previous_fix: "task-20260202-121830-kitten3（承認プロンプト検出パターン追加）"
+
+expected_outputs:
+  - "owl-watcher.sh の修正版"
+  - "-f パターンが削除されていること"
+  - "logs/approval.log にコマンド詳細が記録されること"
+  - "完了報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - Editツールで該当箇所を修正するにゃ
+  - 修正後は動作確認が必須にゃ
+  - owl-watcher.sh を再起動するにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

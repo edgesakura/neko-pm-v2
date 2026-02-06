@@ -1,70 +1,52 @@
-# neko-pm 設定ファイル
-# 猫型マルチエージェントシステム設定にゃ〜
+# neko-pm v3 設定ファイル
+# Agent Teams ベース猫型マルチエージェントシステム設定にゃ〜
 
 # システム基本設定
 system:
   name: "neko-pm"
-  version: "1.0.0"
+  version: "3.0.0"
   language: "ja"
+  architecture: "agent-teams"
 
-# エージェント設定
+# エージェント設定（2層構成）
 agents:
-  boss_cat:
-    name: "ボスねこ"
+  lead:
+    name: "ボスねこ（Lead）"
     model: "opus"
-    session: "boss"
-    pane: "boss:0.0"
-    role: "PM（プロジェクトマネージャー）"
+    role: "PM（プロジェクトマネージャー）+ PL（タスク分解）"
+    mode: "delegate"
 
-  guard_cat:
-    name: "番猫"
+  teammate:
+    name: "子猫（Teammate）"
     model: "sonnet"
-    session: "team"
-    pane: "team:0.0"
-    role: "PL（プロジェクトリーダー）"
+    role: "メンバー（実装担当）"
+    spawn_method: "agent-teams"
 
   elder_cat:
     name: "長老猫"
     model: "opus"
-    session: null  # オンデマンド召喚（Task tool）
+    invocation: "on_demand"
     role: "参謀（アドバイザー）"
 
-  kitten:
-    name: "子猫"
-    model: "sonnet"
-    session: "worker"
-    role: "メンバー（実行部隊）"
-    default_count: 3
+# 外部エージェント（Bash 経由）
+external_agents:
+  sage_fox:
+    name: "賢者キツネ"
+    tool: "gemini"
+    model: "gemini-3-pro"
+    use_for: ["リサーチ", "トレンド調査", "概要把握"]
 
-# 通信設定
-communication:
-  # ボスねこ→番猫
-  boss_to_guard:
-    queue_file: "queue/boss_to_guard.yaml"
+  research_tanuki:
+    name: "研究狸"
+    tool: "codex"
+    model: "gpt-5.3-codex-high"
+    use_for: ["深い調査", "詳細分析", "Lead の相談相手"]
 
-  # 番猫→子猫
-  guard_to_kitten:
-    queue_dir: "queue/tasks/"
-
-  # 子猫→番猫
-  kitten_to_guard:
-    queue_dir: "queue/reports/"
-
-# 縄張り（状況板）設定
-nawabari:
-  file: "nawabari.md"
-  update_interval: "on_event"  # リアルタイム更新
-
-# send-keys ルール（絶対厳守にゃ！）
-send_keys_rule:
-  # 必ず2回に分けて送信すること
-  # 1回目: コマンド入力（Enter なし）
-  # 2回目: Enter 送信
-  steps:
-    - "tmux send-keys -t {pane} \"{command}\" \"\""
-    - "sleep 1"
-    - "tmux send-keys -t {pane} Enter"
-  warning: "絶対に1回のsend-keysでコマンドとEnterを同時に送るなにゃ！"
+  owl_reviewer:
+    name: "目利きフクロウ"
+    tool: "codex"
+    model: "gpt-5.3-codex-high"
+    use_for: ["コードレビュー", "セキュリティ監査"]
 
 # スキルロード設定
 skills:
@@ -78,11 +60,13 @@ skills:
     - "datadog"
     - "aws"
     - "ppt"
+    - "external-agents"
 
 # 禁止事項（全エージェント共通）
 prohibited_actions:
-  - "ボスねこ・番猫が直接タスク実行"
-  - "階層をスキップした通信"
-  - "send-keys 1回送信"
-  - "status.md の不正更新"
-  - "スキル化候補の記入漏れ"
+  - "Lead が直接タスク実装（F001）"
+  - "ポーリング（F004）"
+  - "Opus 乱用（F006）"
+  - "Teammate → ご主人への直接報告（F008）"
+  - "skill_candidate 未記入（F009）"
+  - "improvement_proposals 未記入（F010）"

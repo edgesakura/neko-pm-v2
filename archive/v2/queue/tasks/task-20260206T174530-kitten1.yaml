@@ -1,0 +1,108 @@
+task_id: "task-20260206T174530-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T17:45:30"
+priority: urgent
+load_skills: []
+description: |
+  【🚨 緊急実装】チャットAPI未接続修正 - API Gateway 呼び出し実装
+
+  ## 目的
+  フロントエンドがモック応答ではなく、実際にAPI Gatewayを呼び、
+  Cognitoトークン付きで居酒屋検索結果を表示できるようにするにゃ。
+
+  ## 現在の問題
+  - ログインは成功（✅ 解決済み）
+  - チャットでメッセージを送信すると「ご質問ありがとうございます。現在、バックエンド接続を準備中です。」と返る
+  - これはモック/プレースホルダー応答で、実際にAPI Gatewayを呼んでいない
+
+  ## 実装手順
+
+  ### Step 1: 現在のチャットコンポーネントを確認
+  ```bash
+  # チャット関連のコンポーネントを確認
+  find output/nomibero-web/src -name "*.tsx" -o -name "*.ts" | xargs grep -l "chat\|message\|send\|api\|fetch" -i
+
+  # API呼び出し部分を確認（モック応答の場所を特定）
+  grep -rn "fetch\|axios\|API\|endpoint\|バックエンド接続を準備中" output/nomibero-web/src/
+  ```
+
+  ### Step 2: API Gateway 呼び出しを実装
+  チャットコンポーネントの送信処理を修正:
+
+  **API Gateway エンドポイント**: `https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat`
+
+  **実装例（Amplify Gen 2）**:
+  ```typescript
+  import { fetchAuthSession } from 'aws-amplify/auth';
+
+  // メッセージ送信処理
+  const handleSendMessage = async (userMessage: string) => {
+    try {
+      // Cognito トークン取得
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+
+      if (!token) {
+        throw new Error('認証トークンが取得できませんでした');
+      }
+
+      // API Gateway 呼び出し
+      const response = await fetch(
+        'https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: userMessage }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API エラー: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response; // AgentCore からの応答
+    } catch (error) {
+      console.error('API 呼び出しエラー:', error);
+      throw error;
+    }
+  };
+  ```
+
+  ### Step 3: レスポンス表示
+  - API Gatewayからのレスポンスをチャット画面に表示
+  - エラー時は適切なメッセージを表示
+  - ローディング状態の表示（送信中...）
+
+  ### Step 4: サーバー再起動 + テスト
+  ```bash
+  # Next.js サーバー再起動
+  pkill -f 'next dev'
+  cd output/nomibero-web
+  npm run dev -- -p 3002 &
+  ```
+
+  - ログイン → チャット送信 → 居酒屋リスト返却を確認
+
+  ## 重要な注意事項
+  - **Amplify Gen 2 のトークン取得方法**を使うこと（`fetchAuthSession`）
+  - Authorization ヘッダーにトークンを付与すること
+  - リクエストボディ: `{ "message": "ユーザーの入力" }`
+  - エラーハンドリングを適切に実装すること
+  - モック応答を削除すること
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+  user_pool_id: "ap-northeast-1_VwL7teKWl"
+  references:
+    - "output/nomibero-web/src/"
+expected_outputs:
+  - "チャットコンポーネントがAPI Gatewayを呼ぶよう修正"
+  - "Cognitoトークン付きリクエスト"
+  - "居酒屋検索結果がチャットに表示される"
+  - "nawabari.md への報告"

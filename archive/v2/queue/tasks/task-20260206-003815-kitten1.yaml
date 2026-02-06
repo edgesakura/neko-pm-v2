@@ -1,0 +1,225 @@
+task_id: "task-20260206-003815-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T00:38:15"
+priority: high
+load_skills:
+  - "aws"
+  - "cdk-mcp-server"
+description: |
+  ## 居酒屋検索AIエージェント「イザカヤくん」開発 - Phase 1: CDKインフラ構築
+
+  LINE Botで複数エリアの居酒屋を検索できるAIエージェントの
+  インフラ基盤をAWS CDK v2（TypeScript）で構築するにゃ。
+
+  ## 技術スタック
+  - AWS CDK v2 (TypeScript)
+  - リージョン: ap-northeast-1（東京）
+  - Lambda + Function URL (Python)
+  - Secrets Manager
+  - CloudWatch Logs
+
+  ## 参考資料（必読）
+
+  以下の2記事をWebFetchで取得して参照するにゃ：
+
+  1. **元記事（新橋くん）**:
+     https://dev.classmethod.jp/articles/shoma-struggling-with-after-party-venue-search-built-shimbashi-izakaya-search-ai-agent-shimbashi-kun-with-bedrock-agentcore/
+     - プロンプト: "Bedrock AgentCoreを使った居酒屋検索AIエージェントの実装方法、特にインフラ構成とCDKの実装例を詳しく抽出してください"
+
+  2. **LINE Bot化記事**:
+     https://dev.classmethod.jp/articles/shoma-bedrock-agentcore-izakaya-search-ai-agent-shinbashi-kun-line-official-account-messaging-api-bot/
+     - プロンプト: "LINE BotとBedrock AgentCoreの連携方法、特にLambdaの実装とCDK構成を詳しく抽出してください"
+
+  ## タスク内容
+
+  ### ステップ1: プロジェクト準備
+
+  1. output/izakaya-agent/ ディレクトリ作成
+  2. 以下のディレクトリ構成を作成:
+     ```
+     output/izakaya-agent/
+     ├── infra/           # CDKプロジェクト（このPhaseで作成）
+     ├── agent/           # Strands Agent（Phase 2で作成）
+     └── lambda/          # LINE Webhook（Phase 3で作成）
+     ```
+
+  ### ステップ2: CDK初期化
+
+  1. output/izakaya-agent/infra/ に移動
+  2. CDKプロジェクト初期化:
+     ```bash
+     cd output/izakaya-agent/infra
+     cdk init app --language typescript
+     ```
+  3. 必要な依存関係をインストール:
+     ```bash
+     npm install @aws-cdk/aws-secretsmanager
+     npm install @aws-cdk/aws-lambda
+     npm install @aws-cdk/aws-iam
+     npm install @aws-cdk/aws-logs
+     ```
+
+  ### ステップ3: CDKスタック実装
+
+  lib/izakaya-stack.ts を作成し、以下のリソースを定義するにゃ：
+
+  #### 3-1. Secrets Manager
+
+  以下のシークレットを作成（値は後でご主人が手動設定）:
+  - izakaya-agent/hotpepper-api-key
+  - izakaya-agent/google-places-api-key
+  - izakaya-agent/line-channel-secret
+  - izakaya-agent/line-channel-access-token
+
+  ```typescript
+  import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+
+  const hotpepperApiKey = new secretsmanager.Secret(this, 'HotpepperApiKey', {
+    secretName: 'izakaya-agent/hotpepper-api-key',
+    description: 'ホットペッパーグルメAPI キー',
+  });
+  ```
+
+  #### 3-2. IAM Role
+
+  AgentCore呼び出し権限を持つLambda実行ロール:
+  - Bedrock AgentCore Runtime呼び出し権限
+  - Secrets Manager読み取り権限
+  - CloudWatch Logs書き込み権限
+
+  ```typescript
+  import * as iam from 'aws-cdk-lib/aws-iam';
+
+  const lambdaRole = new iam.Role(this, 'LambdaExecutionRole', {
+    assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    managedPolicies: [
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+    ],
+  });
+
+  lambdaRole.addToPolicy(new iam.PolicyStatement({
+    actions: ['bedrock:InvokeAgent'],
+    resources: ['*'],
+  }));
+
+  lambdaRole.addToPolicy(new iam.PolicyStatement({
+    actions: ['secretsmanager:GetSecretValue'],
+    resources: [
+      hotpepperApiKey.secretArn,
+      googlePlacesApiKey.secretArn,
+      lineChannelSecret.secretArn,
+      lineChannelAccessToken.secretArn,
+    ],
+  }));
+  ```
+
+  #### 3-3. Lambda Function（スケルトン）
+
+  LINE Webhook用Lambda（実装はPhase 3）:
+  - Runtime: Python 3.12
+  - Function URL有効化
+  - 環境変数: SECRETS_PREFIX=izakaya-agent/
+
+  ```typescript
+  import * as lambda from 'aws-cdk-lib/aws-lambda';
+
+  const webhookLambda = new lambda.Function(this, 'LineWebhookLambda', {
+    runtime: lambda.Runtime.PYTHON_3_12,
+    handler: 'handler.lambda_handler',
+    code: lambda.Code.fromAsset('../lambda'), // Phase 3で実装
+    role: lambdaRole,
+    environment: {
+      SECRETS_PREFIX: 'izakaya-agent/',
+    },
+    timeout: cdk.Duration.seconds(30),
+  });
+
+  const functionUrl = webhookLambda.addFunctionUrl({
+    authType: lambda.FunctionUrlAuthType.NONE,
+  });
+
+  new cdk.CfnOutput(this, 'LineWebhookUrl', {
+    value: functionUrl.url,
+    description: 'LINE Webhook URL',
+  });
+  ```
+
+  #### 3-4. CloudWatch Logs
+
+  ログ保持期間: 7日
+
+  ```typescript
+  import * as logs from 'aws-cdk-lib/aws-logs';
+
+  new logs.LogGroup(this, 'LambdaLogGroup', {
+    logGroupName: `/aws/lambda/${webhookLambda.functionName}`,
+    retention: logs.RetentionDays.ONE_WEEK,
+  });
+  ```
+
+  ### ステップ4: README.md 作成
+
+  output/izakaya-agent/README.md を作成し、以下を記載するにゃ：
+
+  1. **プロジェクト概要**
+     - 居酒屋検索AIエージェント「イザカヤくん」
+     - LINE Botで複数エリア対応
+
+  2. **技術スタック**
+     - Strands Agents + Bedrock AgentCore
+     - AWS CDK v2
+     - Lambda + Function URL
+
+  3. **Phase 1 セットアップ手順**
+     ```bash
+     # CDKデプロイ
+     cd infra
+     npm install
+     cdk bootstrap
+     cdk deploy
+
+     # シークレット設定（手動）
+     aws secretsmanager put-secret-value \
+       --secret-id izakaya-agent/hotpepper-api-key \
+       --secret-string "YOUR_HOTPEPPER_API_KEY"
+     ```
+
+  4. **次のステップ**
+     - Phase 2: エージェント実装
+     - Phase 3: LINE Bot連携
+     - Phase 4: デプロイ・テスト
+
+  ## 注意事項
+
+  - APIキーの値はSecretsManagerに格納するが、値の設定はご主人が手動で行うにゃ
+  - AgentCore本体は agentcore CLI でデプロイ（CDKではなく）
+  - Phase 1 ではインフラ基盤のみ構築。エージェント実装はPhase 2にゃ
+  - MCP ツールを活用: mcp__cdk-mcp-server, mcp__bedrock-agentcore-mcp-server
+
+  ## MCP ツールの活用
+
+  以下のMCPツールを活用するにゃ：
+
+  1. **mcp__cdk-mcp-server**
+     - CDKのベストプラクティス確認
+     - CDKスタック実装の支援
+
+  2. **mcp__bedrock-agentcore-mcp-server**
+     - AgentCore Runtime呼び出しのベストプラクティス
+     - IAM権限の確認
+
+context:
+  project_type: "ai-agent"
+  output_dir: "output/izakaya-agent"
+  references:
+    - "https://dev.classmethod.jp/articles/shoma-struggling-with-after-party-venue-search-built-shimbashi-izakaya-search-ai-agent-shimbashi-kun-with-bedrock-agentcore/"
+    - "https://dev.classmethod.jp/articles/shoma-bedrock-agentcore-izakaya-search-ai-agent-shinbashi-kun-line-official-account-messaging-api-bot/"
+    - "https://strandsagents.com/latest/documentation/"
+    - "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/"
+expected_outputs:
+  - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+  - "output/izakaya-agent/infra/bin/app.ts"
+  - "output/izakaya-agent/infra/package.json"
+  - "output/izakaya-agent/infra/cdk.json"
+  - "output/izakaya-agent/README.md"
+  - "queue/reports/report-task-20260206-003815-kitten1.yaml"

@@ -1,0 +1,165 @@
+task_id: "task-20260206T154105-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-06T15:41:05"
+priority: high
+load_skills: []
+description: |
+  【グループB: バックエンド連携 + 全国対応】のみべろエージェント v2 Phase 1
+
+  ## タスク概要
+  既存のLambda + AgentCore RuntimeをWebアプリ対応させるにゃ。
+  API Gateway連携、全国対応（resolve_area.py改修）、Lambda handler修正を実施せよ。
+
+  ## B1: API Gateway連携
+
+  ### 実装内容
+  1. 既存CDKスタックにAPI Gateway追加
+     - ファイル: output/izakaya-agent/infra/lib/izakaya-stack.ts
+     - REST API作成（/chat エンドポイント）
+     - Lambda統合（既存Lambda関数を使用）
+  2. Cognito Authorizer設定
+     - 認証済みユーザーのみAPIアクセス可能
+     - Cognito User PoolのARNを設定
+     - Authorization header検証
+  3. CORS設定
+     - Access-Control-Allow-Origin: フロントエンドのURL
+     - Access-Control-Allow-Methods: POST, OPTIONS
+     - Access-Control-Allow-Headers: Content-Type, Authorization
+  4. CDKデプロイ
+     ```bash
+     cd output/izakaya-agent/infra
+     npx cdk deploy
+     ```
+  5. API Gateway URLを取得してREADME.mdに記載
+
+  ## B2: 全国対応（resolve_area.py改修）
+
+  ### 実装内容
+  1. 既存のハードコーディングを確認
+     - ファイル: output/izakaya-agent/agent/tools/resolve_area.py
+     - 現在のエリアマッピング（東京、渋谷等）を確認
+  2. Google Geocoding API統合
+     - Secrets Managerに google-geocoding-api-key を追加（既存のGoogle Places API Keyを使用可能）
+     - Geocoding APIでエリア名→座標を動的に解決
+     ```python
+     import googlemaps
+     from utils.secrets import get_secret
+
+     def resolve_area(area_name: str) -> dict:
+         api_key = get_secret("izakaya-agent/google-places-api-key")
+         gmaps = googlemaps.Client(key=api_key)
+         geocode_result = gmaps.geocode(area_name + ", Japan")
+         if geocode_result:
+             location = geocode_result[0]['geometry']['location']
+             return {
+                 "lat": location['lat'],
+                 "lng": location['lng'],
+                 "formatted_address": geocode_result[0]['formatted_address']
+             }
+         else:
+             raise ValueError(f"Area '{area_name}' not found")
+     ```
+  3. ハードコーディングを廃止
+     - エリアマッピング辞書を削除
+     - 全ての地域検索をGeocoding API経由に変更
+  4. エラーハンドリング追加
+     - エリアが見つからない場合の処理
+     - API制限エラーのハンドリング
+  5. agentcore deploy で再デプロイ
+     ```bash
+     cd output/izakaya-agent/agent
+     source .venv/bin/activate
+     agentcore deploy
+     ```
+
+  ## B3: Lambda handler修正（Web対応）
+
+  ### 実装内容
+  1. リクエスト形式の抽象化
+     - ファイル: output/izakaya-agent/lambda/handler.py
+     - LINE Webhook形式とWeb API形式を統一
+     ```python
+     def parse_request(event):
+         # LINE Webhook形式
+         if 'body' in event and 'events' in json.loads(event['body']):
+             line_event = json.loads(event['body'])['events'][0]
+             return {
+                 "message": line_event['message']['text'],
+                 "user_id": line_event['source']['userId'],
+                 "source": "line"
+             }
+         # Web API形式
+         elif 'body' in event:
+             web_request = json.loads(event['body'])
+             return {
+                 "message": web_request['message'],
+                 "user_id": web_request.get('user_id', 'web-user'),
+                 "source": "web"
+             }
+         else:
+             raise ValueError("Invalid request format")
+     ```
+  2. レスポンス形式の統一
+     - LINE: replyMessage形式
+     - Web: JSON形式（message, status）
+     ```python
+     def format_response(response_text, source):
+         if source == "line":
+             return {
+                 "statusCode": 200,
+                 "body": json.dumps({"status": "ok"})
+             }
+         else:  # web
+             return {
+                 "statusCode": 200,
+                 "body": json.dumps({
+                     "message": response_text,
+                     "status": "success"
+                 })
+             }
+     ```
+  3. CDKデプロイ
+     ```bash
+     cd output/izakaya-agent/infra
+     npx cdk deploy
+     ```
+  4. 動作確認
+     - LINE Webhookでの動作確認（既存機能）
+     - API Gateway経由でのテスト
+
+  ## 技術スタック
+  - AWS CDK（TypeScript）
+  - API Gateway（REST API）
+  - Cognito Authorizer
+  - Google Geocoding API
+  - 既存: Lambda + AgentCore Runtime
+
+  ## 成果物
+  - API Gateway + Cognito Authorizer設定完了
+  - 全国対応の resolve_area.py
+  - Web対応の Lambda handler.py
+  - CDKデプロイ完了
+  - API Gateway URL取得
+
+  ## 注意事項
+  - Google Geocoding API の使用制限に注意
+  - CORS設定はフロントエンドURL確定後に調整
+  - 既存のLINE Bot機能を壊さないこと（互換性維持）
+  - agentcore deploy を忘れずに
+
+context:
+  service_name: "nomibero-web"
+  existing_backend: "output/izakaya-agent"
+  region: "ap-northeast-1"
+  runtime_arn: "arn:aws:bedrock-agentcore:ap-northeast-1:921563379197:runtime/izakaya_agent-9JGtN3Enat"
+  references:
+    - "output/izakaya-agent/agent/tools/resolve_area.py"
+    - "output/izakaya-agent/lambda/handler.py"
+    - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+
+expected_outputs:
+  - "API Gateway連携完了"
+  - "全国対応の resolve_area.py"
+  - "Web対応の Lambda handler.py"
+  - "CDKデプロイ完了"
+  - "API Gateway URL"

@@ -1,0 +1,104 @@
+task_id: "task-20260206T163815-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-06T16:38:15"
+priority: high
+load_skills: []
+description: |
+  🧪 のみべろWebアプリ E2Eテスト準備 - Cognitoユーザー作成 + ローカル起動
+
+  ## 目的
+  のみべろWebアプリ（Phase 1）の動作をご主人が手動テストできるよう環境を整えるにゃ。
+
+  ## タスク
+
+  ### Step 1: Cognito ユーザー作成（招待制）
+  Amplify Gen 2 の User Pool にユーザーを作成するにゃ。
+
+  ```bash
+  # ユーザー作成
+  aws cognito-idp admin-create-user \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --username edgesakura@gmail.com \
+    --user-attributes Name=email,Value=edgesakura@gmail.com Name=email_verified,Value=true \
+    --temporary-password 'Nomibero2026!' \
+    --message-action SUPPRESS \
+    --region ap-northeast-1
+  ```
+
+  **注意事項**:
+  - `--message-action SUPPRESS` でメール送信を抑制（パスワードは直接伝える）
+  - 初回ログイン時にパスワード変更を求められるにゃ
+  - ユーザーが既に存在する場合はスキップOK
+
+  ### Step 2: Next.js ローカルサーバー起動確認
+  ```bash
+  cd output/nomibero-web
+  # package.json の依存関係確認
+  npm install
+  # ローカルサーバー起動（バックグラウンド）
+  npm run dev -- -p 3001 &
+  ```
+
+  **確認ポイント**:
+  - http://localhost:3001 でアクセスできること
+  - エラーがあれば修正（package.json、tsconfig.json等）
+  - ポート3001が既に使われている場合は別ポートでもOK
+
+  ### Step 3: フロントエンド → API Gateway 接続確認
+  フロントエンドのAPI設定が正しいか確認するにゃ：
+  - API Gateway エンドポイント: `https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat`
+  - Cognito User Pool ID: `ap-northeast-1_VwL7teKWl`
+  - Cognito トークンが API Gateway に正しく渡されるか確認
+  - CORS設定が `localhost:3001` を許可しているか確認
+
+  ### Step 4: 動作確認テスト
+  1. http://localhost:3001 にアクセス
+  2. ログイン画面が表示されること確認
+  3. curl でAPI Gateway にCognitoトークン付きリクエストを送って200が返ること確認
+
+  **トークン取得方法**:
+  ```bash
+  # User Pool Client IDを取得
+  aws cognito-idp list-user-pool-clients \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --region ap-northeast-1
+
+  # トークン取得（テスト用）
+  aws cognito-idp admin-initiate-auth \
+    --user-pool-id ap-northeast-1_VwL7teKWl \
+    --client-id <client_id> \
+    --auth-flow ADMIN_NO_SRP_AUTH \
+    --auth-parameters USERNAME=edgesakura@gmail.com,PASSWORD='Nomibero2026!' \
+    --region ap-northeast-1
+  ```
+
+  ### Step 5: ご主人への報告（nawabari.md に記載）
+  以下の情報を nawabari.md の適切な場所に記載するにゃ：
+  - **ログインURL**: http://localhost:3001
+  - **ユーザー名**: edgesakura@gmail.com
+  - **初期パスワード**: Nomibero2026!（初回ログイン時に変更必要）
+  - **テスト手順**: ログイン → チャット → 居酒屋検索
+  - **発見した問題点**（あれば）
+
+  ## 注意事項
+  - ローカルサーバーはバックグラウンドで起動（`&` または tmux セッション）
+  - Cognito ユーザー作成エラーが出たら、既存ユーザーの有無を確認
+  - API Gateway接続テストはトークンなしで401、トークン付きで200を期待
+
+context:
+  service_name: "nomibero-web"
+  project_dir: "output/nomibero-web"
+  region: "ap-northeast-1"
+  user_pool_id: "ap-northeast-1_VwL7teKWl"
+  api_gateway: "https://ok1y8ns08b.execute-api.ap-northeast-1.amazonaws.com/prod/chat"
+  cognito_email: "edgesakura@gmail.com"
+  cognito_password: "Nomibero2026!"
+  references:
+    - "output/nomibero-web/"
+    - "output/izakaya-agent/infra/lib/izakaya-stack.ts"
+
+expected_outputs:
+  - "Cognito ユーザー作成完了（edgesakura@gmail.com）"
+  - "ローカルサーバー起動（http://localhost:3001）"
+  - "API接続確認（401/200テスト）"
+  - "ご主人向けテスト手順（nawabari.md）"

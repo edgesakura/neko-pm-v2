@@ -1,0 +1,115 @@
+task_id: "task-20260202-120955-kitten2"
+assigned_to: "kitten2"
+timestamp: "2026-02-02T12:09:55"
+priority: high
+command_id: "cmd-20260202-120826"
+description: |
+  【タスク】owl-researcher.sh 実装 + reports/research/ ディレクトリ作成
+
+  ## 目的
+  Codexを活用した調査フクロウ（owl-researcher）の本体スクリプトを実装するにゃ。
+  ボスねこからオンデマンドで呼び出され、技術的な深掘り調査を実行するにゃ。
+
+  ## 実装内容
+
+  ### 1. owl-researcher.sh 本体スクリプト
+  保存先: /home/edgesakura/git/neko-pm/owl-researcher.sh
+
+  #### 必須機能
+  1. **引数処理**
+     - 調査テーマ（必須）
+     - 対象ディレクトリ（デフォルト: カレントディレクトリ）
+     - --type オプション（research, analyze, debug, security）
+
+  2. **Codex呼び出し**
+     - コマンド: codex exec --full-auto --sandbox read-only --cd {project_dir} "{prompt}"
+     - プロンプトは調査タイプに応じて変える
+
+  3. **結果保存**
+     - 保存先: reports/research/research_{timestamp}_{topic}.md
+     - ファイル命名規則: タイムスタンプ + トピック名（スペースは_に変換）
+
+  4. **ログ出力**
+     - 調査開始・完了をログに記録（logs/owl-researcher.log）
+     - 実行コマンドも記録
+
+  #### スクリプト構造（参考: owl-watcher.sh）
+  ```bash
+  #!/bin/bash
+  set -e
+
+  # 定数定義
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  RESEARCH_DIR="${SCRIPT_DIR}/reports/research"
+  LOG_FILE="${SCRIPT_DIR}/logs/owl-researcher.log"
+
+  # ログ関数
+  log_info() { ... }
+
+  # ヘルプ表示
+  show_help() { ... }
+
+  # 引数パース
+  parse_args() { ... }
+
+  # Codex呼び出し
+  run_research() {
+      local type="$1"
+      local topic="$2"
+      local project_dir="$3"
+
+      # プロンプト生成
+      # Codex実行
+      # 結果保存
+  }
+
+  # メイン処理
+  main() { ... }
+
+  main "$@"
+  ```
+
+  #### 調査タイプ別プロンプト
+  | タイプ | プロンプトテンプレート |
+  |--------|----------------------|
+  | research | "以下のテーマについて技術的な調査を実施して: {topic}" |
+  | analyze | "プロジェクト全体のアーキテクチャ分析を実施して" |
+  | debug | "以下のバグの原因を調査して: {topic}" |
+  | security | "セキュリティ監査を実施して、脆弱性を検出して" |
+
+  ### 2. reports/research/ ディレクトリ作成
+  ```bash
+  mkdir -p /home/edgesakura/git/neko-pm/reports/research
+  ```
+
+  ### 3. 動作確認
+  実装後、以下のテストを実行して動作確認：
+  ```bash
+  # テスト1: ヘルプ表示
+  ./owl-researcher.sh --help
+
+  # テスト2: 簡単な調査実行（デフォルトタイプ）
+  ./owl-researcher.sh "neko-pmの構造調査" /home/edgesakura/git/neko-pm
+
+  # テスト3: タイプ指定
+  ./owl-researcher.sh --type analyze /home/edgesakura/git/neko-pm
+  ```
+
+context:
+  references:
+    - "/home/edgesakura/git/neko-pm/owl-watcher.sh"
+    - "/home/edgesakura/git/neko-pm/instructions/owl-reviewer.md"
+    - "/home/edgesakura/git/.claude/skills/codex/SKILL.md"
+  codex_command: "codex exec --full-auto --sandbox read-only"
+  output_dir: "/home/edgesakura/git/neko-pm/reports/research"
+
+expected_outputs:
+  - "/home/edgesakura/git/neko-pm/owl-researcher.sh"
+  - "/home/edgesakura/git/neko-pm/reports/research/（ディレクトリ）"
+  - "動作確認済みの報告（queue/reports/ にYAML作成）"
+
+notes: |
+  - owl-watcher.sh を参考にして実装するにゃ
+  - Codex呼び出しは --full-auto --sandbox read-only を厳守にゃ
+  - 実装後は必ず動作確認するにゃ
+  - 完了したら queue/reports/ に報告YAML作成にゃ

@@ -1,0 +1,148 @@
+task_id: "task-20260205T233651-kitten1"
+assigned_to: "kitten1"
+timestamp: "2026-02-05T23:36:51"
+priority: high
+parent_command: "cmd-20260205-233506"
+
+description: |
+  🐱 Phase C: 自動化・ドキュメント強化作戦 - 子猫1担当にゃ！
+
+  ## タスク1: context/ ディレクトリの作成
+
+  neko-pm/context/ を作成し、README.md とテンプレートを配置するにゃ。
+
+  ### 参考元
+  - /tmp/multi-agent-shogun/context/README.md
+  - /tmp/multi-agent-shogun/templates/context_template.md
+
+  ### 作成ファイル
+
+  #### context/README.md
+  プロジェクト固有のコンテキストファイルの使い方を説明:
+  - context/ ディレクトリの目的
+  - テンプレートの使い方
+  - 子猫がいつ参照すべきか
+
+  参考元を neko-pm 用に調整して作成にゃ。
+
+  #### context/template.md
+  プロジェクトコンテキストのテンプレート:
+  - プロジェクト概要
+  - 技術スタック
+  - 重要な注意事項
+  - コーディング規約
+
+  参考元を neko-pm 用に調整して作成にゃ。
+
+  ## タスク2: skill-creator スキルの移植
+
+  multi-agent-shogun の skill-creator を neko-pm 用にアレンジして移植するにゃ。
+
+  ### 参考元
+  /tmp/multi-agent-shogun/skills/skill-creator/SKILL.md
+
+  ### 作成先
+  .claude/skills/skill-creator/SKILL.md
+
+  ### 変更点（必須）
+  1. 用語変換:
+     - Shogun → ボスねこ
+     - Karo → 番猫
+     - Ashigaru → 子猫
+     - dashboard.md → nawabari.md
+     - Human → ご主人
+
+  2. 保存先変更:
+     - スキル保存先: ~/.claude/skills/neko-{skill-name}/
+     - 報告先: queue/reports/
+
+  3. 報告形式を「にゃ！」形式に変更:
+     - 語尾に「にゃ」を追加
+     - ねこ語でフレンドリーに
+
+  4. neko-pm 固有の調整:
+     - skill_candidate と improvement_proposals の必須記入を明記
+     - nawabari.md の「🎯 スキル化候補」セクションへの記載を追加
+
+  ## タスク3: 用語マッピングテーブルの作成
+
+  multi-agent-shogun と neko-pm の用語対応表を作成するにゃ。
+
+  ### 作成ファイル
+  docs/terminology-mapping.md
+
+  ### 内容
+  ```markdown
+  # 用語マッピング: multi-agent-shogun ↔ neko-pm
+
+  複数プロジェクト間でパターン移植する際の用語対応表にゃ。
+
+  ## エージェント
+
+  | multi-agent-shogun | neko-pm | 役割 |
+  |--------------------|---------|------|
+  | Shogun | ボスねこ | 統括・作戦指揮 |
+  | Karo | 番猫 | タスク分配・管理 |
+  | Ashigaru | 子猫 | 実装作業 |
+
+  ## ファイル
+
+  | multi-agent-shogun | neko-pm | 用途 |
+  |--------------------|---------|------|
+  | dashboard.md | nawabari.md | 状況板 |
+  | queue/shogun_to_karo.yaml | queue/boss_to_guard.yaml | 指示キュー |
+  | queue/tasks/ashigaru{N}.yaml | queue/tasks/task-*-kitten{N}.yaml | タスク定義 |
+  | queue/reports/ | queue/reports/ | 報告キュー |
+
+  ## その他
+
+  | multi-agent-shogun | neko-pm | 意味 |
+  |--------------------|---------|------|
+  | Human / The Lord | ご主人 | ユーザー |
+  | instructions/ | instructions/ | エージェント指示書 |
+  | context/ | context/ | プロジェクト固有情報 |
+
+  ## 使用例
+
+  multi-agent-shogun のパターンを neko-pm に移植する際:
+  1. このテーブルを参照
+  2. 用語を一括置換
+  3. プロジェクト固有の調整
+  ```
+
+  ## 完了報告
+  3つのタスクが完了したら、queue/reports/ に報告YAMLを作成にゃ。
+
+context:
+  references:
+    - "/tmp/multi-agent-shogun/context/README.md"
+    - "/tmp/multi-agent-shogun/templates/context_template.md"
+    - "/tmp/multi-agent-shogun/skills/skill-creator/SKILL.md"
+  reference_repo: "/tmp/multi-agent-shogun/"
+
+expected_outputs:
+  - "context/README.md"
+  - "context/template.md"
+  - ".claude/skills/skill-creator/SKILL.md"
+  - "docs/terminology-mapping.md"
+  - "queue/reports/report-20260205T233651-kitten1.yaml"
+
+pre_task_checklist:
+  - "参照元ファイルの存在確認"
+  - "context/ ディレクトリ作成"
+  - ".claude/skills/skill-creator/ ディレクトリ作成"
+  - "docs/ ディレクトリの存在確認"
+
+post_task_checklist:
+  - "context/README.md が作成されているか確認"
+  - "context/template.md が作成されているか確認"
+  - ".claude/skills/skill-creator/SKILL.md が作成されているか確認"
+  - "docs/terminology-mapping.md が作成されているか確認"
+  - "用語変換が正しく行われているか確認"
+  - "完了報告YAMLに skill_candidate と improvement_proposals を記入"
+
+notes: |
+  - 3つのタスクを順次実行にゃ
+  - 全て新規ファイル作成なので、ファイル競合なしにゃ
+  - 参照元を neko-pm 用に調整することが重要にゃ
+  - 用語マッピングテーブルは今後のパターン移植で活用されるにゃ〜
