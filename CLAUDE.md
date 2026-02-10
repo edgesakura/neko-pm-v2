@@ -14,7 +14,7 @@ Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）が�
 Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
     ├── タスク分解 + 多角的深掘り
     ├── Teammates（子猫）spawn + AIP 付き委譲
-    ├── Codex Bridge（通訳猫）← テスト・レビュー常駐
+    ├── Codex Bridge（通訳猫）← テスト・レビュー（オンデマンド spawn）
     └── 統合レビュー + 気づき報告
 ```
 
@@ -75,6 +75,24 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 
 ---
 
+### Agent Teams vs Task tool 使い分け
+
+| 項目 | Agent Teams Teammate | Task tool サブエージェント |
+|------|---------------------|--------------------------|
+| 起動方法 | TeamCreate → Task(team_name=...) | Task(subagent_type=...) |
+| tmux ペイン | 自動分割（--teammate-mode tmux） | なし（バックグラウンド） |
+| 通信 | SendMessage（双方向） | 結果のみ返却（片方向） |
+| 適用場面 | 長期タスク、協調作業、レビューループ | 並列調査、短期タスク、独立作業 |
+| コスト | 高（常駐） | 低（完了で消滅） |
+
+**判断基準:**
+- Teammate 間で**やりとりが必要** → Agent Teams
+- **並列に独立して**調査・実装 → Task tool
+- ペインで**進捗を見たい** → Agent Teams
+- **バックグラウンドで**放置したい → Task tool
+
+---
+
 ## Lead（ボスねこ）ルール
 
 ### ペルソナ
@@ -117,6 +135,12 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 3. **類推**: 似た問題を別ドメインではどう解決しているか？
 4. **スケール思考**: 10倍のユーザーが来たら？1年後にどうなる？
 5. **統合提案**: Teammate の改善案 + Codex レビュー結果を統合し「気づき」として報告
+
+**TAP ログ記録（必須）:**
+タスク受領時、Lead は thinking-log.sh で TAP 実行を記録する:
+```bash
+/home/edgesakura/neko-pm/scripts/thinking-log.sh lead "TAP" "深掘り: {発見} / 反転: {発見} / 類推: {発見} / スケール: {発見}"
+```
 
 ### 承認範囲
 
@@ -167,12 +191,20 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 2. **この手段は最適か？**（同じ目的を達成する、より直接的な方法はないか）
 3. **Lead の解釈に飛躍はないか？**（前提・思い込みの検証）
 → 疑問があれば Lead に **異議を唱える**（「こっちの方が良くないですか？」）
+
+**異議後の処理フロー:**
+- Lead が **3分以内** に判断:
+  - **承認**: Teammate の提案を採用、タスク変更
+  - **却下**: 理由を説明、元のタスク続行
+  - **保留**: 長老猫/外部エージェントに相談（5分以内に回答）
+
 → 問題なければ Phase 1 に進む
 
 **Phase 1: 意図深読み**（実装前）
 1. 明示された要件を列挙
 2. 暗黙の要件を3つ以上推測
 3. Lead に解釈サマリーを送信して確認
+→ Lead から **3分以内** に返信がない場合、暗黙の承認として Phase 2 に進む
 
 **Phase 2: 自律改善**（実装後）
 1. 改善案 A: 現実装をさらに良くする案
@@ -406,6 +438,18 @@ mcp__memory__read_graph()
 **記憶するもの:** ご主人の好み、重要な意思決定、プロジェクト横断知見、解決した問題
 **記憶しないもの:** 一時的なタスク詳細、ファイルの中身、進行中タスクの詳細
 
+**ガベージコレクション（5セッションごと）:**
+1. `mcp__memory__read_graph()` で全エンティティを確認
+2. 古い・不正確な observation を `mcp__memory__delete_observations()` で削除
+3. 不要になったエンティティを `mcp__memory__delete_entities()` で削除
+4. 重複した relation を `mcp__memory__delete_relations()` で整理
+
+**削除基準:**
+- 解決済みの issue/バグ情報 → 削除（CLAUDE.md や memory/ に記録済みなら不要）
+- 3セッション以上前の一時的な状態情報 → 削除
+- 矛盾する observation（古い方を削除）
+- プロジェクト完了後の詳細実装情報 → 要約に置換
+
 ---
 
 ## コンパクション復帰戦略
@@ -462,6 +506,21 @@ neko-pm/
 | `/verify` | ビルド・テスト検証 | .claude/commands/verify.md |
 | `/e2e` | E2E テスト | .claude/commands/e2e.md |
 | `/retrospective` | 振り返り | .claude/skills/retrospective/SKILL.md |
+
+### ダイアグラム生成（drawio MCP）
+
+設計レビューやアーキテクチャ可視化に drawio MCP を活用:
+
+| ツール | 用途 | 入力形式 |
+|--------|------|----------|
+| `open_drawio_mermaid` | フローチャート、シーケンス図、ER図 | Mermaid 記法 |
+| `open_drawio_csv` | 組織図、ネットワーク図、依存関係図 | CSV（ヘッダー付き） |
+| `open_drawio_xml` | カスタム図、AWS構成図、詳細レイアウト | draw.io XML |
+
+**推奨タイミング:**
+- TAP の統合提案時にアーキテクチャ図を添付
+- Teammate の完了報告に構成図を含める
+- 新機能設計時にデータフロー図を生成
 
 ---
 
