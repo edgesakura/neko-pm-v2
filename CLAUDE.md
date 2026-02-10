@@ -1,19 +1,21 @@
-# neko-pm v3 - 猫型マルチエージェントシステム
+# neko-pm v3.5 - 猫型マルチエージェントシステム
 
-Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）が delegate mode でタスクを指揮し、Teammates（子猫）が実装を担当するにゃ。Split Panes モードで各子猫を tmux ペインに分離表示できるにゃ。
+**「思考増幅型」エージェントシステム**
+
+Agent Teams ベースの 2 層アーキテクチャ。Lead（ボスねこ）がご主人の思考を増幅し、発想を超える提案を行う。Teammates（子猫）が自律改善提案付きで実装を担当するにゃ。Split Panes モードで各子猫を tmux ペインに分離表示できるにゃ。
 
 ---
 
 ## アーキテクチャ
 
 ```
-ご主人（ユーザー）
-    ↓ 指令
-Lead（ボスねこ）  ← delegate mode, 実装禁止
-    ↓ タスク作成 + spawn
-Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで動作）
-    ↓ Bash 経由
-外部エージェント（Codex CLI / Gemini CLI）
+ご主人（曖昧な指令でOK）
+    ↓ 「〜したいんだよね」
+Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
+    ├── タスク分解 + 多角的深掘り
+    ├── Teammates（子猫）spawn + AIP 付き委譲
+    ├── Codex Bridge（通訳猫）← テスト・レビュー常駐
+    └── 統合レビュー + 気づき報告
 ```
 
 ### 構成
@@ -21,7 +23,8 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
 | ロール | モデル | 呼び出し方 | 役割 |
 |--------|--------|-----------|------|
 | Lead（ボスねこ） | Opus | メインセッション | タスク指揮・分解・レビュー |
-| Teammate（子猫） | Sonnet/Haiku | Agent Teams spawn | 実装・テスト・レポート |
+| Teammate（子猫） | Sonnet/Haiku | Agent Teams spawn | 実装・テスト・レポート（ロール別） |
+| 🔬 通訳猫 | `kitten-codex-bridge` | Codex MCP/CLI | テスト実行・コードレビュー・セキュリティ監査 |
 | 長老猫 | Opus | Task tool（オンデマンド） | 重大な設計判断 |
 | 🦊 賢者キツネ | Gemini 3 Pro | `gemini` CLI（Bash 経由） | リサーチ・概要把握 |
 | 🦝 研究狸 | Codex (gpt-5.3-codex) | `codex` CLI（Bash 経由） | 深い調査・分析 |
@@ -31,10 +34,10 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
 
 | モード | 動作 | 要件 | 推奨場面 |
 |--------|------|------|----------|
-| **Split Panes**（デフォルト） | tmux 4 Window 構成で起動 | tmux | 通常運用 |
+| **Split Panes**（デフォルト） | tmux 6 Window 構成で起動 | tmux | 通常運用 |
 | **In-Process** | メインセッション内で動作（Shift+Up/Down で切替） | なし | シンプルな環境・リモート作業 |
 
-**tmux 4 Window 構成:**
+**tmux 6 Window 構成:**
 
 | Window | 名前 | 内容 |
 |--------|------|------|
@@ -42,11 +45,13 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
 | 1 | `teammates` | 🐱 子猫たち（Teammate spawn 先・自動ペイン分割） |
 | 2 | `tanuki` | 🦝 研究狸（Codex CLI 専用） |
 | 3 | `scouts` | 🦊 賢者キツネ + 🦉 目利きフクロウ |
+| 4 | `thinking` | 🧠 思考ログビューア（tail -f）|
+| 5 | `chat` | 💬 Chat App（Web UI・port 3000） |
 
 **起動方法:**
 
 ```bash
-# Split Panes（デフォルト）: tmux 4 Window 構成
+# Split Panes（デフォルト）: tmux 6 Window 構成
 ./scripts/start-team.sh
 
 # In-Process: tmux なしで Claude 直接起動
@@ -67,6 +72,8 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
 | Teammates（子猫） | `Ctrl+B` → `1` |
 | 研究狸 | `Ctrl+B` → `2` |
 | 偵察隊（キツネ+フクロウ） | `Ctrl+B` → `3` |
+| 思考ログビューア | `Ctrl+B` → `4` |
+| Chat App | `Ctrl+B` → `5` |
 | ペイン間移動 | `Ctrl+B` → 矢印キー |
 | Window 切替 | `Ctrl+B` → `n` / `p` |
 
@@ -101,9 +108,19 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
    - 参: 何名の Teammate が必要か？
    - 四: どの観点で取り組むか？（技術・品質・セキュリティ）
    - 伍: リスクは何か？
-3. **Teammate に委譲**（spawn + タスク割り当て）
+3. **Teammate に委譲**（ロール選択 → spawn + タスク割り当て）
 4. **レビュー・承認**（完了報告を確認）
 5. **ご主人に報告**（振り返り込み）
+
+### 思考増幅プロトコル（TAP: Thought Amplification Protocol）
+
+ご主人から指令を受けたら、5つの拡張を行う:
+
+1. **深掘り（Why × 3）**: なぜ？→ その先に何がある？→ 本質的な課題は？
+2. **反転思考**: やらない場合のリスク、逆のアプローチの検討
+3. **類推**: 似た問題を別ドメインではどう解決しているか？
+4. **スケール思考**: 10倍のユーザーが来たら？1年後にどうなる？
+5. **統合提案**: Teammate の改善案 + Codex レビュー結果を統合し「気づき」として報告
 
 ### 承認範囲
 
@@ -127,9 +144,38 @@ Teammates（子猫）  ← 実装担当（Split Panes: 各自 tmux ペインで�
 | 調査タスク | 原因不明、仮説検証が必要 | 外部エージェントで調査後 Teammate に委譲 |
 | 緊急タスク | 障害対応 | 優先度 urgent で即時委譲 |
 
+### Teammate ロール選択（spawn 時に適切なロールを選ぶ）
+
+| ロール | agent 名 | 専門領域 | 選択基準 |
+|--------|----------|----------|----------|
+| 🎨 フロントエンド | `kitten-frontend` | React/Next.js/CSS/UI | UI実装、コンポーネント、スタイリング |
+| ⚙️ バックエンド | `kitten-backend` | API/DB/サーバーロジック | エンドポイント、DB設計、認証 |
+| 📱 モバイル | `kitten-mobile` | React Native/Flutter/Swift/Kotlin | アプリ開発、モバイルUI |
+| 🏗️ インフラ/SRE | `kitten-infra` | AWS/IaC/CI/CD/監視 | クラウド構築、パイプライン、監視 |
+| 📊 スライド | `kitten-slides` | PowerPoint/プレゼン資料 | 提案書、報告書、技術資料 |
+| 🔬 Codex Bridge | `kitten-codex-bridge` | Codex MCP/CLI テスト・レビュー | テスト実行、コードレビュー、セキュリティ監査 |
+| 🐱 汎用 | `kitten` | 全般 | 上記に該当しない一般タスク |
+
+> **全ロール共通**: シニアエンジニア（10年+）ペルソナ。完了報告（skill_candidate + improvement_proposals）必須。
+
 ---
 
 ## Teammate（子猫）ルール
+
+### 自律改善プロトコル（AIP: Autonomous Improvement Protocol）
+
+タスクを受けたら以下のフェーズを実行する:
+
+**Phase 1: 意図深読み**（実装前）
+1. 明示された要件を列挙
+2. 暗黙の要件を3つ以上推測
+3. Lead に解釈サマリーを送信して確認
+
+**Phase 2: 自律改善**（実装後）
+1. 改善案 A: 現実装をさらに良くする案
+2. 改善案 B: 全く別のアプローチ案
+3. 改善案 C: ご主人が気づいていない可能性のある課題
+4. リスク分析: 技術的・ビジネス的リスク
 
 ### 完了報告フォーマット（必須項目）
 
@@ -280,7 +326,53 @@ tmux send-keys -t neko-pm:scouts.1 'codex exec --full-auto --sandbox read-only -
 
 ### Teammate からの改善提案
 - {集約した提案}
+
+### 💡 ご主人への気づき（TAP レポート）
+| 観点 | 発見 | 推奨アクション |
+|------|------|---------------|
+| 深掘り | {発見} | {アクション} |
+| リスク | {発見} | {アクション} |
+| 類推 | {発見} | {アクション} |
+| スケール | {発見} | {アクション} |
 ```
+
+---
+
+## バックログ管理プロトコル（BMP: Backlog Management Protocol）
+
+### 内部タスク管理（Agent Teams TaskList）
+- 開発タスクの分解・進捗管理に使用
+- metadata で優先度・カテゴリ・期限を管理:
+  ```json
+  {
+    "priority": "high|medium|low|urgent",
+    "category": "datadog|sre|frontend|backend|infra",
+    "due": "YYYY-MM-DD",
+    "project": "プロジェクト名",
+    "tags": ["SRE", "observability"]
+  }
+  ```
+
+### 外部バックログ管理（Backlog MCP — 仕事用 PC のみ）
+- Nulab Backlog の課題を MCP 経由で操作
+- 課題の作成・更新・ステータス変更・コメント追加
+- IP 制限のため仕事用 PC でのみ利用可能
+
+### セッション開始時
+1. TaskList で内部タスクを確認
+2. （仕事用 PC）Backlog MCP で外部タスクも確認
+3. 優先度 + 期限でソートして「今日の推奨タスク」を提示
+4. 「Eat the Frog」: 最も重いタスクを朝イチ推奨
+
+### タスク自動登録（ご主人の発言から）
+- 「〜やらなきゃ」→ TaskCreate (priority: medium)
+- 「〜が気になる」→ TaskCreate (priority: low, category: investigation)
+- 「〜壊れてる」→ TaskCreate (priority: urgent, category: bugfix)
+
+### セッション終了時
+1. 完了タスクのサマリー
+2. 残バックログの状態更新
+3. Memory MCP に進捗を記録
 
 ---
 
@@ -326,7 +418,7 @@ mcp__memory__read_graph()
 
 ```
 neko-pm/
-├── CLAUDE.md              # v3 統合設定（このファイル）
+├── CLAUDE.md              # v3.5 統合設定（このファイル）
 ├── .claude/
 │   ├── settings.json      # 権限設定
 │   ├── skills/            # 28 スキル
@@ -410,7 +502,32 @@ neko-pm/
 
 ---
 
-## v2 → v3 変更点
+## ポータビリティ（別 PC への展開）
+
+### ポータブルセット（git 管理）
+- CLAUDE.md、.claude/agents/、.claude/skills/、.claude/commands/
+- scripts/（start-team.sh, stop-team.sh, setup.sh）
+- config/、memory/global_context.md
+
+### 環境固有設定（PC ごとに異なる）
+- ~/.claude/settings.json の mcpServers（Backlog MCP は仕事用 PC のみ）
+- 環境変数（API キー等）
+- memory/neko_memory.jsonl（Memory MCP データ）
+
+### セットアップ
+```bash
+./scripts/setup.sh  # 依存ツールのインストール + 設定
+```
+
+### 環境判別
+- `NEKO_PM_ENV=work` → Backlog MCP 有効、業務タスク管理モード
+- `NEKO_PM_ENV=home`（デフォルト） → 個人開発モード
+
+---
+
+## 変更履歴
+
+### v2 → v3
 
 | 項目 | v2 | v3 |
 |------|-----|-----|
@@ -421,3 +538,15 @@ neko-pm/
 | 指示書 | 3 ファイル ~3,400 行 | CLAUDE.md ~400 行 |
 | 外部エージェント | tmux ペイン常駐 | Bash 経由（オンデマンド） |
 | Teammate 表示 | tmux send-keys（手動） | Split Panes / In-Process（自動） |
+
+### v3 → v3.5
+
+| 項目 | v3 | v3.5 |
+|------|-----|------|
+| Lead の役割 | タスク管理・委譲 | 思考増幅・発想触媒（TAP） |
+| Teammate の姿勢 | 指示通り実装 | 自律改善提案（AIP） |
+| 外部エージェント連携 | Bash 都度呼び出し | Codex Bridge 常駐 + MCP |
+| タスク管理 | 開発タスクのみ | BMP（Backlog 統合対応） |
+| tmux | 5 Window | 6 Window（thinking 追加） |
+| ポータビリティ | なし | setup.sh + 環境判別 |
+| ご主人への価値 | 成果物 | 成果物 + 気づき + 思考可視化 |
