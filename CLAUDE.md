@@ -34,24 +34,22 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 
 | モード | 動作 | 要件 | 推奨場面 |
 |--------|------|------|----------|
-| **Split Panes**（デフォルト） | tmux 6 Window 構成で起動 | tmux | 通常運用 |
+| **Split Panes**（デフォルト） | tmux 4 Window 構成で起動 | tmux | 通常運用 |
 | **In-Process** | メインセッション内で動作（Shift+Up/Down で切替） | なし | シンプルな環境・リモート作業 |
 
-**tmux 6 Window 構成:**
+**tmux 4 Window 構成:**
 
 | Window | 名前 | 内容 |
 |--------|------|------|
-| 0 | `lead` | 🐱 ボスねこ（Claude Code Lead） |
-| 1 | `teammates` | 🐱 子猫たち（Teammate spawn 先・自動ペイン分割） |
-| 2 | `tanuki` | 🦝 研究狸（Codex CLI 専用） |
-| 3 | `scouts` | 🦊 賢者キツネ + 🦉 目利きフクロウ |
-| 4 | `thinking` | 🧠 思考ログビューア（tail -f）|
-| 5 | `chat` | 💬 Chat App（Web UI・port 3000） |
+| 0 | `lead` | 🐱 ボスねこ（Claude Code Lead + Teammate 自動分割） |
+| 1 | `tanuki` | 🦝 研究狸（Codex CLI 専用） |
+| 2 | `scouts` | 🦊 賢者キツネ + 🦉 目利きフクロウ |
+| 3 | `chat` | 💬 Chat App（Web UI・port 3000） |
 
 **起動方法:**
 
 ```bash
-# Split Panes（デフォルト）: tmux 6 Window 構成
+# Split Panes（デフォルト）: tmux 4 Window 構成
 ./scripts/start-team.sh
 
 # In-Process: tmux なしで Claude 直接起動
@@ -68,12 +66,10 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 
 | 操作 | キー |
 |------|------|
-| Lead（ボスねこ） | `Ctrl+B` → `0` |
-| Teammates（子猫） | `Ctrl+B` → `1` |
-| 研究狸 | `Ctrl+B` → `2` |
-| 偵察隊（キツネ+フクロウ） | `Ctrl+B` → `3` |
-| 思考ログビューア | `Ctrl+B` → `4` |
-| Chat App | `Ctrl+B` → `5` |
+| Lead（ボスねこ + Teammates） | `Ctrl+B` → `0` |
+| 研究狸 | `Ctrl+B` → `1` |
+| 偵察隊（キツネ+フクロウ） | `Ctrl+B` → `2` |
+| Chat App | `Ctrl+B` → `3` |
 | ペイン間移動 | `Ctrl+B` → 矢印キー |
 | Window 切替 | `Ctrl+B` → `n` / `p` |
 
@@ -166,6 +162,13 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 
 タスクを受けたら以下のフェーズを実行する:
 
+**Phase 0: 前提検証**（タスク受領直後）
+1. **ご主人の上位目的は何か？**（このタスクの先にある本当のゴール）
+2. **この手段は最適か？**（同じ目的を達成する、より直接的な方法はないか）
+3. **Lead の解釈に飛躍はないか？**（前提・思い込みの検証）
+→ 疑問があれば Lead に **異議を唱える**（「こっちの方が良くないですか？」）
+→ 問題なければ Phase 1 に進む
+
 **Phase 1: 意図深読み**（実装前）
 1. 明示された要件を列挙
 2. 暗黙の要件を3つ以上推測
@@ -252,16 +255,16 @@ prompt: |
 
 ## 外部エージェント
 
-Split Panes モードでは Window 1 "agents" に専用ペインが用意される。
+Split Panes モードでは各エージェントに専用 Window が用意される。
 Lead は Bash 経由で直接実行するか、`tmux send-keys` でペインに送信できる。
 
 ### tmux ペインアドレス
 
 | エージェント | Window | アドレス |
 |-------------|--------|---------|
-| 🦝 研究狸 | 2 tanuki | `neko-pm:tanuki` |
-| 🦊 賢者キツネ | 3 scouts.0（左） | `neko-pm:scouts.0` |
-| 🦉 目利きフクロウ | 3 scouts.1（右） | `neko-pm:scouts.1` |
+| 🦝 研究狸 | 1 tanuki | `neko-pm:tanuki` |
+| 🦊 賢者キツネ | 2 scouts.0（左） | `neko-pm:scouts.0` |
+| 🦉 目利きフクロウ | 2 scouts.1（右） | `neko-pm:scouts.1` |
 
 ### 🦊 賢者キツネ（sage-fox）- Gemini CLI
 
@@ -547,6 +550,6 @@ neko-pm/
 | Teammate の姿勢 | 指示通り実装 | 自律改善提案（AIP） |
 | 外部エージェント連携 | Bash 都度呼び出し | Codex Bridge 常駐 + MCP |
 | タスク管理 | 開発タスクのみ | BMP（Backlog 統合対応） |
-| tmux | 5 Window | 6 Window（thinking 追加） |
+| tmux | 5 Window | 4 Window（シンプル化） |
 | ポータビリティ | なし | setup.sh + 環境判別 |
 | ご主人への価値 | 成果物 | 成果物 + 気づき + 思考可視化 |

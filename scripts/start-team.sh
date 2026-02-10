@@ -1,13 +1,11 @@
 #!/bin/bash
 # neko-pm v3.5 - Agent Teams 起動スクリプト
 #
-# tmux セッション 'neko-pm' を作成し、6 Window 構成で起動:
-#   Window 0 "lead"      : 🐱 ボスねこ（Claude Code Lead）
-#   Window 1 "teammates" : 🐱 子猫たち（Teammate spawn 先・自動分割）
-#   Window 2 "tanuki"    : 🦝 研究狸（Codex CLI 専用）
-#   Window 3 "scouts"    : 🦊 賢者キツネ + 🦉 目利きフクロウ
-#   Window 4 "thinking"  : 💭 思考ログビューア
-#   Window 5 "chat"      : 💬 Chat App (Web UI)
+# tmux セッション 'neko-pm' を作成し、4 Window 構成で起動:
+#   Window 0 "lead"      : 🐱 ボスねこ（Claude Code Lead + Teammate 自動分割）
+#   Window 1 "tanuki"    : 🦝 研究狸（Codex CLI 専用）
+#   Window 2 "scouts"    : 🦊 賢者キツネ + 🦉 目利きフクロウ
+#   Window 3 "chat"      : 💬 Chat App (Web UI)
 #
 # 使い方:
 #   ./scripts/start-team.sh                # Split Panes（デフォルト）
@@ -42,48 +40,36 @@ show_help() {
   -h, --help      ヘルプ表示
 
 デフォルト（Split Panes）:
-  tmux セッション 'neko-pm' を 6 Window 構成で起動:
+  tmux セッション 'neko-pm' を 4 Window 構成で起動:
 
-  Window 0 "lead" ─ ボスねこ
+  Window 0 "lead" ─ ボスねこ（+ Teammate 自動分割）
   ┌──────────────────────────────────┐
   │   🐱 Lead（ボスねこ）             │
   │   claude --teammate-mode tmux    │
+  │   Teammate spawn で自動ペイン分割 │
   └──────────────────────────────────┘
 
-  Window 1 "teammates" ─ 子猫たち（Teammate spawn 先）
-  ┌──────────────────────────────────┐
-  │   🐱 Teammates                   │
-  │   spawn 時に自動ペイン分割        │
-  └──────────────────────────────────┘
-
-  Window 2 "tanuki" ─ 研究狸（専用）
+  Window 1 "tanuki" ─ 研究狸
   ┌──────────────────────────────────┐
   │   🦝 研究狸（Codex CLI）          │
   └──────────────────────────────────┘
 
-  Window 3 "scouts" ─ 偵察隊
+  Window 2 "scouts" ─ 偵察隊
   ┌───────────────┬──────────────────┐
   │ 🦊 賢者キツネ  │ 🦉 目利きフクロウ │
   │   (gemini)    │   (codex)       │
   └───────────────┴──────────────────┘
 
-  Window 4 "thinking" ─ 思考ログビューア
-  ┌──────────────────────────────────┐
-  │   💭 Thinking Log (リアルタイム)  │
-  └──────────────────────────────────┘
-
-  Window 5 "chat" ─ Chat App (Web UI)
+  Window 3 "chat" ─ Chat App (Web UI)
   ┌──────────────────────────────────┐
   │   💬 Chat App (port 3000)        │
   └──────────────────────────────────┘
 
 操作:
-  Ctrl+B → 0      : Lead（ボスねこ）
-  Ctrl+B → 1      : Teammates（子猫）
-  Ctrl+B → 2      : 研究狸
-  Ctrl+B → 3      : 偵察隊（キツネ+フクロウ）
-  Ctrl+B → 4      : 思考ログビューア
-  Ctrl+B → 5      : Chat App (Web UI)
+  Ctrl+B → 0      : Lead（ボスねこ + Teammates）
+  Ctrl+B → 1      : 研究狸
+  Ctrl+B → 2      : 偵察隊（キツネ+フクロウ）
+  Ctrl+B → 3      : Chat App (Web UI)
   Ctrl+B → 矢印   : ペイン間移動
   Ctrl+B → n/p    : Window 切替
 HELP
@@ -155,7 +141,7 @@ CONTEXT_EOF
 
 # --- モード別起動 ---
 
-echo -e "${CYAN}🐱 neko-pm v3 起動中にゃ〜${NC}"
+echo -e "${CYAN}🐱 neko-pm v3.5 起動中にゃ〜${NC}"
 echo ""
 
 setup_memory_mcp
@@ -197,24 +183,17 @@ case "$MODE" in
         # =============================================
         tmux new-session -d -s "$SESSION_NAME" -n "lead" -c "$PROJECT_DIR"
         tmux send-keys -t "${SESSION_NAME}:lead" \
-            "echo -e '${GREEN}🐱 neko-pm v3 - Lead（ボスねこ）${NC}' && echo '' && claude --model opus --teammate-mode tmux" Enter
+            "echo -e '${GREEN}🐱 neko-pm v3.5 - Lead（ボスねこ）${NC}' && echo '' && claude --model opus --teammate-mode tmux" Enter
 
         # =============================================
-        # Window 1 "teammates": 🐱 子猫たち（spawn 先）
-        # =============================================
-        tmux new-window -t "${SESSION_NAME}" -n "teammates" -c "$PROJECT_DIR"
-        tmux send-keys -t "${SESSION_NAME}:teammates" \
-            "echo -e '${CYAN}🐱 Teammates（子猫たち）${NC}'; echo ''; echo 'Teammate spawn 時にここにペインが追加されるにゃ'; echo '手動で子猫を起動する場合はここで claude を実行するにゃ'; echo ''; exec bash" Enter
-
-        # =============================================
-        # Window 2 "tanuki": 🦝 研究狸（Codex CLI 専用）
+        # Window 1 "tanuki": 🦝 研究狸（Codex CLI 専用）
         # =============================================
         tmux new-window -t "${SESSION_NAME}" -n "tanuki" -c "$PROJECT_DIR"
         tmux send-keys -t "${SESSION_NAME}:tanuki" \
             "echo -e '${CYAN}🦝 研究狸（research-tanuki）- Codex CLI [full-auto]${NC}'; echo '─────────────────────────────────────────'; echo ''; codex --full-auto" Enter
 
         # =============================================
-        # Window 3 "scouts": 🦊 賢者キツネ + 🦉 目利きフクロウ
+        # Window 2 "scouts": 🦊 賢者キツネ + 🦉 目利きフクロウ
         # =============================================
         tmux new-window -t "${SESSION_NAME}" -n "scouts" -c "$PROJECT_DIR"
 
@@ -228,22 +207,12 @@ case "$MODE" in
             "echo -e '${CYAN}🦉 目利きフクロウ（owl-reviewer）- Codex CLI${NC}'; echo '──────────────────────────────────────────────'; echo ''; echo '使い方:'; echo '  codex exec --full-auto --sandbox read-only --cd /home/edgesakura \"{レビュー依頼}\"'; echo ''; echo '用途: コードレビュー、OWASP Top 10 セキュリティ監査'; echo ''; exec bash" Enter
 
         # =============================================
-        # Window 4 "thinking": 💭 思考ログビューア
-        # =============================================
-        THINKING_LOG="${PROJECT_DIR}/.claude/teams/neko-pm/thinking.log"
-        mkdir -p "$(dirname "$THINKING_LOG")"
-        touch "$THINKING_LOG"
-        tmux new-window -t "${SESSION_NAME}" -n "thinking" -c "$PROJECT_DIR"
-        tmux send-keys -t "${SESSION_NAME}:thinking" \
-            "echo -e '${CYAN}💭 思考ログビューア（Thinking Log）${NC}'; echo '─────────────────────────────────────'; echo ''; echo 'Teammate の思考プロセスがリアルタイムで表示されるにゃ'; echo ''; tail -f ${THINKING_LOG}" Enter
-
-        # =============================================
-        # Window 5 "chat": 💬 Chat App (Web UI)
+        # Window 3 "chat": 💬 Chat App (Web UI)
         # =============================================
         CHAT_APP_DIR="${PROJECT_DIR}/output/chat-app"
         tmux new-window -t "${SESSION_NAME}" -n "chat" -c "$CHAT_APP_DIR"
         tmux send-keys -t "${SESSION_NAME}:chat" \
-            "echo -e '${CYAN}💬 Chat App (Web UI)${NC}'; echo '─────────────────────────────────────'; echo ''; BOSS_PANE=neko-pm:lead WORKERS_SESSION=neko-pm:teammates PORT=3000 npm start" Enter
+            "echo -e '${CYAN}💬 Chat App (Web UI)${NC}'; echo '─────────────────────────────────────'; echo ''; BOSS_PANE=neko-pm:lead WORKERS_SESSION=neko-pm:lead PORT=3000 npm start" Enter
 
         # Window 0（lead）をアクティブに
         tmux select-window -t "${SESSION_NAME}:lead"
@@ -252,20 +221,16 @@ case "$MODE" in
         echo -e "${GREEN}✅ neko-pm v3.5 準備完了にゃ〜${NC}"
         echo ""
         echo -e "${YELLOW}【tmux レイアウト】${NC}"
-        echo -e "  Window 0 ${CYAN}\"lead\"${NC}      : 🐱 ボスねこ（Claude Code）"
-        echo -e "  Window 1 ${CYAN}\"teammates\"${NC} : 🐱 子猫たち（Teammate spawn 先）"
-        echo -e "  Window 2 ${CYAN}\"tanuki\"${NC}    : 🦝 研究狸（Codex CLI）"
-        echo -e "  Window 3 ${CYAN}\"scouts\"${NC}    : 🦊 賢者キツネ + 🦉 目利きフクロウ"
-        echo -e "  Window 4 ${CYAN}\"thinking\"${NC}  : 💭 思考ログビューア"
-        echo -e "  Window 5 ${CYAN}\"chat\"${NC}      : 💬 Chat App (http://0.0.0.0:3000)"
+        echo -e "  Window 0 ${CYAN}\"lead\"${NC}      : 🐱 ボスねこ（+ Teammate 自動分割）"
+        echo -e "  Window 1 ${CYAN}\"tanuki\"${NC}    : 🦝 研究狸（Codex CLI）"
+        echo -e "  Window 2 ${CYAN}\"scouts\"${NC}    : 🦊 賢者キツネ + 🦉 目利きフクロウ"
+        echo -e "  Window 3 ${CYAN}\"chat\"${NC}      : 💬 Chat App (http://0.0.0.0:3000)"
         echo ""
         echo -e "${YELLOW}【操作】${NC}"
-        echo -e "  Ctrl+B → 0  : Lead（ボスねこ）"
-        echo -e "  Ctrl+B → 1  : Teammates（子猫）"
-        echo -e "  Ctrl+B → 2  : 研究狸"
-        echo -e "  Ctrl+B → 3  : 偵察隊（キツネ+フクロウ）"
-        echo -e "  Ctrl+B → 4  : 思考ログビューア"
-        echo -e "  Ctrl+B → 5  : Chat App (Web UI)"
+        echo -e "  Ctrl+B → 0  : Lead（ボスねこ + Teammates）"
+        echo -e "  Ctrl+B → 1  : 研究狸"
+        echo -e "  Ctrl+B → 2  : 偵察隊（キツネ+フクロウ）"
+        echo -e "  Ctrl+B → 3  : Chat App (Web UI)"
         echo -e "  Ctrl+B → 矢印 : ペイン間移動"
         echo ""
 

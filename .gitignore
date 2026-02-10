@@ -58,5 +58,8 @@ test-*.js
 # Local settings（ローカル固有）
 .claude/settings.local.json
 
+# Agent Teams 実行時状態
+.claude/teams/
+
 # Research reports（一時的な調査結果）
 reports/
