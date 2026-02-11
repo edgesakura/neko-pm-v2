@@ -41,7 +41,7 @@ echo ""
 # --- 必須ツールチェック ---
 echo -e "${YELLOW}📋 必須ツール確認中...${NC}"
 MISSING=()
-for cmd in tmux node npm; do
+for cmd in tmux node npm uv; do
     if command -v "$cmd" &> /dev/null; then
         echo -e "  ${GREEN}✅ $cmd${NC} $(command -v "$cmd")"
     else
@@ -84,6 +84,53 @@ fi
 
 echo ""
 
+# --- MCP サーバーセットアップ ---
+echo -e "${YELLOW}🔌 MCP サーバーセットアップ...${NC}"
+
+# npx 系: 初回起動時に自動 fetch されるが、プリキャッシュで高速化
+echo -e "  npx 系パッケージをプリキャッシュ中..."
+NPX_PACKAGES=(
+  "@modelcontextprotocol/server-memory"
+  "@playwright/mcp@latest"
+  "chrome-devtools-mcp@latest"
+  "@drawio/mcp"
+)
+for pkg in "${NPX_PACKAGES[@]}"; do
+  echo -n "    $pkg ... "
+  npx -y "$pkg" --help >/dev/null 2>&1 && echo -e "${GREEN}✅${NC}" || echo -e "${YELLOW}⚠️ (初回接続時に fetch)${NC}"
+done
+
+# uvx 系: 初回起動時に自動 fetch されるが、プリキャッシュで高速化
+echo -e "  uvx 系パッケージをプリキャッシュ中..."
+UVX_PACKAGES=(
+  "awslabs.aws-api-mcp-server@latest"
+  "awslabs.cdk-mcp-server@latest"
+  "awslabs.amazon-bedrock-agentcore-mcp-server@latest"
+  "strands-agents-mcp-server"
+)
+for pkg in "${UVX_PACKAGES[@]}"; do
+  echo -n "    $pkg ... "
+  uvx "$pkg" --help >/dev/null 2>&1 && echo -e "${GREEN}✅${NC}" || echo -e "${YELLOW}⚠️ (初回接続時に fetch)${NC}"
+done
+
+# HTTP 系: インストール不要、到達確認のみ
+echo -e "  HTTP 系 MCP の接続確認..."
+HTTP_MCPS=(
+  "https://knowledge-mcp.global.api.aws|aws-knowledge"
+  "https://context7.liam.sh/mcp|context7"
+  "https://api.githubcopilot.com/mcp/|github"
+)
+for entry in "${HTTP_MCPS[@]}"; do
+  url="${entry%%|*}"
+  name="${entry##*|}"
+  echo -n "    $name ($url) ... "
+  curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null | grep -qE "^[234]" \
+    && echo -e "${GREEN}✅${NC}" \
+    || echo -e "${YELLOW}⚠️ (接続不可 - ネットワーク確認)${NC}"
+done
+
+echo ""
+
 # --- ディレクトリ作成 ---
 echo -e "${YELLOW}📁 ディレクトリ構造作成中...${NC}"
 mkdir -p "${PROJECT_DIR}/memory"
@@ -106,6 +153,53 @@ else
         && echo -e "  ${GREEN}✅ Memory MCP 設定完了${NC}" \
         || echo -e "  ${YELLOW}⚠️  手動設定が必要にゃ${NC}"
 fi
+
+echo ""
+
+# --- settings.json MCP 設定 ---
+echo -e "${YELLOW}⚙️  settings.json 確認中...${NC}"
+SETTINGS_FILE="$HOME/.claude/settings.json"
+if [ -f "$SETTINGS_FILE" ]; then
+  # mcpServers キーが存在するか確認
+  if grep -q '"mcpServers"' "$SETTINGS_FILE"; then
+    echo -e "  ${GREEN}✅ settings.json に mcpServers 設定済み${NC}"
+    # MCP サーバー数を表示
+    MCP_COUNT=$(grep -c '"type"' "$SETTINGS_FILE" 2>/dev/null || echo 0)
+    echo -e "  設定済み MCP サーバー: ${MCP_COUNT} 個"
+  else
+    echo -e "  ${YELLOW}⚠️  mcpServers が未設定。テンプレートを参照:${NC}"
+    echo -e "  ${CYAN}cat ${PROJECT_DIR}/config/settings.json.template${NC}"
+  fi
+else
+  echo -e "  ${YELLOW}⚠️  ~/.claude/settings.json が存在しない${NC}"
+  echo -e "  テンプレートからコピー:"
+  echo -e "  ${CYAN}mkdir -p ~/.claude && cp ${PROJECT_DIR}/config/settings.json.template ~/.claude/settings.json${NC}"
+fi
+
+echo ""
+
+# --- 環境変数チェック ---
+echo -e "${YELLOW}🔑 環境変数チェック...${NC}"
+ENV_VARS=(
+  "GITHUB_TOKEN|GitHub MCP 認証|必須"
+  "ANTHROPIC_API_KEY|Claude Code API|必須"
+  "OPENAI_API_KEY|Codex CLI|推奨"
+  "AWS_PROFILE|AWS MCP 群|推奨"
+)
+for entry in "${ENV_VARS[@]}"; do
+  IFS='|' read -r var desc importance <<< "$entry"
+  if [ -n "${!var:-}" ]; then
+    echo -e "  ${GREEN}✅ $var${NC} ($desc)"
+  else
+    if [ "$importance" = "必須" ]; then
+      echo -e "  ${RED}❌ $var${NC} ($desc) - $importance"
+    else
+      echo -e "  ${YELLOW}⚠️  $var${NC} ($desc) - $importance"
+    fi
+  fi
+done
+
+echo ""
 
 # --- 環境変数設定 ---
 echo -e "${YELLOW}🔧 環境設定...${NC}"
@@ -154,5 +248,11 @@ echo -e '  }'
 echo ""
 echo -e "${GREEN}✅ neko-pm v3.5 セットアップ完了にゃ〜${NC}"
 echo ""
+echo -e "MCP: ${CYAN}12 サーバー構成（npx/uvx 自動 fetch 対応）${NC}"
 echo -e "起動: ${CYAN}./scripts/start-team.sh${NC}"
 echo -e "停止: ${CYAN}./scripts/stop-team.sh${NC}"
+echo ""
+echo -e "${YELLOW}📝 次のステップ:${NC}"
+echo -e "  1. 環境変数を設定（GITHUB_TOKEN, ANTHROPIC_API_KEY）"
+echo -e "  2. settings.json を確認・配置"
+echo -e "  3. ${CYAN}./scripts/start-team.sh${NC} で起動"
