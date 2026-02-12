@@ -198,13 +198,23 @@ case "$MODE" in
         tmux new-window -t "${SESSION_NAME}" -n "scouts" -c "$PROJECT_DIR"
 
         # ペイン 0: 🦊 賢者キツネ（左半分）
-        tmux send-keys -t "${SESSION_NAME}:scouts" \
-            "echo -e '${CYAN}🦊 賢者キツネ（sage-fox）- Gemini CLI${NC}'; echo '─────────────────────────────────────'; echo ''; echo '使い方:'; echo '  gemini --approval-mode full \"{依頼内容}\"'; echo ''; echo '用途: リサーチ、トレンド調査、概要把握'; echo ''; exec bash" Enter
+        if command -v gemini &> /dev/null; then
+            tmux send-keys -t "${SESSION_NAME}:scouts" \
+                "echo -e '${CYAN}🦊 賢者キツネ（sage-fox）- Gemini CLI [interactive]${NC}'; echo '─────────────────────────────────────'; echo '用途: リサーチ、トレンド調査、概要把握'; echo ''; gemini" Enter
+        else
+            tmux send-keys -t "${SESSION_NAME}:scouts" \
+                "echo -e '${YELLOW}🦊 賢者キツネ - gemini CLI 未インストール${NC}'; echo '  npm install -g @anthropic-ai/gemini-cli'; exec bash" Enter
+        fi
 
         # ペイン 1: 🦉 目利きフクロウ（右半分）
         tmux split-window -t "${SESSION_NAME}:scouts" -h -c "$PROJECT_DIR"
-        tmux send-keys -t "${SESSION_NAME}:scouts.1" \
-            "echo -e '${CYAN}🦉 目利きフクロウ（owl-reviewer）- Codex CLI${NC}'; echo '──────────────────────────────────────────────'; echo ''; echo '使い方:'; echo '  codex exec --full-auto --sandbox read-only --cd /home/edgesakura \"{レビュー依頼}\"'; echo ''; echo '用途: コードレビュー、OWASP Top 10 セキュリティ監査'; echo ''; exec bash" Enter
+        if command -v codex &> /dev/null; then
+            tmux send-keys -t "${SESSION_NAME}:scouts.1" \
+                "echo -e '${CYAN}🦉 目利きフクロウ（owl-reviewer）- Codex CLI [read-only]${NC}'; echo '──────────────────────────────────────────────'; echo '用途: コードレビュー、OWASP Top 10 セキュリティ監査'; echo ''; codex --full-auto --sandbox read-only" Enter
+        else
+            tmux send-keys -t "${SESSION_NAME}:scouts.1" \
+                "echo -e '${YELLOW}🦉 目利きフクロウ - codex CLI 未インストール${NC}'; echo '  npm install -g @openai/codex'; exec bash" Enter
+        fi
 
         # =============================================
         # Window 3 "chat": 💬 Chat App (Web UI)

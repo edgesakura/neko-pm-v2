@@ -287,25 +287,25 @@ prompt: |
 
 ## 外部エージェント
 
-Split Panes モードでは各エージェントに専用 Window が用意される。
-Lead は Bash 経由で直接実行するか、`tmux send-keys` でペインに送信できる。
+Split Panes モードでは各エージェントが専用ペインで**対話モード常駐**する。
+Lead は `tmux send-keys` でプロンプトを送信するだけで依頼できる。
 
 ### tmux ペインアドレス
 
-| エージェント | Window | アドレス |
-|-------------|--------|---------|
-| 🦝 研究狸 | 1 tanuki | `neko-pm:tanuki` |
-| 🦊 賢者キツネ | 2 scouts.0（左） | `neko-pm:scouts.0` |
-| 🦉 目利きフクロウ | 2 scouts.1（右） | `neko-pm:scouts.1` |
+| エージェント | Window | アドレス | 常駐プロセス |
+|-------------|--------|---------|-------------|
+| 🦝 研究狸 | 1 tanuki | `neko-pm:tanuki` | `codex --full-auto` |
+| 🦊 賢者キツネ | 2 scouts.0（左） | `neko-pm:scouts.0` | `gemini` |
+| 🦉 目利きフクロウ | 2 scouts.1（右） | `neko-pm:scouts.1` | `codex --full-auto --sandbox read-only` |
 
 ### 🦊 賢者キツネ（sage-fox）- Gemini CLI
 
 ```bash
-# 直接実行（Bash 経由）
-gemini --approval-mode full "{依頼内容}"
+# tmux ペインに依頼を送信（gemini が対話モードで常駐中）
+tmux send-keys -t neko-pm:scouts.0 "{依頼内容}" Enter
 
-# tmux ペインに送信
-tmux send-keys -t neko-pm:scouts.0 'gemini --approval-mode full "{依頼内容}"' Enter
+# 直接実行（In-Process モード / Bash 経由）
+gemini --approval-mode full "{依頼内容}"
 ```
 
 スキル: `~/.gemini/skills/sage-fox/`
@@ -314,11 +314,11 @@ tmux send-keys -t neko-pm:scouts.0 'gemini --approval-mode full "{依頼内容}"
 ### 🦝 研究狸（research-tanuki）- Codex CLI
 
 ```bash
-# 直接実行（Bash 経由）
-codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}"
+# tmux ペインに依頼を送信（codex が対話モードで常駐中）
+tmux send-keys -t neko-pm:tanuki "{依頼内容}" Enter
 
-# tmux ペインに送信
-tmux send-keys -t neko-pm:tanuki 'codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}"' Enter
+# 直接実行（In-Process モード / Bash 経由）
+codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{依頼内容}"
 ```
 
 スキル: `~/.codex/skills/research-tanuki/`
@@ -327,11 +327,11 @@ tmux send-keys -t neko-pm:tanuki 'codex exec --full-auto --sandbox read-only --c
 ### 🦉 目利きフクロウ（owl-reviewer）- Codex CLI
 
 ```bash
-# 直接実行（Bash 経由）
-codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{レビュー依頼}"
+# tmux ペインにレビュー依頼を送信（codex が read-only で常駐中）
+tmux send-keys -t neko-pm:scouts.1 "{レビュー依頼}" Enter
 
-# tmux ペインに送信
-tmux send-keys -t neko-pm:scouts.1 'codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{レビュー依頼}"' Enter
+# 直接実行（In-Process モード / Bash 経由）
+codex exec --full-auto --sandbox read-only --cd /home/edgesakura "{レビュー依頼}"
 ```
 
 スキル: `~/.codex/skills/owl-reviewer/`
