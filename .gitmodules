@@ -1,0 +1,3 @@
+[submodule ".claude/skills/ppt"]
+	path = .claude/skills/ppt
+	url = https://github.com/edgesakura/claude-ppt-skill.git
