@@ -1,0 +1,74 @@
+{
+  "check_interval_seconds": 300,
+  "market_hours_only": false,
+  "market_hours": {
+    "comment": "US futures: ほぼ24h だが主要時間帯のみ監視",
+    "start_utc": 13,
+    "end_utc": 6,
+    "comment2": "JST 22:00 - 15:00 (翌日)"
+  },
+  "notification": {
+    "log_file": "/home/edgesakura/neko-pm/output/market-alerts.log",
+    "terminal_bell": true,
+    "webhook_url": "",
+    "cooldown_minutes": 60
+  },
+  "alerts": [
+    {
+      "ticker": "NQ=F",
+      "name": "NASDAQ 100 先物",
+      "levels": [
+        { "price": 25560, "direction": "above", "label": "売り抵抗帯(週足+日足)", "action": "戻り売り検討。反転確認後ショート", "priority": "high" },
+        { "price": 25000, "direction": "above", "label": "日足売り抵抗帯", "action": "25,560到達前の反転に注意", "priority": "medium" },
+        { "price": 24575, "direction": "below", "label": "先週安値下抜け", "action": "24,155へ向かう下落シナリオ開始", "priority": "high" },
+        { "price": 24155, "direction": "below", "label": "11月安値(最重要)", "action": "23,970の買い抵抗帯で反発確認→中長期ロング", "priority": "critical" },
+        { "price": 23970, "direction": "below", "label": "3ヶ月足+月足 買い抵抗帯", "action": "反発確認→中長期ロング最強ポイント!", "priority": "critical" }
+      ]
+    },
+    {
+      "ticker": "GC=F",
+      "name": "ゴールド先物",
+      "levels": [
+        { "price": 5300, "direction": "above", "label": "売り抵抗帯", "action": "反転兆候あれば利確検討", "priority": "high", "needs_position": true },
+        { "price": 4600, "direction": "below", "label": "サポートライン", "action": "割れてからの反発で買い", "priority": "high" }
+      ]
+    },
+    {
+      "ticker": "SI=F",
+      "name": "シルバー先物",
+      "levels": [
+        { "price": 92, "direction": "above", "label": "強い売り抵抗帯(92-95)", "action": "上抜け失敗なら撤退", "priority": "high" },
+        { "price": 80, "direction": "above", "label": "売り抵抗帯", "action": "上抜け失敗で反落→トレード枠逃げ検討", "priority": "high" },
+        { "price": 70, "direction": "below", "label": "買い抵抗帯", "action": "反発確認で押し目買い", "priority": "medium" }
+      ]
+    },
+    {
+      "ticker": "USDJPY=X",
+      "name": "ドル円",
+      "levels": [
+        { "price": 155.00, "direction": "above", "label": "心理的大台(R2)", "action": "ここを超えない限り調整局面。ショート検討", "priority": "high" },
+        { "price": 153.80, "direction": "above", "label": "戻り高値(R1)", "action": "戻り売り検討ゾーン。下位足で反転確認", "priority": "high" },
+        { "price": 152.00, "direction": "below", "label": "大底(S2)最重要", "action": "割れたら150円への急落リスク!", "priority": "critical" },
+        { "price": 151.30, "direction": "below", "label": "最終防衛線(S3)", "action": "中長期上昇トレンド崩壊。146.59ターゲット", "priority": "critical" },
+        { "price": 150.00, "direction": "below", "label": "月足買い抵抗帯(S4)", "action": "ここでの攻防注目。反発なら買い検討", "priority": "high" }
+      ]
+    },
+    {
+      "ticker": "AUDUSD=X",
+      "name": "豪ドル/米ドル",
+      "levels": [
+        { "price": 0.7150, "direction": "above", "label": "直近高値突破", "action": "上昇加速。利確は0.7200付近で検討", "priority": "medium", "needs_position": true },
+        { "price": 0.7050, "direction": "above", "label": "YS利確検討ライン", "action": "利確判断タイミング。動き方次第で継続", "priority": "high", "needs_position": true },
+        { "price": 0.6920, "direction": "below", "label": "重要サポート割れ", "action": "上昇基調崩壊警戒。0.684まで下落想定", "priority": "high", "needs_position": true },
+        { "price": 0.6840, "direction": "below", "label": "押し目買いゾーン", "action": "エントリー検討ライン", "priority": "high" }
+      ]
+    },
+    {
+      "ticker": "ES=F",
+      "name": "S&P 500 先物",
+      "levels": [
+        { "price": 6700, "direction": "below", "label": "下値警戒ライン", "action": "NQへの連れ安に注意", "priority": "medium" }
+      ]
+    }
+  ]
+}

@@ -73,6 +73,11 @@ Lead（ボスねこ）  ← 思考増幅エンジン + delegate mode
 | ペイン間移動 | `Ctrl+B` → 矢印キー |
 | Window 切替 | `Ctrl+B` → `n` / `p` |
 
+**tmux send-keys ルール（必須）:**
+- **Enter は必ず別コマンドで送る。** `tmux send-keys -t <target> 'コマンド' Enter` の Enter が効かないケースがある
+- 正しいパターン: `tmux send-keys -t neko-pm:tanuki 'コマンド内容'` の後に `tmux send-keys -t neko-pm:tanuki Enter`
+- **常にこの2ステップで送ること。** コマンドなしの素の Enter 送信も同じ: `tmux send-keys -t <target> Enter`
+
 ---
 
 ### Agent Teams vs Task tool 使い分け
