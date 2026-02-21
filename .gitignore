@@ -1,5 +1,5 @@
 # Output（成果物は公開しない）
-output/
+output/*
 !output/.gitkeep
 
 # Temp launchers（起動時に生成）
@@ -36,6 +36,9 @@ node_modules/
 # Logs
 logs/
 *.log
+!output/logs/
+output/logs/*
+!output/logs/.gitkeep
 
 # Memory MCP（ローカル状態）
 memory/
@@ -57,6 +60,10 @@ test-*.js
 
 # Local settings（ローカル固有）
 .claude/settings.local.json
+
+# Python cache
+__pycache__/
+*.pyc
 
 # Agent Teams 実行時状態
 .claude/teams/

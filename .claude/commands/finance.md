@@ -88,7 +88,10 @@ config/market-alerts.json を編集
 
 ## 相談対応フロー
 
-0. **過去の分析を読む**: `output/finance/` の最新ファイルを Read で読み込む（キーレベル・シナリオの前提として使う）
+0. **ソース資料の自動読み込み**（以下の順で実行）:
+   - `output/finance/` の最新 .md を Read（キーレベル・シナリオの前提）
+   - `output/*.pdf` を Glob で検索し、FX note 系の最新 PDF を Read（20p以下なら全ページ、超えたら方針ページを優先）
+   - `output/*.jpg` / `output/*.png` を Glob で検索し、FX note 系の最新画像を Read（チャート確認用）
 1. **MT5 の状況を確認**（market-watch --mt5）
 2. **現在値を確認**（market-watch --status）
 3. **キーレベルとの距離を計算**（過去分析のレベルと現在値を比較）
@@ -96,6 +99,11 @@ config/market-alerts.json を編集
 5. **前回分析からの変化を判定**（レベルのブレイク、シナリオの的中/外れ）
 6. **判断を提示**（エントリー/待機/撤退）
 7. **必ずリスクを明示**（「逆に行ったら○○にゃ」）
+
+### ソース資料の管理
+- **PDF/画像の置き場**: `output/` 直下（FX note PDF、スクリーンショット等）
+- ファイル名パターン: `*FX*note*`, `*ナスダック*`, `*相場予測*` 等
+- 新しい Note が提供されたら読み込んで `output/finance/YYYY-MM-DD.md` に分析結果を保存
 
 ### 分析ファイル管理
 - 保存先: `output/finance/YYYY-MM-DD.md`

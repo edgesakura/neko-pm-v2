@@ -1,11 +1,11 @@
 #!/bin/bash
-# neko-pm v3.5 - Agent Teams 起動スクリプト
+# neko-pm - Agent Teams 起動スクリプト
 #
 # tmux セッション 'neko-pm' を作成し、4 Window 構成で起動:
-#   Window 0 "lead"      : 🐱 ボスねこ（Claude Code Lead + Teammate 自動分割）
-#   Window 1 "tanuki"    : 🦝 研究狸（Codex CLI 専用）
-#   Window 2 "scouts"    : 🦊 賢者キツネ + 🦉 目利きフクロウ
-#   Window 3 "chat"      : 💬 Chat App (Web UI)
+#   Window 0 "lead"      : ボスねこ（Claude Code Lead + Teammate 自動分割）
+#   Window 1 "tanuki"    : 研究狸（Codex CLI 専用）
+#   Window 2 "kitsune"   : 賢者キツネ（Gemini CLI）
+#   Window 3 "market"    : Market Watch（テクニカル分析付き銘柄監視）
 #
 # 使い方:
 #   ./scripts/start-team.sh                # Split Panes（デフォルト）
@@ -30,7 +30,7 @@ MODE="split-panes"
 
 show_help() {
     cat << 'HELP'
-🐱 neko-pm v3.5 - Agent Teams 起動スクリプト
+neko-pm - Agent Teams 起動スクリプト
 
 使い方: start-team.sh [オプション]
 
@@ -42,34 +42,16 @@ show_help() {
 デフォルト（Split Panes）:
   tmux セッション 'neko-pm' を 4 Window 構成で起動:
 
-  Window 0 "lead" ─ ボスねこ（+ Teammate 自動分割）
-  ┌──────────────────────────────────┐
-  │   🐱 Lead（ボスねこ）             │
-  │   claude --teammate-mode tmux    │
-  │   Teammate spawn で自動ペイン分割 │
-  └──────────────────────────────────┘
-
-  Window 1 "tanuki" ─ 研究狸
-  ┌──────────────────────────────────┐
-  │   🦝 研究狸（Codex CLI）          │
-  └──────────────────────────────────┘
-
-  Window 2 "scouts" ─ 偵察隊
-  ┌───────────────┬──────────────────┐
-  │ 🦊 賢者キツネ  │ 🦉 目利きフクロウ │
-  │   (gemini)    │   (codex)       │
-  └───────────────┴──────────────────┘
-
-  Window 3 "chat" ─ Chat App (Web UI)
-  ┌──────────────────────────────────┐
-  │   💬 Chat App (port 3000)        │
-  └──────────────────────────────────┘
+  Window 0 "lead"    - ボスねこ（+ Teammate 自動分割）
+  Window 1 "tanuki"  - 研究狸（Codex CLI）
+  Window 2 "kitsune" - 賢者キツネ（Gemini CLI）
+  Window 3 "market"  - Market Watch
 
 操作:
   Ctrl+B → 0      : Lead（ボスねこ + Teammates）
   Ctrl+B → 1      : 研究狸
-  Ctrl+B → 2      : 偵察隊（キツネ+フクロウ）
-  Ctrl+B → 3      : Chat App (Web UI)
+  Ctrl+B → 2      : 賢者キツネ
+  Ctrl+B → 3      : Market Watch
   Ctrl+B → 矢印   : ペイン間移動
   Ctrl+B → n/p    : Window 切替
 HELP
@@ -91,6 +73,39 @@ if ! command -v claude &> /dev/null; then
     echo -e "${YELLOW}   npm install -g @anthropic-ai/claude-code でインストールするにゃ${NC}"
     exit 1
 fi
+
+# --- nawabari アーカイブ + 新規作成 ---
+
+archive_nawabari() {
+    local nawabari="${PROJECT_DIR}/nawabari.md"
+    local history_dir="${PROJECT_DIR}/history"
+    mkdir -p "$history_dir"
+
+    if [ -f "$nawabari" ]; then
+        cp "$nawabari" "${history_dir}/nawabari-$(date +%Y%m%d-%H%M%S).md"
+        echo -e "${CYAN}📋 前回の nawabari を history/ にアーカイブしたにゃ${NC}"
+    fi
+
+    cat > "$nawabari" << 'NAWABARI_EOF'
+# nawabari
+
+最終更新: (セッション開始)
+
+## 要対応
+（ご主人の判断が必要なこと）
+
+## 進行中
+| 担当 | タスク | 状態 |
+|------|--------|------|
+
+## 完了（最新5件）
+（リンクのみ: → output/logs/xxx.md）
+
+## メモ
+（チーム共有の気づき・発見）
+NAWABARI_EOF
+    echo -e "${GREEN}📝 nawabari.md を新規作成したにゃ${NC}"
+}
 
 # --- Memory MCP セットアップ ---
 
@@ -116,7 +131,7 @@ setup_memory_mcp() {
 setup_global_context() {
     if [ ! -f "${PROJECT_DIR}/memory/global_context.md" ]; then
         cat > "${PROJECT_DIR}/memory/global_context.md" << 'CONTEXT_EOF'
-# 🐱 neko-pm グローバルコンテキスト
+# neko-pm グローバルコンテキスト
 
 > 最終更新: (未設定)
 > このファイルはシステム全体で共有する情報を記録するにゃ
@@ -141,9 +156,10 @@ CONTEXT_EOF
 
 # --- モード別起動 ---
 
-echo -e "${CYAN}🐱 neko-pm v3.5 起動中にゃ〜${NC}"
+echo -e "${CYAN}🐱 neko-pm 起動中にゃ〜${NC}"
 echo ""
 
+archive_nawabari
 setup_memory_mcp
 setup_global_context
 
@@ -179,68 +195,84 @@ case "$MODE" in
         echo -e "${GREEN}🖥️  tmux セッション '${SESSION_NAME}' を作成するにゃ${NC}"
 
         # =============================================
-        # Window 0 "lead": 🐱 ボスねこ（Claude Code Lead）
+        # Window 0 "lead": ボスねこ（Claude Code Lead）
         # =============================================
         tmux new-session -d -s "$SESSION_NAME" -n "lead" -c "$PROJECT_DIR"
         tmux send-keys -t "${SESSION_NAME}:lead" \
-            "echo -e '${GREEN}🐱 neko-pm v3.5 - Lead（ボスねこ）${NC}' && echo '' && claude --model opus --teammate-mode tmux" Enter
+            "echo -e '${GREEN}🐱 neko-pm - Lead（ボスねこ）${NC}' && echo '' && claude --model opus --teammate-mode tmux" Enter
 
         # =============================================
-        # Window 1 "tanuki": 🦝 研究狸（Codex CLI 専用）
+        # Window 1 "tanuki": 研究狸（Codex CLI 専用）
         # =============================================
         tmux new-window -t "${SESSION_NAME}" -n "tanuki" -c "$PROJECT_DIR"
         tmux send-keys -t "${SESSION_NAME}:tanuki" \
             "echo -e '${CYAN}🦝 研究狸（research-tanuki）- Codex CLI [full-auto]${NC}'; echo '─────────────────────────────────────────'; echo ''; codex --full-auto" Enter
 
         # =============================================
-        # Window 2 "scouts": 🦊 賢者キツネ + 🦉 目利きフクロウ
+        # Window 2 "kitsune": 賢者キツネ（Gemini CLI）
         # =============================================
-        tmux new-window -t "${SESSION_NAME}" -n "scouts" -c "$PROJECT_DIR"
-
-        # ペイン 0: 🦊 賢者キツネ（左半分）
+        tmux new-window -t "${SESSION_NAME}" -n "kitsune" -c "$PROJECT_DIR"
         if command -v gemini &> /dev/null; then
-            tmux send-keys -t "${SESSION_NAME}:scouts" \
-                "echo -e '${CYAN}🦊 賢者キツネ（sage-fox）- Gemini CLI [interactive]${NC}'; echo '─────────────────────────────────────'; echo '用途: リサーチ、トレンド調査、概要把握'; echo ''; gemini" Enter
+            tmux send-keys -t "${SESSION_NAME}:kitsune" \
+                "echo -e '${CYAN}🦊 賢者キツネ（sage-fox）- Gemini CLI [interactive]${NC}'; echo '─────────────────────────────────────'; echo ''; gemini" Enter
         else
-            tmux send-keys -t "${SESSION_NAME}:scouts" \
+            tmux send-keys -t "${SESSION_NAME}:kitsune" \
                 "echo -e '${YELLOW}🦊 賢者キツネ - gemini CLI 未インストール${NC}'; echo '  npm install -g @anthropic-ai/gemini-cli'; exec bash" Enter
         fi
 
-        # ペイン 1: 🦉 目利きフクロウ（右半分）
-        tmux split-window -t "${SESSION_NAME}:scouts" -h -c "$PROJECT_DIR"
-        if command -v codex &> /dev/null; then
-            tmux send-keys -t "${SESSION_NAME}:scouts.1" \
-                "echo -e '${CYAN}🦉 目利きフクロウ（owl-reviewer）- Codex CLI [read-only]${NC}'; echo '──────────────────────────────────────────────'; echo '用途: コードレビュー、OWASP Top 10 セキュリティ監査'; echo ''; codex --full-auto --sandbox read-only" Enter
-        else
-            tmux send-keys -t "${SESSION_NAME}:scouts.1" \
-                "echo -e '${YELLOW}🦉 目利きフクロウ - codex CLI 未インストール${NC}'; echo '  npm install -g @openai/codex'; exec bash" Enter
+        # =============================================
+        # chat-app: バックグラウンド起動（port 3000）
+        # =============================================
+        CHAT_APP_DIR="${PROJECT_DIR}/output/chat-app"
+        if [ -d "$CHAT_APP_DIR" ] && [ -f "${CHAT_APP_DIR}/package.json" ]; then
+            echo -e "${CYAN}💬 Chat App をバックグラウンド起動中にゃ...${NC}"
+            cd "$CHAT_APP_DIR"
+            BOSS_PANE=neko-pm:lead WORKERS_SESSION=neko-pm:lead PORT=3000 \
+                nohup npm start > "${PROJECT_DIR}/output/logs/chat-app.log" 2>&1 &
+            echo $! > "${PROJECT_DIR}/.chat-app.pid"
+            cd "$PROJECT_DIR"
+            echo -e "${GREEN}✅ Chat App 起動完了（http://0.0.0.0:3000）${NC}"
         fi
 
         # =============================================
-        # Window 3 "chat": 💬 Chat App (Web UI)
+        # Discord Bot: バックグラウンド起動
         # =============================================
-        CHAT_APP_DIR="${PROJECT_DIR}/output/chat-app"
-        tmux new-window -t "${SESSION_NAME}" -n "chat" -c "$CHAT_APP_DIR"
-        tmux send-keys -t "${SESSION_NAME}:chat" \
-            "echo -e '${CYAN}💬 Chat App (Web UI)${NC}'; echo '─────────────────────────────────────'; echo ''; BOSS_PANE=neko-pm:lead WORKERS_SESSION=neko-pm:lead PORT=3000 npm start" Enter
+        DISCORD_BOT_DIR="${PROJECT_DIR}/output/discord-bot"
+        if [ -d "$DISCORD_BOT_DIR" ] && [ -f "${DISCORD_BOT_DIR}/.env" ]; then
+            echo -e "${CYAN}🤖 Discord Bot をバックグラウンド起動中にゃ...${NC}"
+            cd "$DISCORD_BOT_DIR"
+            nohup node bot.js > "${PROJECT_DIR}/output/logs/discord-bot.log" 2>&1 &
+            echo $! > "${PROJECT_DIR}/.discord-bot.pid"
+            cd "$PROJECT_DIR"
+            echo -e "${GREEN}✅ Discord Bot 起動完了${NC}"
+        fi
+
+        # =============================================
+        # Window 3 "market": Market Watch
+        # =============================================
+        tmux new-window -t "${SESSION_NAME}" -n "market" -c "$PROJECT_DIR"
+        tmux send-keys -t "${SESSION_NAME}:market" \
+            "echo -e '${CYAN}📈 Market Watch（テクニカル分析付き銘柄監視）${NC}'; echo '─────────────────────────────────────'; echo ''; python3 ${PROJECT_DIR}/scripts/market-watch.py" Enter
 
         # Window 0（lead）をアクティブに
         tmux select-window -t "${SESSION_NAME}:lead"
 
         echo ""
-        echo -e "${GREEN}✅ neko-pm v3.5 準備完了にゃ〜${NC}"
+        echo -e "${GREEN}✅ neko-pm 準備完了にゃ〜${NC}"
         echo ""
         echo -e "${YELLOW}【tmux レイアウト】${NC}"
         echo -e "  Window 0 ${CYAN}\"lead\"${NC}      : 🐱 ボスねこ（+ Teammate 自動分割）"
         echo -e "  Window 1 ${CYAN}\"tanuki\"${NC}    : 🦝 研究狸（Codex CLI）"
-        echo -e "  Window 2 ${CYAN}\"scouts\"${NC}    : 🦊 賢者キツネ + 🦉 目利きフクロウ"
-        echo -e "  Window 3 ${CYAN}\"chat\"${NC}      : 💬 Chat App (http://0.0.0.0:3000)"
+        echo -e "  Window 2 ${CYAN}\"kitsune\"${NC}   : 🦊 賢者キツネ（Gemini CLI）"
+        echo -e "  💬 Chat App: http://0.0.0.0:3000（バックグラウンド）"
+        echo -e "  🤖 Discord Bot: バックグラウンド（output/discord-bot/.env が必要）"
+        echo -e "  Window 3 ${CYAN}\"market\"${NC}    : 📈 Market Watch"
         echo ""
         echo -e "${YELLOW}【操作】${NC}"
         echo -e "  Ctrl+B → 0  : Lead（ボスねこ + Teammates）"
         echo -e "  Ctrl+B → 1  : 研究狸"
-        echo -e "  Ctrl+B → 2  : 偵察隊（キツネ+フクロウ）"
-        echo -e "  Ctrl+B → 3  : Chat App (Web UI)"
+        echo -e "  Ctrl+B → 2  : 賢者キツネ"
+        echo -e "  Ctrl+B → 3  : Market Watch"
         echo -e "  Ctrl+B → 矢印 : ペイン間移動"
         echo ""
 
@@ -266,16 +298,15 @@ case "$MODE" in
     # --------------------------------------------------
     in-process)
         echo ""
-        echo -e "${GREEN}✅ neko-pm v3.5 準備完了にゃ〜${NC}"
+        echo -e "${GREEN}✅ neko-pm 準備完了にゃ〜${NC}"
         echo ""
         echo -e "Teammate Mode: ${CYAN}In-Process${NC}"
         echo ""
-        echo -e "${YELLOW}【v3.5 構成】${NC}"
+        echo -e "${YELLOW}【構成】${NC}"
         echo -e "  🐱 Lead（ボスねこ）: delegate mode でタスク指揮"
         echo -e "  🐱 Teammates（子猫）: In-Process（Shift+Up/Down で切替）"
         echo -e "  🦊 賢者キツネ: gemini CLI（Bash 経由・同一ターミナル）"
         echo -e "  🦝 研究狸: codex CLI（Bash 経由・同一ターミナル）"
-        echo -e "  🦉 目利きフクロウ: codex CLI（Bash 経由・同一ターミナル）"
         echo ""
 
         cd "$PROJECT_DIR"
