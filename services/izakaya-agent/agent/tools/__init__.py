@@ -1,3 +1,0 @@
-"""
-Tools for Izakaya Agent
-"""
