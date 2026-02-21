@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# CDK
+cdk.out/
+node_modules/
+
+# Lambda Layer
+lambda/layer/
+lambda/layer.zip
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+.env.local
+
+# Logs
+*.log
+
+# AWS
+*.zip

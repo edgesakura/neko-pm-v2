@@ -1,0 +1,22 @@
+{
+  "id": "alert-001",
+  "title": "[P1] API 5xx Error Rate Spike - payment-service",
+  "description": "5xx error rate exceeded 5% threshold on payment-service. Current: 12.3%. Duration: 15 minutes.",
+  "severity": "critical",
+  "category": "API_5XX_SPIKE",
+  "source": "datadog",
+  "timestamp": "2026-02-18T10:30:00Z",
+  "tags": {
+    "service": "payment-service",
+    "env": "production",
+    "team": "platform",
+    "region": "ap-northeast-1"
+  },
+  "raw_payload": {
+    "monitor_id": 12345,
+    "metric": "trace.http.request.errors",
+    "threshold": 5.0,
+    "current_value": 12.3,
+    "alert_type": "metric_alert"
+  }
+}

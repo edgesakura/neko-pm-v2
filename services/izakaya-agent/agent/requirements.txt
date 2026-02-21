@@ -1,0 +1,7 @@
+# AgentCore Runtime requirements (Strands Agent)
+
+# Include base requirements (shared with Lambda)
+-r ../requirements-base.txt
+
+# AgentCore-specific dependencies (if any)
+# Add AgentCore-specific packages here

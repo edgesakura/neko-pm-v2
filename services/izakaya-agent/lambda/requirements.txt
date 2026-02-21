@@ -1,0 +1,7 @@
+# Lambda-specific requirements (LINE webhook handler)
+
+# Include base requirements (shared with AgentCore)
+-r ../requirements-base.txt
+
+# LINE Messaging API SDK (Lambda-specific)
+line-bot-sdk>=3.0.0

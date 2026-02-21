@@ -1,0 +1,22 @@
+{
+  "id": "alert-002",
+  "title": "[P2] Pod CrashLoopBackOff - user-api-deployment",
+  "description": "Pod user-api-deployment-7d4f9b8c5-x2k9j in namespace production is in CrashLoopBackOff state. Restart count: 15 in last 30 minutes.",
+  "severity": "high",
+  "category": "POD_CRASHLOOP",
+  "source": "datadog",
+  "timestamp": "2026-02-18T11:15:00Z",
+  "tags": {
+    "kube_namespace": "production",
+    "kube_deployment": "user-api-deployment",
+    "kube_cluster": "main-eks-cluster",
+    "team": "backend"
+  },
+  "raw_payload": {
+    "monitor_id": 12346,
+    "pod_name": "user-api-deployment-7d4f9b8c5-x2k9j",
+    "restart_count": 15,
+    "last_termination_reason": "OOMKilled",
+    "alert_type": "process_alert"
+  }
+}
