@@ -29,6 +29,13 @@ queue/reports/*.yaml
 nawabari.md
 
 # History（セッション履歴）
+history/
+
+# Archive（旧バージョンバックアップ）
+archive/
+
+# Backup（一時バックアップ）
+backup/
 
 # Node modules
 node_modules/
