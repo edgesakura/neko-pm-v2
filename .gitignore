@@ -68,6 +68,10 @@ test-*.js
 # Local settings（ローカル固有）
 .claude/settings.local.json
 
+# Market Watch（有料ロジック含む・公開禁止）
+scripts/market-watch.py
+config/market-alerts.json
+
 # Python cache
 __pycache__/
 *.pyc
