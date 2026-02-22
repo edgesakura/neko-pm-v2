@@ -14,10 +14,6 @@
     "deny": []
   },
   "mcpServers": {
-    "codex": {
-      "command": "codex",
-      "args": ["mcp-server"]
-    },
     "awspricing": {
       "type": "stdio",
       "command": "uvx",
